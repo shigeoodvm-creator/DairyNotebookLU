@@ -1,0 +1,1031 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>子牛 肺エコー検診 プロトコール案 3パターン</title>
+  <style>
+    :root {
+      --primary: #1a5276;
+      --primary-light: #2e86c1;
+      --accent: #1abc9c;
+      --accent-dark: #148f77;
+      --warning: #e67e22;
+      --danger: #c0392b;
+      --bg: #f4f6f9;
+      --card: #ffffff;
+      --text: #2c3e50;
+      --text-light: #5d6d7e;
+      --border: #d5dbdb;
+      --highlight: #eaf4fb;
+
+      /* プロトコール別カラー */
+      --p1: #1a5276;
+      --p1-light: #d6eaf8;
+      --p1-mid: #2e86c1;
+      --p2: #1e8449;
+      --p2-light: #d5f5e3;
+      --p2-mid: #27ae60;
+      --p3: #7d3c98;
+      --p3-light: #f5eef8;
+      --p3-mid: #9b59b6;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: 'Helvetica Neue', 'Hiragino Sans', 'Yu Gothic', sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      font-size: 15px;
+      line-height: 1.75;
+    }
+
+    /* ===== ヘッダー ===== */
+    header {
+      background: linear-gradient(135deg, #0d2137 0%, var(--primary) 60%, var(--primary-light) 100%);
+      color: white;
+      padding: 48px 40px 44px;
+      position: relative;
+      overflow: hidden;
+    }
+    header::before {
+      content: '';
+      position: absolute;
+      top: -80px; right: -80px;
+      width: 320px; height: 320px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.05);
+    }
+    header::after {
+      content: '';
+      position: absolute;
+      bottom: -100px; left: 25%;
+      width: 400px; height: 400px;
+      border-radius: 50%;
+      background: rgba(255,255,255,0.03);
+    }
+    .header-inner { position: relative; z-index: 1; max-width: 1100px; margin: 0 auto; }
+    .header-badge {
+      display: inline-block;
+      background: var(--accent);
+      color: white;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      padding: 4px 12px;
+      border-radius: 20px;
+      text-transform: uppercase;
+      margin-bottom: 16px;
+    }
+    header h1 {
+      font-size: 26px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 8px;
+    }
+    header p {
+      font-size: 14px;
+      opacity: 0.8;
+      max-width: 680px;
+      line-height: 1.6;
+    }
+    .header-meta { font-size: 12px; opacity: 0.6; margin-top: 16px; }
+
+    /* ===== コンテナ ===== */
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      padding: 0 24px 60px;
+    }
+
+    /* ===== 比較概観 ===== */
+    .overview-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 20px;
+      margin: 36px 0 12px;
+    }
+    @media (max-width: 800px) { .overview-grid { grid-template-columns: 1fr; } }
+
+    .overview-card {
+      border-radius: 12px;
+      padding: 24px;
+      cursor: default;
+    }
+    .overview-card.p1 { background: var(--p1); color: white; }
+    .overview-card.p2 { background: var(--p2); color: white; }
+    .overview-card.p3 { background: var(--p3); color: white; }
+
+    .ov-num {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      opacity: 0.7;
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .ov-title {
+      font-size: 17px;
+      font-weight: 700;
+      line-height: 1.4;
+      margin-bottom: 14px;
+    }
+    .ov-tag {
+      display: inline-block;
+      background: rgba(255,255,255,0.2);
+      font-size: 11px;
+      padding: 3px 10px;
+      border-radius: 20px;
+      margin: 2px 2px 0 0;
+    }
+    .ov-desc {
+      font-size: 13px;
+      opacity: 0.85;
+      margin-top: 14px;
+      line-height: 1.6;
+    }
+
+    /* ===== プロトコールセクション ===== */
+    .protocol {
+      background: var(--card);
+      border-radius: 12px;
+      overflow: hidden;
+      margin-bottom: 40px;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.08);
+    }
+    .protocol-header {
+      padding: 28px 40px;
+      color: white;
+      position: relative;
+    }
+    .protocol.p1 .protocol-header { background: linear-gradient(135deg, var(--p1) 0%, var(--p1-mid) 100%); }
+    .protocol.p2 .protocol-header { background: linear-gradient(135deg, var(--p2) 0%, var(--p2-mid) 100%); }
+    .protocol.p3 .protocol-header { background: linear-gradient(135deg, var(--p3) 0%, var(--p3-mid) 100%); }
+
+    .protocol-num {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: 2px;
+      opacity: 0.7;
+      text-transform: uppercase;
+      margin-bottom: 6px;
+    }
+    .protocol-header h2 { font-size: 22px; font-weight: 700; margin-bottom: 8px; }
+    .protocol-header p { font-size: 14px; opacity: 0.85; max-width: 700px; line-height: 1.6; }
+
+    .protocol-body { padding: 36px 40px; }
+    @media (max-width: 640px) { .protocol-body { padding: 24px 20px; } }
+
+    /* ===== セクション内見出し ===== */
+    .block-title {
+      font-size: 13px;
+      font-weight: 700;
+      letter-spacing: 1.5px;
+      text-transform: uppercase;
+      color: var(--text-light);
+      margin: 32px 0 14px;
+      padding-bottom: 8px;
+      border-bottom: 2px solid var(--bg);
+    }
+    .block-title:first-child { margin-top: 0; }
+
+    /* ===== 肺葉別走査ランドマーク（記録様式用） ===== */
+    .landmark-section {
+      background: var(--card);
+      border-radius: 12px;
+      padding: 28px 40px;
+      margin: 32px 0 40px;
+      box-shadow: 0 3px 14px rgba(0,0,0,0.08);
+    }
+    .landmark-section .block-title { color: var(--primary); border-bottom-color: var(--primary-light); }
+    .landmark-dir { display: flex; justify-content: space-between; font-size: 12px; color: var(--text-light); margin-bottom: 12px; }
+    .landmark-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; margin-bottom: 12px; }
+    @media (max-width: 640px) { .landmark-grid { grid-template-columns: 1fr; } }
+    .landmark-box { border-radius: 8px; padding: 12px 14px; font-size: 13px; line-height: 1.6; }
+    .landmark-box.lobe-a { background: #eff6ff; border: 1px solid #bfdbfe; }
+    .landmark-box.lobe-b { background: #f0fdf4; border: 1px solid #bbf7d0; }
+    .landmark-box.lobe-c { background: #fefce8; border: 1px solid #fde047; }
+    .landmark-box.lobe-d { background: #fff7ed; border: 1px solid #fed7aa; }
+    .landmark-box strong { display: block; margin-bottom: 2px; }
+    .landmark-box .ref { font-size: 11px; color: var(--text-light); margin-top: 4px; }
+    .landmark-note { font-size: 12px; color: var(--text-light); line-height: 1.5; }
+
+    h3 {
+      font-size: 16px;
+      font-weight: 700;
+      color: var(--primary);
+      margin: 24px 0 10px;
+    }
+    .protocol.p2 h3 { color: var(--p2); }
+    .protocol.p3 h3 { color: var(--p3); }
+
+    /* ===== テーブル ===== */
+    .table-wrap { overflow-x: auto; margin: 12px 0 20px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; }
+    thead tr { color: white; }
+    .protocol.p1 thead tr { background: var(--p1); }
+    .protocol.p2 thead tr { background: var(--p2); }
+    .protocol.p3 thead tr { background: var(--p3); }
+    thead th { padding: 11px 14px; text-align: left; font-weight: 600; white-space: nowrap; }
+    tbody tr:nth-child(even) { background: var(--bg); }
+    tbody tr:hover { background: #eaf4fb; }
+    tbody td { padding: 10px 14px; border-bottom: 1px solid var(--border); vertical-align: top; font-size: 14px; }
+
+    /* ===== フローチャート風ステップ ===== */
+    .steps { list-style: none; margin: 12px 0 20px; }
+    .steps li {
+      display: flex;
+      gap: 16px;
+      margin-bottom: 14px;
+      align-items: flex-start;
+    }
+    .step-num {
+      width: 28px; height: 28px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 13px;
+      flex-shrink: 0;
+      color: white;
+      margin-top: 1px;
+    }
+    .protocol.p1 .step-num { background: var(--p1-mid); }
+    .protocol.p2 .step-num { background: var(--p2-mid); }
+    .protocol.p3 .step-num { background: var(--p3-mid); }
+    .step-body { flex: 1; font-size: 14px; line-height: 1.65; }
+    .step-body strong { font-weight: 700; }
+
+    /* 矢印コネクタ */
+    .step-arrow {
+      font-size: 18px;
+      color: var(--border);
+      text-align: center;
+      margin: -6px 0 -4px 10px;
+    }
+
+    /* ===== タイムライン ===== */
+    .timeline { position: relative; margin: 16px 0 24px; padding-left: 0; list-style: none; }
+    .timeline::before {
+      content: '';
+      position: absolute;
+      left: 20px; top: 0; bottom: 0;
+      width: 2px;
+      background: var(--border);
+    }
+    .tl-item {
+      display: flex;
+      gap: 20px;
+      margin-bottom: 20px;
+      align-items: flex-start;
+      position: relative;
+    }
+    .tl-dot {
+      width: 40px; height: 40px;
+      border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      font-weight: 700; font-size: 11px;
+      flex-shrink: 0;
+      color: white;
+      position: relative; z-index: 1;
+      text-align: center;
+      line-height: 1.2;
+    }
+    .protocol.p1 .tl-dot { background: var(--p1-mid); }
+    .protocol.p2 .tl-dot { background: var(--p2-mid); }
+    .protocol.p3 .tl-dot { background: var(--p3-mid); }
+    .tl-content { flex: 1; background: var(--bg); border-radius: 8px; padding: 12px 16px; font-size: 14px; }
+    .tl-content strong { display: block; margin-bottom: 4px; }
+
+    /* ===== コールアウト ===== */
+    .callout {
+      border-radius: 8px;
+      padding: 14px 18px;
+      margin: 14px 0;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      font-size: 14px;
+    }
+    .callout-icon { font-size: 18px; flex-shrink: 0; margin-top: 1px; }
+    .callout-body { flex: 1; line-height: 1.6; }
+    .callout.info { background: #eaf4fb; border-left: 4px solid var(--primary-light); }
+    .callout.warning { background: #fef9e7; border-left: 4px solid var(--warning); }
+    .callout.success { background: #eafaf1; border-left: 4px solid var(--accent); }
+    .callout.danger { background: #fdedec; border-left: 4px solid var(--danger); }
+    .callout.purple { background: #f5eef8; border-left: 4px solid var(--p3-mid); }
+
+    /* ===== 負担評価バー ===== */
+    .burden-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 16px;
+      margin: 16px 0 24px;
+    }
+    @media (max-width: 640px) { .burden-grid { grid-template-columns: 1fr; } }
+    .burden-card {
+      border-radius: 10px;
+      padding: 18px 16px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+    }
+    .burden-label {
+      font-size: 12px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--text-light);
+      text-transform: uppercase;
+      margin-bottom: 8px;
+    }
+    .burden-level {
+      font-size: 18px;
+      font-weight: 800;
+      margin-bottom: 6px;
+    }
+    .burden-level.low { color: var(--accent-dark); }
+    .burden-level.mid { color: var(--warning); }
+    .burden-level.high { color: var(--danger); }
+    .burden-detail { font-size: 13px; color: var(--text-light); line-height: 1.5; }
+
+    .protocol.p1 .burden-card { border-top: 3px solid var(--p1-mid); }
+    .protocol.p2 .burden-card { border-top: 3px solid var(--p2-mid); }
+    .protocol.p3 .burden-card { border-top: 3px solid var(--p3-mid); }
+
+    /* ===== バッジ ===== */
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 700;
+    }
+    .badge-blue { background: #d6eaf8; color: var(--primary); }
+    .badge-green { background: #d5f5e3; color: var(--accent-dark); }
+    .badge-orange { background: #fdebd0; color: #a04000; }
+    .badge-red { background: #fadbd8; color: var(--danger); }
+    .badge-purple { background: #f5eef8; color: var(--p3); }
+
+    /* ===== 機器リスト ===== */
+    .equip-list {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin: 12px 0 20px;
+    }
+    .equip-item {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 12px 16px;
+      font-size: 13px;
+      border: 1px solid var(--border);
+      min-width: 160px;
+    }
+    .equip-item .ei-label { font-size: 11px; color: var(--text-light); margin-bottom: 4px; }
+    .equip-item .ei-val { font-weight: 700; }
+
+    /* ===== KPI ===== */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+      gap: 12px;
+      margin: 14px 0 20px;
+    }
+    .kpi-card {
+      background: var(--bg);
+      border-radius: 8px;
+      padding: 16px;
+      text-align: center;
+    }
+    .kpi-val { font-size: 26px; font-weight: 800; line-height: 1; }
+    .kpi-unit { font-size: 12px; color: var(--text-light); }
+    .kpi-label { font-size: 12px; color: var(--text-light); margin-top: 6px; line-height: 1.4; }
+    .protocol.p1 .kpi-val { color: var(--p1-mid); }
+    .protocol.p2 .kpi-val { color: var(--p2-mid); }
+    .protocol.p3 .kpi-val { color: var(--p3-mid); }
+
+    /* ===== 費用試算ボックス ===== */
+    .cost-box {
+      background: var(--bg);
+      border-radius: 10px;
+      padding: 20px 22px;
+      margin: 12px 0 20px;
+      border: 1px solid var(--border);
+    }
+    .cost-box h4 {
+      font-size: 13px;
+      font-weight: 700;
+      color: var(--text-light);
+      letter-spacing: 0.5px;
+      margin-bottom: 12px;
+      text-transform: uppercase;
+    }
+    .cost-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      padding: 6px 0;
+      border-bottom: 1px dashed var(--border);
+      font-size: 13px;
+    }
+    .cost-row:last-child { border-bottom: none; }
+    .cost-row .cost-item { color: var(--text-light); }
+    .cost-row .cost-val { font-weight: 700; color: var(--text); }
+    .cost-total {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 12px;
+      padding-top: 10px;
+      border-top: 2px solid var(--border);
+      font-size: 14px;
+      font-weight: 700;
+    }
+    .protocol.p1 .cost-total .total-val { color: var(--p1-mid); }
+    .protocol.p2 .cost-total .total-val { color: var(--p2-mid); }
+    .protocol.p3 .cost-total .total-val { color: var(--p3-mid); }
+
+    /* ===== 比較表 ===== */
+    .compare-table { margin: 28px 0 0; }
+    .compare-table thead tr { background: var(--primary); }
+
+    /* ===== まとめ ===== */
+    .summary-section {
+      background: linear-gradient(135deg, #0d2137 0%, var(--primary) 100%);
+      color: white;
+      border-radius: 12px;
+      padding: 36px 40px;
+      margin-top: 12px;
+    }
+    .summary-section h2 { font-size: 20px; margin-bottom: 20px; padding-bottom: 14px; border-bottom: 1px solid rgba(255,255,255,0.15); }
+    .summary-section p { opacity: 0.9; margin-bottom: 12px; font-size: 14px; }
+
+    /* ===== フッター ===== */
+    footer {
+      text-align: center;
+      padding: 24px;
+      font-size: 12px;
+      color: var(--text-light);
+      border-top: 1px solid var(--border);
+    }
+
+    hr.section-sep { border: none; border-top: 2px solid var(--bg); margin: 28px 0; }
+
+    ul.bullet { list-style: disc; padding-left: 20px; margin: 8px 0 16px; }
+    ul.bullet li { font-size: 14px; margin-bottom: 5px; }
+
+    @media (max-width: 640px) {
+      .protocol-header { padding: 22px 20px; }
+      .protocol-header h2 { font-size: 18px; }
+      header { padding: 32px 20px; }
+      header h1 { font-size: 20px; }
+      .summary-section { padding: 24px 20px; }
+    }
+  </style>
+</head>
+<body>
+
+<!-- ===== ヘッダー ===== -->
+<header>
+  <div class="header-inner">
+    <div class="header-badge">Calf Protocol — 3 Options</div>
+    <h1>子牛 肺エコー検診 プロトコール案（3パターン）</h1>
+    <p>いつから・どの間隔でスキャンするかを3パターンで提示する。各パターンに費用・時間的負担・人的負担の考察を加え、農場規模や獣医師アクセス頻度に応じた選択ができるよう設計した。対象はすべて哺乳期〜離乳期の子牛。</p>
+    <div class="header-meta">作成：2026年3月15日　|　参照：BLU総合調査レポート（2026）</div>
+  </div>
+</header>
+
+<div class="container">
+
+  <!-- ===== 概観グリッド ===== -->
+  <div class="overview-grid">
+    <div class="overview-card p1">
+      <div class="ov-num">Pattern A</div>
+      <div class="ov-title">集中型<br>週1回スキャン（7日間隔）</div>
+      <span class="ov-tag">開始：生後7日齢</span>
+      <span class="ov-tag">7〜8回/頭</span>
+      <span class="ov-tag">費用：高</span>
+      <div class="ov-desc">出生直後から離乳まで毎週スキャン。潜在性肺炎を最も早期・確実に捕捉できる。検査頻度が高いぶん費用・訪問負担は最大。</div>
+    </div>
+    <div class="overview-card p2">
+      <div class="ov-num">Pattern B</div>
+      <div class="ov-title">標準型<br>隔週スキャン（14日間隔）</div>
+      <span class="ov-tag">開始：生後14日齢</span>
+      <span class="ov-tag">4〜5回/頭</span>
+      <span class="ov-tag">費用：中</span>
+      <div class="ov-desc">BRD好発ウインドウを確実にカバーしながら訪問回数を半減。費用対効果のバランスが最も取れた現実的な標準案。</div>
+    </div>
+    <div class="overview-card p3">
+      <div class="ov-num">Pattern C</div>
+      <div class="ov-title">簡易型<br>重点3時期のみスキャン</div>
+      <span class="ov-tag">開始：生後14日齢</span>
+      <span class="ov-tag">3回/頭（+症状時随時）</span>
+      <span class="ov-tag">費用：低</span>
+      <div class="ov-desc">14日齢・35日齢・離乳時の3点集中。獣医師アクセスが月1〜2回に限られる農場や、まず試験導入したい場合に適する。</div>
+    </div>
+  </div>
+
+  <!-- ===== 肺葉別走査ランドマーク（記録様式・現場参照用） ===== -->
+  <div class="landmark-section">
+    <div class="block-title">肺葉別 走査ランドマーク（Ollivett &amp; Buczinski 2016 他）</div>
+    <div class="landmark-dir"><span>← 頭側（前）</span><span>尾側（後）→</span></div>
+    <div class="landmark-grid">
+      <div class="landmark-box lobe-a">
+        <strong>前葉前部</strong>
+        ランドマーク：内胸動静脈。胸骨腹側縁を走行する内胸動静脈を腹側のランドマークとする。前肢を後方に引いた状態で胸壁最前部（前肢直前〜胸骨傍）にプローブを当て、背腹方向にスウィープする。
+        <span class="ref">参照：Ollivett &amp; Buczinski, 2016; Rabeling et al., 1998</span>
+      </div>
+      <div class="landmark-box lobe-b">
+        <strong>前葉後部</strong>
+        ランドマーク：心臓前縁（頭側）。エコー上で心影が視野に入り始める直前のスペースを評価する。心臓の頭側境界をガイドとして、その前方（頭側）の肺野を背腹方向にスウィープする。
+        <span class="ref">参照：Buczinski et al., 2013; Timsit et al., 2019</span>
+      </div>
+      <div class="landmark-box lobe-c">
+        <strong>中葉（右肺のみ）</strong>
+        ランドマーク：心尖部腹側（心臓下縁）。右肺のみに存在する小葉。心尖部直下の腹側胸壁（胸骨縁近傍）にプローブを当てる。心影を確認しながらその腹側にプローブを移動させると評価しやすい。左肺には中葉は存在しない。
+        <span class="ref">参照：Ollivett &amp; Buczinski, 2016</span>
+      </div>
+      <div class="landmark-box lobe-d">
+        <strong>後葉</strong>
+        ランドマーク：心臓後縁（尾側）。心影が消えた後方（尾側）から後肢股関節前方にかけての広い胸壁を系統的に走査する。最大葉であり、BRD肺炎の好発部位。右肺：心基部後縁から後肢まで、左肺：心影消失後から後肢まで。
+        <span class="ref">参照：Buczinski et al., 2013; Murray et al., 2022</span>
+      </div>
+    </div>
+    <p class="landmark-note">※ 現場では肋間を数えず、心臓・内胸動静脈をランドマークとして肺葉を特定する（Ollivett TL &amp; Buczinski S. Vet Clin North Am Food Anim Pract. 2016;32:333-348）。</p>
+  </div>
+
+  <!-- ============================================================ -->
+  <!-- PATTERN A -->
+  <!-- ============================================================ -->
+  <div class="protocol p1">
+    <div class="protocol-header">
+      <div class="protocol-num">Pattern A</div>
+      <h2>集中型：生後7日齢〜、週1回（7日間隔）スキャン</h2>
+      <p>出生から離乳（56〜70日齢）まで7日ごとに全頭スキャンし、潜在性肺炎を最大限に早期発見・介入する。エビデンスの蓄積が最も厚く、WeanClean™プロトコルの標準に準拠した最高精度の監視体制。</p>
+    </div>
+    <div class="protocol-body">
+
+      <div class="block-title">基本設計</div>
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-val">7</div><div class="kpi-unit">日齢</div><div class="kpi-label">初回スキャン開始日</div></div>
+        <div class="kpi-card"><div class="kpi-val">7日</div><div class="kpi-unit">間隔</div><div class="kpi-label">スキャン頻度</div></div>
+        <div class="kpi-card"><div class="kpi-val">7〜8回</div><div class="kpi-unit">/ 頭</div><div class="kpi-label">離乳まで（56〜70日齢）</div></div>
+        <div class="kpi-card"><div class="kpi-val">&lt;15%</div><div class="kpi-unit">目標</div><div class="kpi-label">離乳時 肺炎有病率ベンチマーク</div></div>
+      </div>
+
+      <hr class="section-sep">
+      <div class="block-title">スクリーニングスケジュール</div>
+
+      <ul class="timeline">
+        <li class="tl-item">
+          <div class="tl-dot">7日齢</div>
+          <div class="tl-content"><strong>第1回（ベースライン）</strong>初回スキャン。正常肺の所見を記録しておくことで以後の変化を明確に追跡できる。哺乳管理・換気状態も同時確認。</div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot">14日齢</div>
+          <div class="tl-content"><strong>第2回（BRD第1ピーク前）</strong>10〜21日齢のBRD第1ピーク前に変化を捕捉する最重要スキャン。スコア≥2で即時治療介入。</div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot">21日齢</div>
+          <div class="tl-content"><strong>第3回（BRD第1ピーク中）</strong>治療牛の再評価を兼ねる。治療後スコアが改善しない場合は薬剤変更を検討。新規病変牛も同時発見。</div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot">28日齢</div>
+          <div class="tl-content"><strong>第4回（慢性化移行期）</strong>急性炎症から慢性化・膿瘍化への移行が始まる時期。新規病変と慢性病変の鑑別を行う。</div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot">35日齢</div>
+          <div class="tl-content"><strong>第5回（中間評価）</strong>折り返し点として農場有病率を集計。&gt;20%の場合は飼養環境（換気・密度）を優先的に見直す。</div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot">42・49日齢</div>
+          <div class="tl-content"><strong>第6・7回（継続監視）</strong>有病率の推移とベンチマーク達成状況を確認。慢性病変牛の発育評価も開始する。</div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot">離乳時</div>
+          <div class="tl-content"><strong>最終スキャン（WeanClean評価）</strong>離乳時有病率の確定。&lt;15%が達成目標。超過した場合は次シーズンの改善策を協議する。</div>
+        </li>
+      </ul>
+
+      <hr class="section-sep">
+      <div class="block-title">スコアリングと介入基準</div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>スコア（Ollivett-Buczinski 0〜5）</th><th>主な所見</th><th>解釈</th><th>対応</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge badge-green">0</span></td><td>Aライン・少量Bライン</td><td>正常肺</td><td>次回定期スキャンまで観察</td></tr>
+            <tr><td><span class="badge badge-blue">1</span></td><td>びまん性・重度Bライン増多</td><td>間質性変化の疑い</td><td>3〜5日後に再スキャン</td></tr>
+            <tr style="background: #fef9e7;"><td><span class="badge badge-orange">2</span></td><td>小葉性実質化（≥1cm）</td><td>小葉性肺炎</td><td><strong>治療介入</strong>。7日後に再スキャン必須</td></tr>
+            <tr style="background: #fdebd0;"><td><span class="badge badge-orange">3</span></td><td>1葉全体の実質化</td><td>葉性気管支肺炎</td><td><strong>治療介入</strong>。7日後再スキャン</td></tr>
+            <tr style="background: #fadbd8;"><td><span class="badge badge-red">4</span></td><td>2葉全体の実質化</td><td>重症肺炎</td><td><strong>積極的治療</strong>。廃用リスク26%を念頭に</td></tr>
+            <tr style="background: #f9ebea;"><td><span class="badge badge-red">5</span></td><td>3葉以上の実質化</td><td>最重症</td><td><strong>緊急対応</strong>。治療反応性の低さを飼育者に説明</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <div class="callout warning">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-body"><strong>潜在性肺炎の特定が核心：</strong>スコア≥2かつ呼吸スコア正常（臨床症状なし）の子牛が最重要ターゲット。聴診・目視では必ず見逃す病変を系統的に発見できる点がPattern Aの最大の価値。</div>
+      </div>
+
+      <hr class="section-sep">
+      <div class="block-title">費用・負担の考察</div>
+
+      <div class="burden-grid">
+        <div class="burden-card">
+          <div class="burden-label">費用負担</div>
+          <div class="burden-level high">高</div>
+          <div class="burden-detail">訪問回数が週1回と多いため、往診費・検査費の累積が3パターン中最大。ただし早期治療による薬剤費削減・廃用損失軽減で相殺されやすい。</div>
+        </div>
+        <div class="burden-card">
+          <div class="burden-label">時間的負担</div>
+          <div class="burden-level high">高</div>
+          <div class="burden-detail">週1回の定期訪問が必要。50頭規模で1回あたり約2〜3時間（スキャン＋記録＋フィードバック）×8回 ＝ 計16〜24時間/哺乳期。</div>
+        </div>
+        <div class="burden-card">
+          <div class="burden-label">人的負担</div>
+          <div class="burden-level high">高</div>
+          <div class="burden-detail">獣医師の高頻度訪問が必須。農場スタッフも週1回の保定補助が必要。専任スタッフがいる中〜大規模農場向き。</div>
+        </div>
+      </div>
+
+      <div class="cost-box">
+        <h4>費用試算の目安（乳用子牛 50頭規模・1哺乳期あたり）</h4>
+        <div class="cost-row">
+          <span class="cost-item">エコー機器（ポータブルリニア）　年間償却分（5年/200頭）</span>
+          <span class="cost-val">¥500〜1,500/頭</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-item">獣医師往診費用（1回あたり交通費含む）× 8回</span>
+          <span class="cost-val">¥80,000〜240,000</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-item">スキャン実作業費（獣医師時間）50頭 × 5分 × 8回 ÷ 60</span>
+          <span class="cost-val">約33時間</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-item">早期発見による治療費削減・廃用損失軽減（期待効果）</span>
+          <span class="cost-val">―（最大）</span>
+        </div>
+        <div class="cost-total">
+          <span>総費用（50頭・1期・往診費含む概算）</span>
+          <span class="total-val">¥80,000〜240,000 程度</span>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-icon">💡</div>
+        <div class="callout-body"><strong>農場常駐型または専任スタッフが操作を習得できる農場では、</strong>往診回数を減らしてスタッフが日常スキャンを担う運用も可能。この場合、費用・時間的負担は大幅に軽減する。</div>
+      </div>
+
+      <div class="callout success">
+        <div class="callout-icon">📈</div>
+        <div class="callout-body"><strong>期待される効果：</strong>兵庫県農業共済組合での事例では、週次検診導入後に35日齢以下での早期治療が約2倍に増加し、重症化・再発件数が大幅に減少した。投資対効果は導入農場で概ね正の評価が得られている。</div>
+      </div>
+
+    </div>
+  </div><!-- /protocol p1 -->
+
+
+  <!-- ============================================================ -->
+  <!-- PATTERN B -->
+  <!-- ============================================================ -->
+  <div class="protocol p2">
+    <div class="protocol-header">
+      <div class="protocol-num">Pattern B</div>
+      <h2>標準型：生後14日齢〜、隔週（14日間隔）スキャン</h2>
+      <p>BRD好発ウインドウを確実にカバーしながら訪問回数をPattern Aの半分に抑える。費用対効果のバランスが最も優れており、NOSAI巡回や定期往診のサイクルに組み込みやすい現実的な標準案。乳用・肉用どちらの子牛にも適用できる。</p>
+    </div>
+    <div class="protocol-body">
+
+      <div class="block-title">基本設計</div>
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-val">14</div><div class="kpi-unit">日齢</div><div class="kpi-label">初回スキャン開始日</div></div>
+        <div class="kpi-card"><div class="kpi-val">14日</div><div class="kpi-unit">間隔</div><div class="kpi-label">スキャン頻度</div></div>
+        <div class="kpi-card"><div class="kpi-val">4〜5回</div><div class="kpi-unit">/ 頭</div><div class="kpi-label">離乳まで（70〜90日齢）</div></div>
+        <div class="kpi-card"><div class="kpi-val">&lt;20%</div><div class="kpi-unit">目標</div><div class="kpi-label">離乳時 肺炎有病率ベンチマーク</div></div>
+      </div>
+
+      <hr class="section-sep">
+      <div class="block-title">スクリーニングスケジュール</div>
+
+      <ul class="timeline">
+        <li class="tl-item">
+          <div class="tl-dot">14日齢</div>
+          <div class="tl-content"><strong>第1回（ベースライン＋BRD第1ピーク前哨）</strong>初回スキャン兼ベースライン記録。10〜21日齢の第1ピーク直前に位置し、この時点のスコアが以後の経過を左右する。スコア≥2は即時治療介入。</div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot">28日齢</div>
+          <div class="tl-content"><strong>第2回（BRD第1ピーク後評価）</strong>治療牛の治療反応性確認と新規病変の発見を兼ねる。治療後にスコアが改善していない場合は薬剤変更を検討。Mycoplasma bovis感染も考慮。</div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot">42日齢</div>
+          <div class="tl-content"><strong>第3回（中間評価）</strong>農場有病率の中間集計。急性→慢性移行期の変化をチェック。有病率&gt;25%なら飼養環境（換気・密度・移動タイミング）を見直す。</div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot">60日齢</div>
+          <div class="tl-content"><strong>第4回（慢性化確認）</strong>慢性病変・膿瘍化の確認と予後評価。スコア2〜3の慢性病変牛は発育成績・廃用リスクを飼育者と共有する。</div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot">離乳時</div>
+          <div class="tl-content"><strong>最終スキャン</strong>有病率の最終確定。育成フェーズへの引き継ぎ情報として肺スコアを記録。</div>
+        </li>
+      </ul>
+
+      <hr class="section-sep">
+      <div class="block-title">スコアリング（Ollivett-Buczinski 0〜5）</div>
+
+      <p style="font-size:14px; margin-bottom:12px;">
+        3パターン共通でOllivett-Buczinski スコア（0〜5）を採用する。エコー所見と病変の広がりで判定するため、隔週スキャンでも変化の大小を明確に追跡できる。
+      </p>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>スコア</th><th>主な所見</th><th>解釈</th><th>対応</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge badge-green">0</span></td><td>Aライン・少量Bライン</td><td>正常肺</td><td>次回定期スキャンまで観察</td></tr>
+            <tr><td><span class="badge badge-blue">1</span></td><td>びまん性・重度Bライン増多</td><td>間質性変化の疑い</td><td>5〜7日後に再スキャン。農場スタッフに観察強化を依頼</td></tr>
+            <tr style="background: #fef9e7;"><td><span class="badge badge-orange">2</span></td><td>小葉性実質化（≥1cm）</td><td>小葉性肺炎</td><td><strong>治療介入。</strong>7〜10日後に再スキャン</td></tr>
+            <tr style="background: #fdebd0;"><td><span class="badge badge-orange">3</span></td><td>1葉全体の実質化</td><td>葉性気管支肺炎</td><td><strong>治療介入。</strong>7〜10日後に再スキャン</td></tr>
+            <tr style="background: #fadbd8;"><td><span class="badge badge-red">4</span></td><td>2葉全体の実質化</td><td>重症肺炎</td><td><strong>積極的治療。</strong>廃用リスクを飼育者に共有</td></tr>
+            <tr style="background: #f9ebea;"><td><span class="badge badge-red">5</span></td><td>3葉以上の実質化</td><td>最重症</td><td><strong>積極的治療。</strong>予後不良（廃用リスク高）を明確に伝える</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr class="section-sep">
+      <div class="block-title">役割分担（獣医師＋農場スタッフ連携）</div>
+
+      <div class="callout info">
+        <div class="callout-icon">👥</div>
+        <div class="callout-body">
+          <strong>獣医師（NOSAI・指定獣医師）：</strong>隔週巡回時に全頭スキャン・スコア記録・治療処置・農場へのフィードバック。<br>
+          <strong>農場スタッフ（飼育者）：</strong>毎朝の呼吸スコア確認（安静時&gt;40回/分は要注意）・食欲低下の早期連絡。中間週に異常を疑う場合は随時連絡。
+        </div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>タスク</th><th>獣医師</th><th>農場スタッフ</th></tr></thead>
+          <tbody>
+            <tr><td>エコースキャン・スコア判定</td><td>◎ 主担当（研修後は補助可）</td><td>△</td></tr>
+            <tr><td>呼吸スコア・日常観察</td><td>○ 巡回時</td><td>◎ 毎日</td></tr>
+            <tr><td>治療処置</td><td>◎ 指示・実施</td><td>○ 指示下で実施</td></tr>
+            <tr><td>記録（個体番号・スコア・日齢）</td><td>◎ スコア・所見</td><td>○ 体重・日齢</td></tr>
+            <tr><td>異常のアラート連絡</td><td>－</td><td>◎ 随時</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr class="section-sep">
+      <div class="block-title">費用・負担の考察</div>
+
+      <div class="burden-grid">
+        <div class="burden-card">
+          <div class="burden-label">費用負担</div>
+          <div class="burden-level mid">中</div>
+          <div class="burden-detail">Pattern Aの約半分の訪問回数。往診費・検査費のトータルは現実的なレンジ。NOSAI巡回に組み込めばさらに低減できる。</div>
+        </div>
+        <div class="burden-card">
+          <div class="burden-label">時間的負担</div>
+          <div class="burden-level mid">中</div>
+          <div class="burden-detail">2週に1回の訪問ペース。50頭規模で1回2〜3時間×5回 ＝ 計10〜15時間/哺乳期。年間を通じて継続可能な現実的負担。</div>
+        </div>
+        <div class="burden-card">
+          <div class="burden-label">人的負担</div>
+          <div class="burden-level mid">中</div>
+          <div class="burden-detail">月2回程度の訪問。既存の定期巡回スケジュールへの追加が可能。農場スタッフは中間週の日常観察強化のみ求められる。</div>
+        </div>
+      </div>
+
+      <div class="cost-box">
+        <h4>費用試算の目安（子牛 50頭規模・1哺乳期あたり）</h4>
+        <div class="cost-row">
+          <span class="cost-item">エコー機器　年間償却分（5年/200頭）</span>
+          <span class="cost-val">¥500〜1,500/頭</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-item">獣医師往診費用（1回あたり交通費含む）× 5回</span>
+          <span class="cost-val">¥50,000〜150,000</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-item">スキャン実作業費（獣医師時間）50頭 × 5分 × 5回 ÷ 60</span>
+          <span class="cost-val">約21時間</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-item">NOSAI巡回に組み込んだ場合の追加往診費</span>
+          <span class="cost-val">削減可</span>
+        </div>
+        <div class="cost-total">
+          <span>総費用（50頭・1期・往診費含む概算）</span>
+          <span class="total-val">¥50,000〜150,000 程度</span>
+        </div>
+      </div>
+
+      <div class="callout success">
+        <div class="callout-icon">📊</div>
+        <div class="callout-body"><strong>最も普及しやすいパターン：</strong>NOSAIかごしまでの事例では隔週スキャンを導入後に子牛の再発率が半減し、日増体重の向上と出荷価格の改善が確認されている。日本の農場規模・獣医師アクセス頻度に最も適合するパターン。</div>
+      </div>
+
+    </div>
+  </div><!-- /protocol p2 -->
+
+
+  <!-- ============================================================ -->
+  <!-- PATTERN C -->
+  <!-- ============================================================ -->
+  <div class="protocol p3">
+    <div class="protocol-header">
+      <div class="protocol-num">Pattern C</div>
+      <h2>簡易型：生後14日齢・35日齢・離乳時の3点スキャン（＋症状時随時）</h2>
+      <p>BRD発生リスクが最も高い重点時期にのみスキャンを集中させ、最小限の訪問で最大限の情報を得ることを目指す。獣医師アクセスが月1回程度に限られる農場や、肺エコー検診を初めて導入する農場・試験導入フェーズに適する。</p>
+    </div>
+    <div class="protocol-body">
+
+      <div class="block-title">基本設計と設計思想</div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card"><div class="kpi-val">14</div><div class="kpi-unit">日齢</div><div class="kpi-label">第1回スキャン</div></div>
+        <div class="kpi-card"><div class="kpi-val">35</div><div class="kpi-unit">日齢</div><div class="kpi-label">第2回スキャン</div></div>
+        <div class="kpi-card"><div class="kpi-val">3回</div><div class="kpi-unit">固定</div><div class="kpi-label">離乳時を最終として計3回</div></div>
+        <div class="kpi-card"><div class="kpi-val">+随時</div><div class="kpi-unit">追加</div><div class="kpi-label">症状出現時は都度実施</div></div>
+      </div>
+
+      <p style="font-size:14px; margin: 16px 0;">
+        3点のみとなるため、各スキャンポイントを「BRD好発ウインドウを代表するタイミング」に配置している。14日齢は第1ピーク（10〜21日齢）の代表点、35日齢は農場有病率の中間評価点、離乳時はWeanClean評価点に対応する。3回の間に臨床症状が出現した場合は随時スキャンを追加し、症状だけでなくエコーでも重症度を確認する。
+      </p>
+
+      <hr class="section-sep">
+      <div class="block-title">スクリーニングスケジュール</div>
+
+      <ul class="timeline">
+        <li class="tl-item">
+          <div class="tl-dot">14日齢</div>
+          <div class="tl-content"><strong>第1回（BRD第1ピーク代表点）</strong>BRD発症リスクが最も高い10〜21日齢のほぼ中間にあたる。ベースラインを兼ね、すでに病変が始まっている子牛を確実に拾う。スコア≥2で治療介入、スコア1は35日齢スキャンを待たず10日後に再スキャンする。</div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot">35日齢</div>
+          <div class="tl-content"><strong>第2回（中間評価）</strong>第1回で発見・治療した牛の治療反応性を確認する。また、20〜35日齢に新規発症した牛を捕捉する目的もある。農場有病率を集計し飼育者にフィードバック。</div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot">症状出現時（随時）</div>
+          <div class="tl-content"><strong>追加スキャン（症状ドリブン）</strong>農場スタッフが食欲低下・呼吸異常・元気消失を確認した場合、随時獣医師に連絡しスキャンを実施。臨床症状＋エコーで重症度を正確に評価し、治療方針を決定する。</div>
+        </li>
+        <li class="tl-item">
+          <div class="tl-dot">離乳時</div>
+          <div class="tl-content"><strong>最終スキャン（WeanClean評価点）</strong>有病率の最終確定と育成フェーズへの引き継ぎ情報として肺スコアを記録する。次サイクルの改善策の検討に使用する。</div>
+        </li>
+      </ul>
+
+      <hr class="section-sep">
+      <div class="block-title">症状ドリブン追加スキャンの判断基準</div>
+
+      <div class="callout warning">
+        <div class="callout-icon">⚠️</div>
+        <div class="callout-body"><strong>Pattern Cの弱点：</strong>定期スキャン間隔が3週間以上空くため、潜在性肺炎（症状なし・エコーで発見可能）の一部は見逃される可能性がある。農場スタッフが日常観察を徹底し、異常時の連絡を早めることでカバーする。以下の観察項目をスタッフと共有する。</div>
+      </div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>農場スタッフが確認すべき観察項目</th><th>要連絡の基準</th></tr></thead>
+          <tbody>
+            <tr><td>安静時呼吸数</td><td>&gt; 40回/分（哺乳子牛）</td></tr>
+            <tr><td>食欲・哺乳量</td><td>前日比50%以下の採食量低下</td></tr>
+            <tr><td>全身状態・元気</td><td>起立不安定・うずくまり姿勢</td></tr>
+            <tr><td>鼻汁・咳</td><td>膿性鼻汁・繰り返す咳</td></tr>
+            <tr><td>体温（測定可能な農場）</td><td>≥39.5°C（直腸温）</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr class="section-sep">
+      <div class="block-title">スコアリングと介入基準（Ollivett-Buczinski 0〜5）</div>
+
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>スコア</th><th>主な所見</th><th>解釈</th><th>対応</th></tr></thead>
+          <tbody>
+            <tr><td><span class="badge badge-green">0</span></td><td>Aライン・少量Bライン</td><td>正常肺</td><td>次回定期スキャン（35日齢または離乳時）まで観察</td></tr>
+            <tr><td><span class="badge badge-blue">1</span></td><td>びまん性・重度Bライン増多</td><td>間質性変化の疑い</td><td>10日後に再スキャン。農場スタッフに観察強化を依頼し、変化があれば随時連絡</td></tr>
+            <tr style="background: #fef9e7;"><td><span class="badge badge-orange">2</span></td><td>小葉性実質化（≥1cm）</td><td>小葉性肺炎</td><td><strong>治療介入。</strong>症状なしでも治療。7〜10日後に再スキャン確認</td></tr>
+            <tr style="background: #fdebd0;"><td><span class="badge badge-orange">3</span></td><td>1葉全体の実質化</td><td>葉性気管支肺炎</td><td><strong>治療介入。</strong>7〜10日後に再スキャン。薬剤選択を再評価</td></tr>
+            <tr style="background: #fadbd8;"><td><span class="badge badge-red">4</span></td><td>2葉全体の実質化</td><td>重症肺炎</td><td><strong>積極的治療。</strong>廃用リスクを飼育者に共有</td></tr>
+            <tr style="background: #f9ebea;"><td><span class="badge badge-red">5</span></td><td>3葉以上の実質化</td><td>最重症</td><td><strong>積極的治療。</strong>予後不良を明確に説明。廃用・安楽殺も選択肢として提示</td></tr>
+          </tbody>
+        </table>
+      </div>
+
+      <hr class="section-sep">
+      <div class="block-title">農場スタッフへの教育ポイント（Pattern Cで特に重要）</div>
+
+      <ul class="bullet">
+        <li>「元気そうに見えても肺が炎症している子牛がいる」―潜在性肺炎の概念をまず伝え、定期スキャンの価値を理解してもらう</li>
+        <li>毎朝の呼吸数確認を習慣化する（15秒間の腹部動きカウント×4）</li>
+        <li>エコー画像を実際に見せ、「正常（Aライン）」と「肺炎（実質化）」の違いを視覚的に説明する</li>
+        <li>「発見が早いほど治療効果が高く、薬剤費・労力も少なくて済む」という経済的メリットを繰り返し伝える</li>
+        <li>迷ったら連絡する―Pattern Cは農場スタッフの観察が検診精度の鍵となることを意識してもらう</li>
+      </ul>
+
+      <hr class="section-sep">
+      <div class="block-title">費用・負担の考察</div>
+
+      <div class="burden-grid">
+        <div class="burden-card">
+          <div class="burden-label">費用負担</div>
+          <div class="burden-level low">低</div>
+          <div class="burden-detail">固定3回＋随時追加分のみ。往診費の合計は3パターン中最小。エコー機器を持ち込む場合も機器償却コストは3回分のみ計上。</div>
+        </div>
+        <div class="burden-card">
+          <div class="burden-label">時間的負担</div>
+          <div class="burden-level low">低</div>
+          <div class="burden-detail">固定訪問は月1回ペース。50頭規模で1回2〜3時間×3回 ＝ 計6〜9時間/哺乳期。農場側・獣医師側ともに最小の時間投資。</div>
+        </div>
+        <div class="burden-card">
+          <div class="burden-label">人的負担</div>
+          <div class="burden-level low">低〜中</div>
+          <div class="burden-detail">獣医師訪問は月1回程度。農場スタッフには日常観察の強化が求められる（無観察では見逃しが増える）。観察教育と連絡体制の整備が必要。</div>
+        </div>
+      </div>
+
+      <div class="cost-box">
+        <h4>費用試算の目安（子牛 50頭規模・1哺乳期あたり）</h4>
+        <div class="cost-row">
+          <span class="cost-item">エコー機器　年間償却分（5年/200頭）</span>
+          <span class="cost-val">¥500〜1,500/頭</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-item">獣医師往診費用（固定3回分）</span>
+          <span class="cost-val">¥30,000〜90,000</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-item">随時追加スキャン（症状発症時・平均2〜3回想定）</span>
+          <span class="cost-val">¥20,000〜60,000</span>
+        </div>
+        <div class="cost-row">
+          <span class="cost-item">スキャン実作業費（獣医師時間）50頭 × 5分 × 3回 ÷ 60</span>
+          <span class="cost-val">約12.5時間</span>
+        </div>
+        <div class="cost-total">
+          <span>総費用（50頭・1期・往診費含む概算）</span>
+          <span class="total-val">¥50,000〜150,000 程度</span>
+        </div>
+      </div>
+
+      <div class="callout info">
+        <div class="callout-icon">📋</div>
+        <div class="callout-body"><strong>Pattern Cの位置づけ：</strong>「まず肺エコーを試してみたい」「獣医師の訪問頻度を増やすことが難しい」という農場への入口として最適。データが蓄積されたら Pattern B への移行を目指すステップアップ型運用が理想的。</div>
+      </div>
+
+    </div>
+  </div><!-- /protocol p3 -->
+
+
+  <!-- ============================================================ -->
+  <!-- 3案 比較表 -->
+  <!-- ============================================================ -->
+  <div style="background: var(--card); border-radius: 12px; padding: 36px 40px; margin-bottom: 28px; box-shadow: 0 3px 14px rgba(0,0,0,0.06);">
+    <h2 style="font-size: 18px; font-weight: 700; color: var(--primary); margin-bottom: 20px;">3パターン 比較早見表</h2>
+    <div class="table-wrap compare-table">
+      <table>
+        <thead>
+          <tr>
+            <th>項目</th>
+            <th style="background: var(--p1);">Pattern A<br>集中型（週1回）</th>
+            <th style="background: var(--p2);">Pattern B<br>標準型（隔週）</th>
+            <th style="background: var(--p3);">Pattern C<br>簡易型（3点）</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr><td><strong>初回スキャン開始</strong></td><td>生後7日齢</td><td>生後14日齢</td><td>生後14日齢</td></tr>
+          <tr><td><strong>スキャン間隔</strong></td><td>7日（毎週）</td><td>14日（隔週）</td><td>固定3点＋症状時随時</td></tr>
+          <tr><td><strong>総スキャン回数/頭</strong></td><td>7〜8回（離乳まで）</td><td>4〜5回（離乳まで）</td><td>3回（固定）＋随時</td></tr>
+          <tr><td><strong>スキャン時期の根拠</strong></td><td>週次で全ウインドウをカバー</td><td>BRD第1・第2ピークをカバー</td><td>第1ピーク代表点・中間・離乳時</td></tr>
+          <tr><td><strong>スコアリング</strong></td><td>Ollivett-Buczinski 0〜5</td><td>Ollivett-Buczinski 0〜5</td><td>Ollivett-Buczinski 0〜5</td></tr>
+          <tr><td><strong>治療介入閾値</strong></td><td>スコア ≥ 2</td><td>スコア ≥ 2（深さ ≥1 cm）</td><td>スコア ≥ 2（深さ ≥1 cm）</td></tr>
+          <tr><td><strong>費用負担</strong></td><td><span class="badge badge-red">高</span>　¥80,000〜240,000/期（50頭）</td><td><span class="badge badge-orange">中</span>　¥50,000〜150,000/期（50頭）</td><td><span class="badge badge-green">低</span>　¥50,000〜150,000/期（随時分含む）</td></tr>
+          <tr><td><strong>時間的負担（獣医師）</strong></td><td><span class="badge badge-red">高</span>　計16〜24時間/哺乳期（50頭）</td><td><span class="badge badge-orange">中</span>　計10〜15時間/哺乳期（50頭）</td><td><span class="badge badge-green">低</span>　計6〜9時間（固定分のみ）</td></tr>
+          <tr><td><strong>人的負担（農場）</strong></td><td><span class="badge badge-red">高</span>　週1回の保定補助が必要</td><td><span class="badge badge-orange">中</span>　2週1回の補助＋日常観察</td><td><span class="badge badge-green">低〜中</span>　日常観察強化＋随時連絡体制</td></tr>
+          <tr><td><strong>潜在性肺炎の発見精度</strong></td><td><span class="badge badge-blue">最高</span></td><td><span class="badge badge-green">高</span></td><td><span class="badge badge-orange">中（一部見逃しリスク）</span></td></tr>
+          <tr><td><strong>向いている農場規模・状況</strong></td><td>中〜大規模酪農場、専任スタッフあり</td><td>中規模農場全般、NOSAI巡回対応</td><td>小規模農場、試験導入、獣医師アクセス月1回</td></tr>
+          <tr><td><strong>ステップアップの方向</strong></td><td>（最上位）</td><td>Pattern A へ移行可</td><td>まずPattern B、次いてPattern Aへ</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+
+  <!-- ===== まとめ ===== -->
+  <div class="summary-section">
+    <h2>パターン選択の考え方</h2>
+    <p><strong>Pattern A（集中型・週1回）</strong>は科学的エビデンスに最も忠実で、潜在性肺炎の発見率が最高。専任スタッフや農場常駐型の運用が整っている中〜大規模酪農場、またはエコーを農場経営改善ツールとして積極的に活用したい農場に推奨する。初期投資とランニングコストは高いが、重症化・廃用損失の削減効果でペイしやすい。</p>
+    <p><strong>Pattern B（標準型・隔週）</strong>は費用・時間・発見精度のバランスが最も取れた現実的な選択肢。日本の農場規模とNOSAI巡回体制に最もフィットしやすく、大多数の農場にとってまず目指すべきスタンダード。和牛・乳用子牛どちらにも適用でき、普及の主軸となり得るパターン。</p>
+    <p><strong>Pattern C（簡易型・3点スキャン）</strong>は「とにかく始めてみる」ための入口として有効。定期スキャン間隔が長い分、農場スタッフの日常観察強化と随時連絡体制の整備が不可欠。データが蓄積されたらPattern Bへのステップアップを明確な目標として設定することを推奨する。</p>
+    <p>いずれのパターンも、<strong>「見つかった肺炎を治す」だけでなく「農場の問題構造を可視化し管理する」</strong>という視点を持つことが継続的な農場改善につながる核心である。最終的な選択は農場規模・獣医師アクセス頻度・スタッフ体制を考慮したうえで、担当獣医師と農場が相談して決定する。</p>
+  </div>
+
+</div>
+
+<footer>
+  <p>子牛 肺エコー検診 プロトコール案（3パターン）　|　作成：2026年3月15日　|　参照：BLU総合調査レポート（2026）</p>
+</footer>
+
+</body>
+</html>

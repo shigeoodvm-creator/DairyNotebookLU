@@ -1,0 +1,2607 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DairyNotebookLU</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4/dist/chart.umd.min.js"></script>
+<style>
+/* ─────────────────────────────────────────
+   Design Tokens
+───────────────────────────────────────── */
+:root {
+  --bg:       #f0f2f5;
+  --surface:  #ffffff;
+  --border:   #e3e6ea;
+  --border-2: #d1d5db;
+
+  --navy:     #1a3a5c;
+  --navy-2:   #0d2137;
+  --blue:     #2e6fcc;
+  --blue-lt:  #dbeafe;
+  --teal:     #0f8c72;
+  --teal-lt:  #d1fae5;
+  --amber:    #b45309;
+  --amber-lt: #fef3c7;
+  --red:      #be2b2b;
+  --red-lt:   #fee2e2;
+  --gray:     #6b7280;
+  --gray-lt:  #f3f4f6;
+
+  --text:     #111827;
+  --text-2:   #374151;
+  --text-3:   #6b7280;
+  --text-4:   #9ca3af;
+
+  --radius:   12px;
+  --radius-sm:8px;
+  --shadow:   0 1px 4px rgba(0,0,0,.07), 0 2px 10px rgba(0,0,0,.04);
+  --shadow-md:0 4px 18px rgba(0,0,0,.1);
+  --tr:       .15s ease;
+
+  /* Score colors */
+  --s0:#10b981; --s1:#3b82f6; --s2:#f59e0b; --s3:#f97316; --s4:#ef4444; --s5:#7f1d1d;
+  --sb0:#d1fae5;--sb1:#dbeafe;--sb2:#fef3c7;--sb3:#ffedd5;--sb4:#fee2e2;--sb5:#fecaca;
+  /* Finding colors: 正常→Bライン→コンソリ→肝変化→胸水→膿瘍 */
+  --fn:#10b981; --fb:#3b82f6; --fc:#f97316; --fh:#b91c1c; --fe:#8b5cf6; --fa:#ef4444;
+}
+
+/* ─────────────────────────────────────────
+   Reset & Base
+───────────────────────────────────────── */
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:'Hiragino Sans','Yu Gothic UI','Meiryo',sans-serif;background:var(--bg);color:var(--text);font-size:14px;line-height:1.65}
+a{color:inherit;text-decoration:none}
+button{cursor:pointer;font-family:inherit;font-size:14px}
+input,select,textarea{font-family:inherit}
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:3px}
+
+/* ─────────────────────────────────────────
+   Top Navigation Bar
+───────────────────────────────────────── */
+#topbar {
+  position:fixed;top:0;left:0;right:0;height:64px;z-index:200;
+  background:var(--surface);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;padding:0 28px;gap:0;
+}
+.tb-brand {
+  display:flex;align-items:center;gap:10px;margin-right:32px;flex-shrink:0;
+}
+.tb-logo {
+  height:44px;width:auto;display:block;
+}
+.tb-brand-title {
+  margin:0;font-size:26px;font-weight:700;color:#202124;letter-spacing:-.3px;white-space:nowrap;line-height:1;
+}
+.tb-abbr {
+  color:var(--blue);
+}
+
+/* Farm switcher pill */
+#farm-btn {
+  display:flex;align-items:center;gap:7px;padding:6px 14px 6px 10px;
+  border:1.5px solid var(--border-2);border-radius:20px;background:#fff;
+  color:var(--text-2);font-size:13px;transition:var(--tr);margin-right:22px;flex-shrink:0;
+  max-width:220px;
+}
+#farm-btn:hover{border-color:var(--blue);color:var(--blue)}
+#farm-btn .dot{width:8px;height:8px;border-radius:50%;background:var(--teal);flex-shrink:0}
+#farm-btn .name{font-weight:600;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+#farm-btn .caret{font-size:9px;color:var(--text-4);flex-shrink:0}
+
+/* Nav tabs */
+.tb-tabs{display:flex;align-items:stretch;height:54px;gap:0}
+.tb-tab {
+  display:flex;align-items:center;padding:0 18px;font-size:13.5px;font-weight:500;
+  color:var(--text-3);border:none;background:none;height:100%;position:relative;
+  transition:var(--tr);white-space:nowrap;
+}
+.tb-tab:hover{color:var(--text)}
+.tb-tab.active{color:var(--navy);font-weight:700}
+.tb-tab.active::after{
+  content:'';position:absolute;bottom:0;left:16px;right:16px;height:2.5px;
+  background:var(--blue);border-radius:2px 2px 0 0;
+}
+
+.tb-spacer{flex:1}
+
+.tb-actions{display:flex;align-items:center;gap:8px}
+.btn-outline {
+  padding:6px 14px;border:1.5px solid var(--border-2);border-radius:7px;
+  background:#fff;color:var(--text-2);font-size:12.5px;font-weight:500;
+  transition:var(--tr);white-space:nowrap;
+}
+.btn-outline:hover{border-color:var(--navy);color:var(--navy);background:var(--gray-lt)}
+.btn-primary {
+  padding:7px 16px;border:none;border-radius:7px;
+  background:var(--navy);color:#fff;font-size:13px;font-weight:600;
+  transition:var(--tr);white-space:nowrap;
+}
+.btn-primary:hover{background:var(--blue)}
+
+/* ─────────────────────────────────────────
+   Main Layout
+───────────────────────────────────────── */
+#main{margin-top:64px;min-height:calc(100vh - 64px)}
+#view{max-width:940px;margin:0 auto;padding:32px 24px 60px}
+
+/* ─────────────────────────────────────────
+   Page header
+───────────────────────────────────────── */
+.page-hd{margin-bottom:24px}
+.page-title{font-size:22px;font-weight:800;color:var(--navy-2);letter-spacing:-.4px;margin-bottom:3px}
+.page-sub{font-size:13px;color:var(--text-3)}
+
+/* ─────────────────────────────────────────
+   Cards / Sections
+───────────────────────────────────────── */
+.card {
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius);margin-bottom:16px;overflow:hidden;
+}
+.card-hd {
+  display:flex;align-items:center;gap:10px;
+  padding:16px 22px 14px;border-bottom:1px solid var(--border);
+}
+.card-hd-icon {
+  width:28px;height:28px;border-radius:50%;
+  display:flex;align-items:center;justify-content:center;
+  font-size:13px;flex-shrink:0;
+}
+.card-hd-icon.blue{background:var(--blue-lt);color:var(--blue)}
+.card-hd-icon.teal{background:var(--teal-lt);color:var(--teal)}
+.card-hd-icon.amber{background:var(--amber-lt);color:var(--amber)}
+.card-hd-icon.red{background:var(--red-lt);color:var(--red)}
+.card-hd-title{font-size:14px;font-weight:700;color:var(--text)}
+.card-hd-sub{font-size:12px;color:var(--text-3);margin-left:auto}
+.card-body{padding:20px 22px}
+.card-body.tight{padding:14px 22px}
+
+/* ─────────────────────────────────────────
+   KPI Grid
+───────────────────────────────────────── */
+.kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:20px}
+.kpi-card{
+  background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);
+  padding:16px 18px;border-top:3px solid var(--border-2);
+}
+.kpi-card.blue{border-top-color:var(--blue)}
+.kpi-card.teal{border-top-color:var(--teal)}
+.kpi-card.amber{border-top-color:var(--amber)}
+.kpi-card.red{border-top-color:var(--red)}
+.kpi-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.6px;color:var(--text-3);margin-bottom:8px}
+.kpi-val{font-size:28px;font-weight:800;color:var(--navy-2);line-height:1}
+.kpi-unit{font-size:13px;font-weight:400;color:var(--text-3);margin-left:2px}
+.kpi-note{font-size:11px;color:var(--text-3);margin-top:5px}
+
+/* ─────────────────────────────────────────
+   Charts
+───────────────────────────────────────── */
+.chart-row{display:grid;grid-template-columns:1fr 320px;gap:14px;margin-bottom:16px}
+.chart-wrap{position:relative;height:210px}
+
+/* ─────────────────────────────────────────
+   Forms
+───────────────────────────────────────── */
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:14px 20px}
+.form-row-3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:14px 20px}
+.form-group{display:flex;flex-direction:column;gap:5px}
+.form-group.full{grid-column:1/-1}
+.form-label{font-size:12px;font-weight:700;color:var(--text-2);letter-spacing:.2px}
+.form-label .req{color:var(--red);margin-left:2px}
+.form-input,.form-select,.form-textarea{
+  border:1.5px solid var(--border-2);border-radius:var(--radius-sm);
+  padding:9px 12px;font-size:14px;color:var(--text);background:#fff;
+  transition:var(--tr);outline:none;width:100%;
+}
+.form-input:focus,.form-select:focus,.form-textarea:focus{
+  border-color:var(--blue);box-shadow:0 0 0 3px rgba(46,111,204,.12);
+}
+.form-textarea{resize:vertical;min-height:72px}
+.form-hint{font-size:11px;color:var(--text-3)}
+.input-addon{display:flex;align-items:center;gap:0}
+.input-addon .form-input{border-radius:var(--radius-sm) 0 0 var(--radius-sm)}
+.input-addon-text{padding:9px 12px;background:var(--gray-lt);border:1.5px solid var(--border-2);border-left:none;border-radius:0 var(--radius-sm) var(--radius-sm) 0;font-size:13px;color:var(--text-3);white-space:nowrap}
+
+/* ─────────────────────────────────────────
+   Lung grid
+───────────────────────────────────────── */
+.lung-block{background:var(--bg);border:1px dashed var(--border-2);border-radius:10px;padding:14px 16px;margin-bottom:10px}
+.lung-block-title{display:flex;align-items:center;gap:8px;margin-bottom:12px}
+.lung-tag{font-size:11px;font-weight:700;padding:2px 9px;border-radius:10px;letter-spacing:.3px}
+.lung-tag.right{background:var(--blue-lt);color:var(--blue)}
+.lung-tag.left{background:var(--teal-lt);color:var(--teal)}
+.lung-grid{display:grid;gap:8px}
+.lung-grid.r4{grid-template-columns:repeat(4,1fr)}
+.lung-grid.l3{grid-template-columns:repeat(3,1fr)}
+.lung-cell{display:flex;flex-direction:column;align-items:center;gap:4px}
+.lung-cell-lbl{font-size:11px;font-weight:700;color:var(--text-2);text-align:center;line-height:1.3}
+.lbl-ics{display:block;font-size:9px;color:var(--text-4);font-weight:400;white-space:nowrap}
+
+.ics-guide{background:#f8fafc;border:1px solid var(--border);border-radius:8px;padding:12px 14px;margin-bottom:14px}
+.ics-guide-hd{font-size:11px;font-weight:700;color:var(--text-3);letter-spacing:.3px;margin-bottom:6px}
+.ics-dir{display:flex;justify-content:space-between;font-size:10px;color:var(--text-4);margin-bottom:4px}
+.lung-btn{
+  width:100%;min-height:52px;padding:6px 4px;border:1.5px solid var(--border-2);border-radius:8px;
+  background:#fff;font-size:12px;font-weight:700;color:var(--text-3);
+  cursor:pointer;transition:var(--tr);display:flex;align-items:center;justify-content:center;
+  text-align:center;line-height:1.2;
+}
+.lung-btn:hover{border-color:var(--blue);color:var(--blue)}
+.lung-btn.st-n{border-color:var(--fn);background:var(--sb0);color:var(--fn)}
+.lung-btn.st-b{border-color:var(--fb);background:var(--sb1);color:var(--fb)}
+.lung-btn.st-c{border-color:var(--fc);background:var(--sb3);color:var(--fc)}
+.lung-btn.st-h{border-color:var(--fh);background:#fef2f2;color:var(--fh)}
+.lung-btn.st-e{border-color:var(--fe);background:#ede9fe;color:var(--fe)}
+.lung-btn.st-a{border-color:var(--fa);background:var(--sb4);color:var(--fa)}
+.lung-quick{display:flex;gap:8px;margin-bottom:10px}
+
+/* ─────────────────────────────────────────
+   Score slider
+───────────────────────────────────────── */
+.score-row{display:flex;align-items:center;gap:14px}
+.score-slider{flex:1;height:6px;-webkit-appearance:none;appearance:none;
+  border-radius:3px;background:var(--border-2);outline:none;cursor:pointer}
+.score-slider::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;background:var(--navy);border:2px solid #fff;box-shadow:0 1px 4px rgba(0,0,0,.2)}
+.score-pill{
+  min-width:48px;height:48px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-weight:900;font-size:20px;color:#fff;flex-shrink:0;transition:var(--tr);
+}
+.score-desc{font-size:12px;color:var(--text-3);margin-top:5px;line-height:1.5}
+
+/* ─────────────────────────────────────────
+   Toggle
+───────────────────────────────────────── */
+.toggle-row{display:flex;align-items:center;gap:10px}
+.toggle{position:relative;display:inline-block;width:42px;height:23px;flex-shrink:0}
+.toggle input{opacity:0;width:0;height:0}
+.tgl-slider{position:absolute;inset:0;background:#d1d5db;border-radius:12px;transition:var(--tr);cursor:pointer}
+.tgl-slider::before{content:'';position:absolute;height:17px;width:17px;left:3px;bottom:3px;background:#fff;border-radius:50%;transition:var(--tr)}
+.toggle input:checked+.tgl-slider{background:var(--teal)}
+.toggle input:checked+.tgl-slider::before{transform:translateX(19px)}
+
+/* ─────────────────────────────────────────
+   Badges / Tags
+───────────────────────────────────────── */
+.badge{display:inline-block;padding:2px 8px;border-radius:5px;font-size:11px;font-weight:700}
+.b-blue{background:var(--blue-lt);color:var(--blue)}
+.b-teal{background:var(--teal-lt);color:var(--teal)}
+.b-amber{background:var(--amber-lt);color:var(--amber)}
+.b-red{background:var(--red-lt);color:var(--red)}
+.b-gray{background:var(--gray-lt);color:var(--text-3)}
+.score-badge{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-weight:800;font-size:12px;color:#fff}
+.sc0{background:var(--s0)}.sc1{background:var(--s1)}.sc2{background:var(--s2)}
+.sc3{background:var(--s3)}.sc4{background:var(--s4)}.sc5{background:var(--s5)}
+
+/* ─────────────────────────────────────────
+   Finding chips
+───────────────────────────────────────── */
+.finding-chip{display:inline-flex;align-items:center;justify-content:center;
+  width:24px;height:24px;border-radius:6px;font-size:11px;font-weight:700;border:1.5px solid transparent}
+.fch-empty{border-color:var(--border-2);color:var(--text-4);background:#fafafa}
+.fch-n{background:var(--sb0);border-color:var(--fn);color:var(--fn)}
+.fch-b{background:var(--sb1);border-color:var(--fb);color:var(--fb)}
+.fch-c{background:var(--sb3);border-color:var(--fc);color:var(--fc)}
+.fch-h{background:#fef2f2;border-color:var(--fh);color:var(--fh)}
+.fch-e{background:#ede9fe;border-color:var(--fe);color:var(--fe)}
+.fch-a{background:var(--sb4);border-color:var(--fa);color:var(--fa)}
+.lung-mini{display:flex;gap:2px;align-items:center}
+
+/* ─────────────────────────────────────────
+   Table
+───────────────────────────────────────── */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead th{
+  background:var(--navy-2);color:#fff;padding:10px 13px;
+  text-align:left;font-weight:600;white-space:nowrap;cursor:pointer;user-select:none;
+}
+thead th:hover{background:var(--navy)}
+thead th.sort-asc::after{content:' ↑'}
+thead th.sort-desc::after{content:' ↓'}
+tbody tr{border-bottom:1px solid var(--border)}
+tbody tr:hover{background:#f8fafc}
+tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
+.tbl-link{color:var(--blue);font-weight:600;cursor:pointer}
+.tbl-link:hover{text-decoration:underline}
+
+/* ─────────────────────────────────────────
+   Filter bar
+───────────────────────────────────────── */
+.filter-bar{
+  display:flex;flex-wrap:wrap;gap:8px;align-items:center;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:14px;
+}
+.filter-bar .form-input,.filter-bar .form-select{padding:7px 10px;font-size:13px;width:auto}
+.btn-sm{padding:7px 13px;border-radius:7px;font-size:12px;font-weight:600;border:none;cursor:pointer;transition:var(--tr);white-space:nowrap}
+.btn-ghost{background:var(--gray-lt);color:var(--text-3);border:1px solid var(--border-2)}
+.btn-ghost:hover{background:var(--border);color:var(--text)}
+.btn-danger{background:var(--red-lt);color:var(--red)}
+.btn-danger:hover{background:#fecaca}
+.btn-edit{background:var(--blue-lt);color:var(--blue)}
+.btn-edit:hover{background:#bfdbfe}
+
+/* ─────────────────────────────────────────
+   Callouts
+───────────────────────────────────────── */
+.callout{border-radius:var(--radius-sm);padding:11px 14px;margin:10px 0;display:flex;gap:9px;align-items:flex-start;font-size:13px}
+.callout-i{flex-shrink:0;font-size:15px;margin-top:1px}
+.cl-blue{background:var(--blue-lt);border-left:3px solid var(--blue)}
+.cl-teal{background:var(--teal-lt);border-left:3px solid var(--teal)}
+.cl-amber{background:var(--amber-lt);border-left:3px solid var(--amber)}
+.cl-red{background:var(--red-lt);border-left:3px solid var(--red)}
+
+/* ─────────────────────────────────────────
+   Modal
+───────────────────────────────────────── */
+#modal-bg{position:fixed;inset:0;background:rgba(0,0,0,.4);z-index:300;display:none;align-items:center;justify-content:center;padding:20px}
+.modal{background:#fff;border-radius:14px;box-shadow:var(--shadow-md);width:100%;max-width:540px;max-height:90vh;overflow-y:auto}
+.modal.lg{max-width:700px}
+.modal-hd{display:flex;align-items:center;justify-content:space-between;padding:20px 24px 16px;border-bottom:1px solid var(--border)}
+.modal-title{font-size:16px;font-weight:700;color:var(--navy-2)}
+.modal-x{background:none;border:none;font-size:20px;color:var(--text-3);cursor:pointer;padding:0 4px;border-radius:5px;transition:var(--tr);line-height:1}
+.modal-x:hover{background:var(--gray-lt)}
+.modal-body{padding:20px 24px}
+.modal-ft{padding:12px 24px 20px;display:flex;gap:8px;justify-content:flex-end}
+
+/* ─────────────────────────────────────────
+   Farm list items
+───────────────────────────────────────── */
+.farm-item{display:flex;align-items:center;gap:10px;padding:12px 14px;border:1.5px solid var(--border);border-radius:var(--radius-sm);margin-bottom:8px;cursor:default;background:#fff}
+.farm-item.active{border-color:var(--teal);background:var(--teal-lt)}
+.farm-item-info{flex:1;min-width:0;cursor:pointer}
+.farm-item-info:hover .farm-name-txt{color:var(--blue)}
+.farm-name-txt{font-weight:700;font-size:13px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.farm-meta-txt{font-size:11px;color:var(--text-3)}
+.farm-status-dot{width:9px;height:9px;border-radius:50%;flex-shrink:0}
+.fsd-active{background:var(--teal)}
+.fsd-inactive{background:var(--border-2)}
+
+/* ─────────────────────────────────────────
+   Timeline (animal detail)
+───────────────────────────────────────── */
+.timeline{list-style:none;position:relative;padding-left:0}
+.timeline::before{content:'';position:absolute;left:17px;top:0;bottom:0;width:2px;background:var(--border)}
+.tl-item{display:flex;gap:14px;margin-bottom:16px;position:relative}
+.tl-dot{width:34px;height:34px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:800;font-size:12px;color:#fff;flex-shrink:0;z-index:1}
+.tl-content{flex:1;background:var(--gray-lt);border-radius:8px;padding:11px 14px;font-size:13px}
+.tl-content strong{display:block;margin-bottom:4px;font-size:13px;color:var(--navy-2)}
+.lung-det-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin:6px 0;font-size:12px}
+.lung-det-side{background:#fff;border-radius:6px;padding:8px 10px}
+.lung-det-lbl{font-size:10px;font-weight:700;color:var(--text-3);text-transform:uppercase;margin-bottom:4px}
+.lung-det-ics{display:flex;gap:3px;flex-wrap:wrap}
+
+/* ─────────────────────────────────────────
+   Benchmark bars
+───────────────────────────────────────── */
+.bm-item{margin-bottom:14px}
+.bm-row{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.bm-bar-bg{background:var(--border);border-radius:4px;height:8px;overflow:hidden}
+.bm-bar{height:100%;border-radius:4px;transition:width .5s}
+.bm-ok{background:var(--teal)} .bm-warn{background:var(--amber)} .bm-alert{background:var(--red)}
+
+/* ─────────────────────────────────────────
+   Empty state
+───────────────────────────────────────── */
+.empty{text-align:center;padding:52px 20px;color:var(--text-3)}
+.empty-icon{font-size:44px;margin-bottom:10px;opacity:.35}
+.empty h3{font-size:15px;font-weight:600;margin-bottom:4px;color:var(--text-3)}
+
+/* ─────────────────────────────────────────
+   Toast
+───────────────────────────────────────── */
+#toast-box{position:fixed;bottom:22px;right:22px;z-index:500;display:flex;flex-direction:column;gap:7px}
+.toast{background:var(--navy-2);color:#fff;padding:11px 16px;border-radius:9px;font-size:13px;box-shadow:var(--shadow-md);display:flex;align-items:center;gap:8px;animation:tIn .2s ease}
+.toast.ok{background:#065f46}.toast.warn{background:var(--amber)}.toast.err{background:var(--red)}
+@keyframes tIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+
+/* ─────────────────────────────────────────
+   Home / No farm
+───────────────────────────────────────── */
+.home-wrap{max-width:480px;margin:80px auto;padding:0 20px;text-align:center}
+.home-icon{font-size:54px;margin-bottom:16px}
+.home-wrap h1{font-size:22px;font-weight:800;color:var(--navy-2);margin-bottom:6px}
+.home-wrap p{font-size:13px;color:var(--text-3);margin-bottom:28px}
+
+/* ─────────────────────────────────────────
+   個体識別番号 表示
+───────────────────────────────────────── */
+.tag-cell{font-family:'Courier New',monospace;white-space:nowrap;letter-spacing:.5px}
+.tag-pre{color:var(--text-3);font-size:13px}
+.tag-exp{
+  color:var(--navy);font-weight:800;font-size:15px;
+  background:var(--blue-lt);padding:1px 4px;border-radius:4px;
+  border:1px solid #bfdbfe;letter-spacing:1px;
+}
+.tag-cd{color:var(--text-4);font-size:12px}
+.tag-exp-lg{
+  display:inline-block;font-weight:800;font-size:17px;color:var(--navy);
+  background:var(--blue-lt);border:1.5px solid #bfdbfe;
+  padding:2px 10px;border-radius:7px;letter-spacing:2px;font-family:'Courier New',monospace;
+}
+.tag-preview-wrap{
+  padding:10px 14px;background:var(--bg);border-radius:8px;
+  border:1px solid var(--border);font-family:'Courier New',monospace;
+  letter-spacing:1px;font-size:16px;min-height:42px;
+}
+
+/* ─────────────────────────────────────────
+   野帳 (Field Notebook)
+───────────────────────────────────────── */
+.note-wrap{max-width:1100px;box-shadow:var(--shadow-md);border-radius:10px}
+.note-hd{background:var(--navy-2);color:#fff;padding:14px 22px;border-radius:10px 10px 0 0;display:flex;align-items:center;justify-content:space-between}
+.note-hd-title{font-size:15px;font-weight:800;letter-spacing:-.2px}
+.note-hd-sub{font-size:10.5px;opacity:.65;margin-top:3px}
+.note-meta{display:grid;grid-template-columns:repeat(4,1fr);border:1.5px solid var(--border-2);border-top:none;padding:13px 22px;background:#fff;gap:16px}
+.note-meta-lbl{font-size:10px;color:var(--text-3);font-weight:700;text-transform:uppercase;letter-spacing:.5px;margin-bottom:4px}
+.note-meta-val{font-size:13px;font-weight:600;border-bottom:2px solid var(--border-2);min-height:26px;padding:2px 3px}
+.note-meta-input{font-size:13px;font-weight:600;border:none;border-bottom:2px solid var(--border-2);background:transparent;width:100%;padding:2px 3px;font-family:inherit;color:var(--text)}
+.note-meta-input:focus{outline:none;border-color:var(--blue)}
+.note-legend{background:#f1f5f9;border:1.5px solid var(--border-2);border-top:none;padding:9px 22px;display:flex;flex-direction:column;gap:4px;font-size:11.5px;color:var(--text-2);line-height:1.7}
+.note-legend strong{color:var(--navy-2)}
+.note-legend-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.note-legend-score{margin-top:2px;color:var(--text-3);font-size:11px}
+.note-tbl-wrap{overflow-x:auto;border:1.5px solid var(--border-2);border-top:none;border-radius:0 0 10px 10px}
+.note-tbl{width:100%;border-collapse:collapse;font-size:12px;table-layout:fixed}
+.note-tbl th{background:var(--navy-2);color:#fff;padding:7px 3px;text-align:center;font-size:10px;font-weight:700;white-space:nowrap;border:1px solid #2a5280;line-height:1.35}
+.note-tbl th.th-r{background:#1a4870}
+.note-tbl th.th-l{background:#1a5c2a}
+.note-tbl th.th-sp{background:#374151}
+.note-tbl td{border:1px solid #cbd5e1;padding:2px 3px;text-align:center;height:26px;overflow:hidden;white-space:nowrap}
+.note-tbl tr:nth-child(even) td{background:#f8fafc}
+.note-tbl tr:hover td{background:#eff6ff}
+.note-tbl td.td-no{color:var(--text-4);font-size:10px;width:24px}
+.note-tbl td.td-tag{text-align:left;padding-left:5px;font-family:'Courier New',monospace;font-size:11px;font-weight:700;color:var(--navy)}
+.note-tbl td.td-pre{font-family:'Courier New',monospace;font-size:11px;color:var(--text-2)}
+.note-tbl td.td-score{font-weight:800;font-size:12px}
+.note-tbl td.td-wide{text-align:left;padding-left:4px}
+.note-opts{display:flex;gap:14px;margin-bottom:18px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 20px;box-shadow:var(--shadow)}
+
+/* ─────────────────────────────────────────
+   要フォロー管理
+───────────────────────────────────────── */
+.fu-row-urgent td{background:#fff1f2!important}
+.fu-row-soon td{background:#fffbeb!important}
+.fu-row-ok td{background:#f0fdf4!important}
+.fu-badge{display:inline-flex;align-items:center;gap:3px;padding:2px 8px;border-radius:20px;font-size:11px;font-weight:700;white-space:nowrap}
+.fu-urgent{background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5}
+.fu-soon{background:#fef3c7;color:#92400e;border:1px solid #fcd34d}
+.fu-ok{background:#d1fae5;color:#065f46;border:1px solid #6ee7b7}
+.fu-days{font-size:14px;font-weight:800}
+
+/* ─────────────────────────────────────────
+   スコアガイド
+───────────────────────────────────────── */
+.sg-score-row{display:grid;grid-template-columns:56px 1fr 1fr 1fr;gap:0;border-bottom:1px solid var(--border);align-items:stretch}
+.sg-score-row:last-child{border-bottom:none}
+.sg-score-cell{padding:10px 14px;display:flex;align-items:center;font-size:13px}
+.sg-score-n{justify-content:center;border-right:1px solid var(--border)}
+.sg-lobe-grid{display:grid;grid-template-columns:repeat(7,1fr);gap:6px;padding:8px 0}
+.sg-lobe{text-align:center;padding:8px 4px;border-radius:8px;font-size:11px;border:1.5px solid}
+
+/* ─────────────────────────────────────────
+   レポートスタイル（乳検レポートと同仕様）
+───────────────────────────────────────── */
+.rpt-wrap{max-width:780px;margin:0 auto;font-family:inherit;color:#1e293b}
+.rpt-header{border-bottom:2.5px solid #1e3a8a;padding-bottom:10px;margin-bottom:28px}
+.rpt-title{font-size:18px;font-weight:800;color:#1e3a8a;letter-spacing:.2px}
+.rpt-subtitle{font-size:12px;color:#64748b;margin-top:5px}
+.rpt-section{margin-bottom:32px}
+.rpt-section-hd{display:flex;align-items:center;gap:10px;border-bottom:1.5px solid #e2e8f0;padding-bottom:8px;margin-bottom:20px}
+.rpt-badge{width:26px;height:26px;border-radius:50%;background:#1e3a8a;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1}
+.rpt-section-title{font-size:16px;font-weight:700;color:#1e3a8a}
+.rpt-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
+.rpt-kpi{border:1px solid #e2e8f0;border-radius:8px;padding:16px 18px}
+.rpt-kpi-lbl{font-size:11px;color:#94a3b8;margin-bottom:8px;font-weight:500}
+.rpt-kpi-val{font-size:30px;font-weight:800;line-height:1;color:#1e293b}
+.rpt-kpi-unit{font-size:15px;font-weight:600;margin-left:2px}
+.rpt-kpi-sub{font-size:11px;color:#94a3b8;margin-top:5px}
+.rpt-dist-title{font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px}
+.rpt-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:5px;font-size:12px}
+.rpt-bar-lbl{width:100px;color:#64748b;text-align:right;flex-shrink:0;font-size:11px}
+.rpt-bar-wrap{flex:1;background:#f1f5f9;border-radius:4px;height:22px;overflow:hidden}
+.rpt-bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 8px;color:#fff;font-size:11px;font-weight:700;transition:width .3s;min-width:0}
+.rpt-bar-pct{width:34px;color:#64748b;flex-shrink:0;text-align:right;font-size:11px}
+.rpt-tbl{width:100%;border-collapse:collapse;font-size:13px}
+.rpt-tbl th{font-size:11px;color:#94a3b8;font-weight:600;padding:6px 10px;border-bottom:1.5px solid #e2e8f0;text-align:left;white-space:nowrap}
+.rpt-tbl td{padding:10px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.rpt-tbl tbody tr:last-child td{border-bottom:none}
+.rpt-id{font-weight:700;color:#1e293b}
+.rpt-score-badge{display:inline-block;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;white-space:nowrap}
+.rpt-no-data{padding:16px 0;color:#94a3b8;font-style:italic;font-size:13px}
+.rpt-footer{border-top:1px solid #e2e8f0;padding-top:10px;margin-top:24px;font-size:10px;color:#94a3b8;display:flex;justify-content:space-between}
+/* ─────────────────────────────────────────
+   印刷
+───────────────────────────────────────── */
+@media print{
+  #topbar,#toast-box,.note-opts,.no-print{display:none!important}
+  #main{margin-top:0!important;padding:0!important}
+  #view{padding:4px 6px!important}
+  body{background:#fff!important}
+  .note-wrap{box-shadow:none!important;border-radius:0!important}
+  .note-hd{border-radius:0!important}
+  .note-tbl{font-size:8.5px!important}
+  .note-tbl td{height:16px!important;padding:0 1px!important}
+  .note-tbl th{font-size:8px!important;padding:3px 1px!important}
+  .note-meta{padding:6px 14px!important}
+  .note-legend{padding:5px 14px!important;gap:2px!important}
+  .note-legend-score{font-size:9.5px!important}
+  .note-tbl-wrap{border-radius:0!important}
+  .card,.callout{box-shadow:none!important}
+  .rpt-kpi{border:1px solid #e2e8f0!important}
+  .rpt-bar-fill,.rpt-score-badge,.rpt-badge{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rpt-kpi-val,.rpt-id{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  @page{size:A4 landscape;margin:7mm}
+}
+
+/* ─────────────────────────────────────────
+   Responsive
+───────────────────────────────────────── */
+@media(max-width:860px){
+  .kpi-grid{grid-template-columns:1fr 1fr}
+  .chart-row{grid-template-columns:1fr}
+  .form-row{grid-template-columns:1fr}
+  .form-row-3{grid-template-columns:1fr 1fr}
+}
+@media(max-width:600px){
+  #topbar{padding:0 14px}
+.tb-tab{padding:0 12px;font-size:12px}
+  #view{padding:20px 14px 50px}
+  .kpi-grid{grid-template-columns:1fr 1fr;gap:8px}
+  .tb-actions .btn-outline{display:none}
+}
+
+/* ─── Hatch Map ───────────────────────────────── */
+.hm-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px}
+.hm-date-nav{display:flex;align-items:center;gap:6px}
+.hm-date-nav button{width:28px;height:28px;border:1px solid var(--border-2);border-radius:6px;background:var(--surface);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
+.hm-date-nav button:hover{background:var(--gray-lt)}
+.hm-date-label{font-size:14px;font-weight:700;color:var(--navy-2);min-width:90px;text-align:center}
+.hm-legend{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap}
+.hm-legend-item{display:flex;align-items:center;gap:4px;font-size:11px;color:var(--text-3)}
+.hm-legend-dot{width:10px;height:10px;border-radius:50%}
+
+.hm-outer{display:flex;gap:16px;overflow-x:auto;padding-bottom:8px}
+.hm-column{flex:0 0 auto;min-width:130px}
+.hm-col-header{font-size:12px;font-weight:700;color:var(--text-2);text-align:center;padding:6px 0;border-bottom:2px solid var(--border-2);margin-bottom:8px;letter-spacing:.4px}
+.hm-col-left .hm-col-header{border-color:var(--blue);color:var(--blue)}
+.hm-col-right .hm-col-header{border-color:var(--teal);color:var(--teal)}
+
+.hm-cell{position:relative;border-radius:10px;border:2px solid var(--border);background:var(--surface);padding:8px 10px;margin-bottom:7px;cursor:pointer;transition:transform var(--tr),box-shadow var(--tr);min-height:68px}
+.hm-cell:hover{transform:translateY(-1px);box-shadow:var(--shadow-md)}
+.hm-cell.hm-active{outline:2px solid var(--navy);outline-offset:2px}
+.hm-cell-no{font-size:10px;font-weight:700;color:var(--text-4);letter-spacing:.5px;margin-bottom:3px}
+.hm-cell-tag{font-size:13px;font-weight:800;color:var(--text);font-family:'Courier New',monospace;letter-spacing:1px}
+.hm-cell-score{position:absolute;top:7px;right:8px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;color:#fff}
+.hm-cell-info{font-size:10px;color:var(--text-3);margin-top:3px}
+.hm-cell-empty{opacity:.45}
+.hm-cell-empty .hm-cell-tag{color:var(--text-4);font-size:11px;font-weight:400;font-family:inherit}
+/* Score colors for cells */
+.hm-s0{border-color:#10b981;background:#f0fdf4}.hm-s0 .hm-cell-score{background:#10b981}
+.hm-s1{border-color:#3b82f6;background:#eff6ff}.hm-s1 .hm-cell-score{background:#3b82f6}
+.hm-s2{border-color:#f59e0b;background:#fffbeb}.hm-s2 .hm-cell-score{background:#f59e0b}
+.hm-s3{border-color:#f97316;background:#fff7ed}.hm-s3 .hm-cell-score{background:#f97316}
+.hm-s4{border-color:#ef4444;background:#fef2f2}.hm-s4 .hm-cell-score{background:#ef4444}
+.hm-s5{border-color:#7f1d1d;background:#fff1f2}.hm-s5 .hm-cell-score{background:#7f1d1d}
+
+.hm-detail{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;margin-top:12px}
+.hm-detail-hd{font-size:14px;font-weight:700;color:var(--navy-2);margin-bottom:12px;display:flex;align-items:center;gap:8px}
+.hm-timeline{display:flex;flex-direction:column;gap:6px}
+.hm-tl-item{display:grid;grid-template-columns:auto 1fr auto;gap:8px 12px;align-items:center;padding:8px 12px;border-radius:8px;background:var(--gray-lt);font-size:12px}
+.hm-tl-date{color:var(--text-3);white-space:nowrap}
+.hm-tl-tag{font-family:'Courier New',monospace;font-weight:700}
+.hm-tl-dots{display:flex;gap:3px}
+.hm-tl-dot{width:8px;height:8px;border-radius:50%}
+.hm-no-data{padding:16px;text-align:center;color:var(--text-4);font-size:13px}
+
+/* Hutch setup modal */
+.hutch-setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
+.hutch-preview{display:flex;gap:10px;margin-top:12px;overflow-x:auto}
+.hutch-preview-col{flex:0 0 90px}
+.hutch-preview-col-hd{font-size:10px;font-weight:700;color:var(--text-3);text-align:center;border-bottom:1px solid var(--border);padding-bottom:4px;margin-bottom:6px}
+.hutch-preview-cell{background:var(--gray-lt);border:1px solid var(--border);border-radius:6px;padding:5px 8px;margin-bottom:4px;font-size:11px;text-align:center;color:var(--text-2)}
+.hutch-custom-tbl{width:100%;font-size:12px;border-collapse:collapse;margin-top:8px}
+.hutch-custom-tbl th{background:var(--navy-2);color:#fff;padding:6px 8px;text-align:left}
+.hutch-custom-tbl td{padding:5px 6px;border-bottom:1px solid var(--border)}
+.hutch-custom-tbl input{width:100%;border:1px solid var(--border);border-radius:4px;padding:3px 6px;font-size:12px}
+</style>
+</head>
+<body>
+
+<!-- ===== TOP NAV ===== -->
+<nav id="topbar">
+  <div class="tb-brand">
+    <img src="Logo.png" alt="DairyNotebookLU" class="tb-logo">
+    <h1 class="tb-brand-title">DairyNotebook<span class="tb-abbr">LU</span></h1>
+  </div>
+
+  <button id="farm-btn" onclick="App.openFarmModal()">
+    <span class="dot"></span>
+    <span class="name" id="tb-farm-name">農場を選択</span>
+    <span class="caret">▼</span>
+  </button>
+
+  <div class="tb-tabs">
+    <button class="tb-tab" data-route="/dashboard" onclick="App.nav('/dashboard')">ダッシュボード</button>
+    <button class="tb-tab" data-route="/scan/new"  onclick="App.nav('/scan/new')">スキャン入力</button>
+    <button class="tb-tab" data-route="/report"    onclick="App.nav('/report')">📋 レポート</button>
+    <button class="tb-tab" data-route="/animals"   onclick="App.nav('/animals')">個体管理</button>
+    <button class="tb-tab" data-route="/history"   onclick="App.nav('/history')">記録履歴</button>
+    <button class="tb-tab" data-route="/followup"  onclick="App.nav('/followup')">要フォロー</button>
+    <button class="tb-tab" data-route="/notes"     onclick="App.nav('/notes')">野帳</button>
+    <button class="tb-tab" data-route="/hatch-map"  onclick="App.nav('/hatch-map')">🏠 ハッチマップ</button>
+    <button class="tb-tab" data-route="/analysis"  onclick="App.nav('/analysis')">分析</button>
+    <button class="tb-tab" data-route="/guide"     onclick="App.nav('/guide')">スコアガイド</button>
+  </div>
+
+  <div class="tb-spacer"></div>
+
+  <div class="tb-actions">
+    <button id="btn-file-open"  class="btn-outline" onclick="FileStore.openFile()" title="OneDriveなどのJSONファイルを開いて常時同期">📂 ファイルを開く</button>
+    <button id="btn-file-save"  class="btn-outline" onclick="FileStore.saveAs()"   title="現在の全データをJSONファイルに保存">💾 名前を付けて保存</button>
+    <span   id="file-status"    style="font-size:11px;color:var(--text-3);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis"></span>
+    <button class="btn-outline" onclick="App.exportFarm()">⬇ エクスポート</button>
+    <button class="btn-outline" onclick="document.getElementById('file-in').click()">⬆ インポート</button>
+    <button class="btn-primary" onclick="App.nav('/scan/new')">＋ 新規スキャン</button>
+  </div>
+</nav>
+
+<div id="main"><div id="view"></div></div>
+<div id="modal-bg" style="display:none"></div>
+<div id="toast-box"></div>
+<input type="file" id="file-in" accept=".json" style="display:none">
+
+<script>
+'use strict';
+// ─── Constants ────────────────────────────────────
+const PFX = 'lu';
+const FC   = ['','A','B','C','H','E','P'];
+const FSTATE = {'':'','A':'st-n','B':'st-b','C':'st-c','H':'st-h','E':'st-e','P':'st-a'};
+const FCHIP  = {'':'fch-empty','A':'fch-n','B':'fch-b','C':'fch-c','H':'fch-h','E':'fch-e','P':'fch-a'};
+const FLBL   = {'':'－','A':'正常（Aライン）','B':'Bライン増多','C':'コンソリデーション（≥1cm）','H':'肝変化（hepatization）','E':'胸水','P':'膿瘍（Purulent）'};
+// ボタン表示用（短い日本語）
+const FBTN   = {'':'未入力','A':'正常','B':'B線↑','C':'コンソリ','H':'肝変化','E':'胸水','P':'膿瘍'};
+// 小チップ用（1〜2文字）
+const FCHP_CHR = {'':'－','A':'正','B':'B↑','C':'Con','H':'肝','E':'胸','P':'膿'};
+const SC     = ['#10b981','#3b82f6','#f59e0b','#f97316','#ef4444','#7f1d1d'];
+const SCB    = ['#d1fae5','#dbeafe','#fef3c7','#ffedd5','#fee2e2','#fecaca'];
+const SLBL   = ['正常（Aライン主体）','Bライン増多（間質性変化）','小葉性実質化（≥1cm）','1葉全体の実質化','2葉全体の実質化','3葉以上の実質化'];
+const SACT   = ['次回定期スキャンまで観察','5〜10日後に再スキャン','治療介入（7〜10日後再スキャン）','治療介入・薬剤選択再評価','積極的治療・廃用リスクを共有','緊急対応・予後不良を説明'];
+const PROT   = {A:'集中型（7日間隔）',B:'標準型（14日間隔）',C:'簡易型（3点固定）'};
+const BM     = {A:15,B:20,C:25};
+const RPOS   = ['rf_a','rf_p','r_m','r_c'];
+const LPOS   = ['lf_a','lf_p','l_c'];
+const RLBL   = {rf_a:'前葉前部',rf_p:'前葉後部',r_m:'中葉',r_c:'後葉',
+                lf_a:'前葉前部',lf_p:'前葉後部',l_c:'後葉'};
+
+// ─── 個体識別番号ユーティリティ ─────────────────────
+// 個体識別番号(10桁)の6〜9桁目 = 拡大4桁
+const get拡4 = tag => { const d=tag.replace(/\D/g,''); return d.length>=9?d.slice(5,9):''; };
+const fmtTagId = tag => {
+  const d = tag.replace(/\D/g,'');
+  if(d.length===10) return `<span class="tag-pre">${d.slice(0,5)}</span><span class="tag-exp">${d.slice(5,9)}</span><span class="tag-cd">${d.slice(9)}</span>`;
+  return h(tag);
+};
+
+// ─── Utils ────────────────────────────────────────
+const $ = id => document.getElementById(id);
+const h = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const today = () => new Date().toLocaleDateString('sv-SE');
+const fmtDate = d => d ? d.replace(/-/g,'/') : '－';
+const calcAge = (b,s) => b ? Math.max(0,Math.floor((new Date(s||today()) - new Date(b))/86400000)) : null;
+const genId = () => Date.now().toString(36)+Math.random().toString(36).slice(2);
+const scClass = n => ['sc0','sc1','sc2','sc3','sc4','sc5'][n]||'sc0';
+
+// ─── FileStore（File System Access API による永続ファイル保存）───────
+const FileStore = {
+  _handle: null,   // FileSystemFileHandle
+  _dirty: false,   // 未書き込み変更フラグ
+  _timer: null,
+
+  // ファイルステータスラベルを更新
+  _setStatus(msg){
+    const el = document.getElementById('file-status');
+    if(el) el.textContent = msg;
+  },
+
+  // サポート確認
+  _supported(){
+    return typeof window.showOpenFilePicker === 'function';
+  },
+
+  // 全データをまとめてシリアライズ
+  _serialize(){
+    const farms = DB.getFarms();
+    const data = {v:'fs1', date: new Date().toISOString(), farms,
+      animals: Object.fromEntries(farms.map(f=>[f.id, DB.getAnimals(f.id)])),
+      scans:   Object.fromEntries(farms.map(f=>[f.id, DB.getScans(f.id)]))
+    };
+    return JSON.stringify(data, null, 2);
+  },
+
+  // ファイルに書き込む（内部用）
+  async _write(){
+    if(!this._handle) return;
+    try{
+      const writable = await this._handle.createWritable();
+      await writable.write(this._serialize());
+      await writable.close();
+      const ts = new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+      this._setStatus(`✅ ${this._handle.name}（${ts}保存）`);
+      this._dirty = false;
+    }catch(e){
+      // ユーザーが権限を拒否した場合など
+      this._setStatus(`⚠️ 保存失敗: ${e.message}`);
+    }
+  },
+
+  // データ変更時に呼び出す（300ms デバウンス）
+  schedule(){
+    if(!this._handle) return;
+    this._dirty = true;
+    clearTimeout(this._timer);
+    this._timer = setTimeout(()=>this._write(), 300);
+  },
+
+  // 既存ファイルを開いて内容をロード
+  async openFile(){
+    if(!this._supported()){
+      toast('このブラウザは File System Access API に対応していません（Edge/Chrome を使用してください）','err',4000);
+      return;
+    }
+    try{
+      const [handle] = await window.showOpenFilePicker({
+        types:[{description:'肺エコーデータ',accept:{'application/json':['.json']}}],
+        multiple: false
+      });
+      this._handle = handle;
+      // ファイル内容を読み込んでDBに反映
+      const file = await handle.getFile();
+      const text = await file.text();
+      const d = JSON.parse(text);
+      if(d.v === 'fs1'){
+        // FileStore 形式（全農場一括）
+        if(Array.isArray(d.farms)){
+          DB._bulkLoad(d.farms, d.animals||{}, d.scans||{});
+          toast(`ファイルを開きました（${d.farms.length}農場）`,'ok');
+        }
+      } else if(d.farm && Array.isArray(d.scans)){
+        // 従来の単農場エクスポート形式も受け付ける
+        App.importFarm(new File([text], handle.name, {type:'application/json'}));
+      } else {
+        throw new Error('対応していないファイル形式です');
+      }
+      this._setStatus(`📂 ${handle.name}`);
+      updateTopBar();
+      Router.nav('/dashboard');
+    }catch(e){
+      if(e.name !== 'AbortError') toast('ファイルを開けませんでした: '+e.message,'err');
+    }
+  },
+
+  // 名前を付けて保存（新規ファイル作成 or 上書き先指定）
+  async saveAs(){
+    if(!this._supported()){
+      // フォールバック：従来のダウンロード
+      const blob = new Blob([this._serialize()],{type:'application/json'});
+      const url  = URL.createObjectURL(blob);
+      const a    = document.createElement('a');
+      a.href = url; a.download = `肺エコー全農場_${today()}.json`; a.click();
+      URL.revokeObjectURL(url);
+      toast('ダウンロードしました（ブラウザが File System Access API 非対応）','ok');
+      return;
+    }
+    try{
+      const handle = await window.showSaveFilePicker({
+        suggestedName: `肺エコー全農場_${today()}.json`,
+        types:[{description:'肺エコーデータ',accept:{'application/json':['.json']}}]
+      });
+      this._handle = handle;
+      await this._write();
+      toast(`「${handle.name}」に保存しました`,'ok');
+    }catch(e){
+      if(e.name !== 'AbortError') toast('保存失敗: '+e.message,'err');
+    }
+  }
+};
+
+// ─── DB ───────────────────────────────────────────
+const DB = {
+  g(k){try{return JSON.parse(localStorage.getItem(`${PFX}:${k}`))||null}catch{return null}},
+  s(k,v){localStorage.setItem(`${PFX}:${k}`,JSON.stringify(v))},
+  getFarms(){return this.g('farms')||[]},
+  saveFarms(f){this.s('farms',f);FileStore.schedule();},
+  getFarm(id){return this.getFarms().find(f=>f.id===id)||null},
+  saveFarm(f){const a=this.getFarms();const i=a.findIndex(x=>x.id===f.id);i>=0?a[i]=f:a.push(f);this.saveFarms(a)},
+  delFarm(id){this.saveFarms(this.getFarms().filter(f=>f.id!==id));['animals','scans'].forEach(k=>localStorage.removeItem(`${PFX}:${id}:${k}`));if(this.activeId()===id)this.s('active','')},
+  activeId(){return this.g('active')||null},
+  setActive(id){this.s('active',id)},
+  getAnimals(fid){try{return JSON.parse(localStorage.getItem(`${PFX}:${fid}:animals`))||[]}catch{return[]}},
+  saveAnimals(fid,a){localStorage.setItem(`${PFX}:${fid}:animals`,JSON.stringify(a));FileStore.schedule();},
+  findByTag(fid,tag){return this.getAnimals(fid).find(a=>a.tagId===tag.trim())||null},
+  upsertAnimal(fid,tag,extra={}){
+    let a=this.getAnimals(fid);let x=a.find(i=>i.tagId===tag.trim());
+    if(!x){x={id:genId(),tagId:tag.trim(),birthDate:'',sex:'',breed:'',createdAt:today(),...extra};a.push(x);}
+    else Object.keys(extra).forEach(k=>{if(extra[k])x[k]=extra[k];});
+    this.saveAnimals(fid,a);return x;
+  },
+  getScans(fid){try{return JSON.parse(localStorage.getItem(`${PFX}:${fid}:scans`))||[]}catch{return[]}},
+  saveScans(fid,s){localStorage.setItem(`${PFX}:${fid}:scans`,JSON.stringify(s));FileStore.schedule();},
+  addScan(fid,s){const a=this.getScans(fid);s.id=genId();s.createdAt=new Date().toISOString();a.push(s);this.saveScans(fid,a);return s},
+  updateScan(fid,s){const a=this.getScans(fid);const i=a.findIndex(x=>x.id===s.id);if(i>=0){a[i]=s;this.saveScans(fid,a);}},
+  delScan(fid,sid){this.saveScans(fid,this.getScans(fid).filter(s=>s.id!==sid))},
+  byAnimal(fid,animalId){return this.getScans(fid).filter(s=>s.animalId===animalId).sort((a,b)=>a.scanDate.localeCompare(b.scanDate))},
+  exportData(fid){
+    const farm=this.getFarm(fid);if(!farm)return null;
+    return JSON.stringify({v:2,date:new Date().toISOString(),farm,animals:this.getAnimals(fid),scans:this.getScans(fid)},null,2);
+  },
+  importData(json){
+    const d=JSON.parse(json);if(!d.farm||!Array.isArray(d.scans))throw new Error('フォーマットエラー');
+    const nid=genId();
+    const farm={...d.farm,id:nid,name:(d.farm.name||'農場')+'（インポート）',updatedAt:today()};
+    this.saveFarm(farm);this.saveAnimals(nid,d.animals||[]);
+    this.saveScans(nid,(d.scans||[]).map(s=>({...s,farmId:nid})));return nid;
+  },
+  // FileStore から全農場を一括ロード（localStorage も更新）
+  _bulkLoad(farms, animalsMap, scansMap){
+    this.s('farms', farms);
+    farms.forEach(f=>{
+      localStorage.setItem(`${PFX}:${f.id}:animals`, JSON.stringify(animalsMap[f.id]||[]));
+      localStorage.setItem(`${PFX}:${f.id}:scans`,   JSON.stringify(scansMap[f.id]||[]));
+    });
+    if(farms.length > 0 && !this.getFarm(this.activeId())){
+      this.setActive(farms[0].id);
+    }
+  }
+};
+
+// ─── Analysis ─────────────────────────────────────
+const Calc = {
+  prev(scans){const t=scans.length,p=scans.filter(s=>s.obScore>=2).length;return{t,p,r:t?+(p/t*100).toFixed(1):0}},
+  byDate(fid){
+    const map={};DB.getScans(fid).forEach(s=>{if(!map[s.scanDate])map[s.scanDate]={d:s.scanDate,t:0,p:0};map[s.scanDate].t++;if(s.obScore>=2)map[s.scanDate].p++;});
+    return Object.values(map).sort((a,b)=>a.d.localeCompare(b.d)).map(x=>({...x,r:+(x.p/x.t*100).toFixed(1)}));
+  },
+  dist(fid){const d=[0,0,0,0,0,0];DB.getScans(fid).forEach(s=>{if(s.obScore>=0&&s.obScore<=5)d[s.obScore]++;});return d;},
+  treatRate(fid){const sc=DB.getScans(fid);const t=sc.filter(s=>s.treated).length;return{t,tot:sc.length,r:sc.length?+(t/sc.length*100).toFixed(1):0}},
+  bm(fid){
+    const farm=DB.getFarm(fid);const tgt=BM[farm?.protocol||'B'];
+    const bd=this.byDate(fid);const cur=bd.length?bd[bd.length-1].r:null;
+    return{cur,tgt,status:cur===null?'none':cur<=tgt?'ok':cur<=tgt*1.5?'warn':'alert'};
+  },
+  suggest(r,l){
+    const all=[...Object.values(r||{}),...Object.values(l||{})];
+    if(all.includes('P'))return 5;
+    const c=all.filter(x=>x==='C'||x==='H').length; // コンソリ＋肝変化を合算
+    const h=all.filter(x=>x==='H').length;           // 肝変化のみ
+    const e=all.filter(x=>x==='E').length;
+    // 7ポジション（右4＋左3）基準でスコア提案
+    if(e>0&&c>=3)return 5;
+    if(h>=3||c>=6)return 5;
+    if(h>=2||c>=4)return 4;
+    if(h>=1||c>=3)return 3;
+    if(c>=1)return 2;
+    if(all.includes('B'))return 1;return 0;
+  }
+};
+
+// ─── HutchUtil ────────────────────────────────────
+const HutchUtil = {
+  get(fid){ return DB.getFarm(fid)?.hutches||[]; },
+
+  // 指定日時点でのハッチ占有者を返す {scan, animal} or null
+  occupant(fid, hutchId, asOf){
+    const sc = DB.getScans(fid)
+      .filter(s=>s.hutchId===hutchId && s.scanDate<=asOf)
+      .sort((a,b)=>b.scanDate.localeCompare(a.scanDate)||b.createdAt.localeCompare(a.createdAt));
+    if(!sc.length) return null;
+    const scan=sc[0];
+    const animal=DB.getAnimals(fid).find(a=>a.id===scan.animalId)||null;
+    return {scan,animal};
+  },
+
+  // ハッチの入退記録を時系列で返す [{tagId,from,to,scans,lastScore}]
+  history(fid, hutchId){
+    const scans=DB.getScans(fid).filter(s=>s.hutchId===hutchId)
+      .sort((a,b)=>a.scanDate.localeCompare(b.scanDate));
+    const groups=[];
+    for(const s of scans){
+      const last=groups[groups.length-1];
+      if(last && last.animalId===s.animalId){last.scans.push(s);last.to=s.scanDate;last.lastScore=s.obScore;}
+      else groups.push({animalId:s.animalId,tagId:s.tagId,scans:[s],from:s.scanDate,to:s.scanDate,lastScore:s.obScore});
+    }
+    return groups;
+  },
+
+  // 個体のハッチ移動履歴 [{hutchLabel, scanDate, obScore}]
+  animalMoves(fid, animalId){
+    const hutches=this.get(fid);
+    return DB.getScans(fid).filter(s=>s.animalId===animalId && s.hutchId)
+      .sort((a,b)=>a.scanDate.localeCompare(b.scanDate))
+      .map(s=>({...s, hutchLabel: hutches.find(h=>h.id===s.hutchId)?.label||s.hutchId}));
+  },
+
+  // ファームのスキャン日一覧（昇順）
+  scanDates(fid){ return [...new Set(DB.getScans(fid).map(s=>s.scanDate))].sort(); },
+
+  // 標準レイアウト生成
+  genStandard(leftN, rightN, lbl0='左列', lbl1='右列'){
+    const h=[];
+    for(let i=0;i<leftN;i++) h.push({id:genId(),label:`${lbl0}-${i+1}`,col:0,row:i});
+    for(let i=0;i<rightN;i++) h.push({id:genId(),label:`${lbl1}-${i+1}`,col:1,row:i});
+    return h;
+  },
+
+  // レイアウトのグリッドサイズを返す {cols, rows}
+  gridSize(hutches){
+    if(!hutches.length) return {cols:0,rows:0};
+    return {cols:Math.max(...hutches.map(h=>h.col))+1, rows:Math.max(...hutches.map(h=>h.row))+1};
+  },
+
+  // 列ごとのラベルを返す（farm.hutchColLabels または自動生成）
+  colLabel(farm, col){
+    if(farm.hutchColLabels && farm.hutchColLabels[col]) return farm.hutchColLabels[col];
+    return col===0?'左列':col===1?'右列':`列${col+1}`;
+  }
+};
+
+// ─── Hatch Map State ──────────────────────────────
+let HM = { date: null, focusHutch: null };
+
+// ─── Charts ───────────────────────────────────────
+const CHS={};
+const mkChart=(id,cfg)=>{if(CHS[id]){CHS[id].destroy();delete CHS[id];}const el=$(id);if(!el)return;if(typeof Chart==='undefined')return;CHS[id]=new Chart(el,cfg);};
+
+// ─── Toast ────────────────────────────────────────
+const toast=(msg,type='',ms=2600)=>{const e=document.createElement('div');e.className=`toast ${type}`;e.textContent=msg;$('toast-box').appendChild(e);setTimeout(()=>e.remove(),ms);};
+
+// ─── Router ───────────────────────────────────────
+const Router={
+  _r:{},on(p,fn){this._r[p]=fn;},nav(p){location.hash=p;},
+  resolve(){
+    const h=location.hash.slice(1)||'/dashboard';
+    for(const[p,fn] of Object.entries(this._r)){const m=this._m(p,h);if(m!==null){fn(m);this._hl(h);return;}}
+    this._r['/dashboard']&&this._r['/dashboard']({});this._hl('/dashboard');
+  },
+  _m(pat,path){const pp=pat.split('/'),hp=path.split('/');if(pp.length!==hp.length)return null;const pm={};for(let i=0;i<pp.length;i++){if(pp[i][0]===':')pm[pp[i].slice(1)]=hp[i];else if(pp[i]!==hp[i])return null;}return pm;},
+  _hl(path){document.querySelectorAll('[data-route]').forEach(el=>{el.classList.toggle('active',path===el.dataset.route||path.startsWith(el.dataset.route+'/'))} );},
+  init(){window.addEventListener('hashchange',()=>this.resolve());this.resolve();}
+};
+
+// ─── Shell ────────────────────────────────────────
+const updateTopBar=()=>{const fid=DB.activeId();const farm=fid?DB.getFarm(fid):null;const el=$('tb-farm-name');if(el)el.textContent=farm?farm.name:'農場を選択';};
+const setView=html=>{$('view').innerHTML=html;};
+
+// ─── Scan State ───────────────────────────────────
+let SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null};
+const resetSS=()=>{SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null};};
+const loadSS=s=>{SS.right={rf_a:'',rf_p:'',r_m:'',r_c:'',...(s.right||{})};SS.left={lf_a:'',lf_p:'',l_c:'',...(s.left||{})};SS.score=s.obScore||0;SS.editId=s.id;};
+
+// ─── Mini lung grid (read-only) ───────────────────
+const miniLung=sides=>{
+  if(!sides)return'<div class="lung-mini">－</div>';
+  const vals=Object.values(sides).slice(0,5);
+  if(vals.every(v=>!v||v===''))return`<div class="lung-mini"><span style="font-size:11px;color:var(--text-4)">全記録なし</span></div>`;
+  return`<div class="lung-mini">${vals.map(v=>`<span class="finding-chip ${FCHIP[v]||'fch-empty'}" title="${FLBL[v]||'未入力'}">${FCHP_CHR[v]||'－'}</span>`).join('')}</div>`;
+};
+
+// ─── VIEWS ────────────────────────────────────────
+
+// HOME
+const renderHome=()=>setView(`
+  <div class="home-wrap">
+    <div class="home-icon">🫁</div>
+    <h1>肺エコー検診データベース</h1>
+    <p>農場を選択、または新しい農場を作成して<br>スキャン記録の入力・管理を始めてください</p>
+    <button class="btn-primary" style="padding:12px 32px;font-size:15px;width:100%;border-radius:10px" onclick="App.openFarmModal()">農場を選択・作成する</button>
+  </div>`);
+
+// DASHBOARD
+const renderDashboard=()=>{
+  const fid=DB.activeId();const farm=DB.getFarm(fid);
+  if(!fid||!farm){renderHome();return;}
+  const scans=DB.getScans(fid);const animals=DB.getAnimals(fid);
+  const pv=Calc.prev(scans);const bm=Calc.bm(fid);const tr=Calc.treatRate(fid);
+  const recent=scans.slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,12);
+
+  setView(`
+  <div class="page-hd">
+    <div class="page-title">ダッシュボード</div>
+    <div class="page-sub">${h(farm.name)}　Protocol ${farm.protocol}（${PROT[farm.protocol]||''}）</div>
+  </div>
+
+  <div class="kpi-grid">
+    <div class="kpi-card blue">
+      <div class="kpi-label">登録個体数</div>
+      <div class="kpi-val">${animals.length}<span class="kpi-unit">頭</span></div>
+      <div class="kpi-note">のべ ${scans.length} スキャン</div>
+    </div>
+    <div class="kpi-card ${pv.r>bm.tgt?'red':pv.r>bm.tgt*.75?'amber':'teal'}">
+      <div class="kpi-label">全体有病率（スコア≥2）</div>
+      <div class="kpi-val">${pv.r}<span class="kpi-unit">%</span></div>
+      <div class="kpi-note">陽性 ${pv.p} / ${pv.t} 頭</div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-label">治療介入率</div>
+      <div class="kpi-val">${tr.r}<span class="kpi-unit">%</span></div>
+      <div class="kpi-note">${tr.t} / ${tr.tot} 件</div>
+    </div>
+    <div class="kpi-card ${bm.status==='ok'?'teal':bm.status==='warn'?'amber':'red'}">
+      <div class="kpi-label">ベンチマーク目標</div>
+      <div class="kpi-val">${bm.tgt}<span class="kpi-unit">%</span></div>
+      <div class="kpi-note">${bm.cur!==null?`最新 ${bm.cur}%`:'データなし'}</div>
+    </div>
+  </div>
+
+  <div class="chart-row">
+    <div class="card" style="padding:18px 20px">
+      <div style="font-size:13px;font-weight:700;color:var(--navy-2);margin-bottom:14px">有病率 推移（日別）</div>
+      <div class="chart-wrap"><canvas id="ch-prev"></canvas></div>
+    </div>
+    <div class="card" style="padding:18px 20px">
+      <div style="font-size:13px;font-weight:700;color:var(--navy-2);margin-bottom:14px">スコア分布</div>
+      <div class="chart-wrap"><canvas id="ch-dist"></canvas></div>
+    </div>
+  </div>
+
+  ${bm.status!=='none'?`<div class="callout ${bm.status==='ok'?'cl-teal':bm.status==='warn'?'cl-amber':'cl-red'}" style="margin-bottom:16px">
+    <div class="callout-i">${bm.status==='ok'?'✅':bm.status==='warn'?'⚠️':'🚨'}</div>
+    <div><strong>${bm.status==='ok'?'ベンチマーク達成中':bm.status==='warn'?'要注意：目標に近づいています':'緊急：ベンチマーク超過'}</strong>　最新有病率 <strong>${bm.cur}%</strong>　目標 ${bm.tgt}%以下</div>
+  </div>`:''}
+
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-hd-icon blue">📋</div>
+      <div class="card-hd-title">最近のスキャン記録</div>
+      <div class="card-hd-sub"><button class="btn-sm btn-ghost" onclick="App.nav('/history')">すべて見る →</button></div>
+    </div>
+    ${recent.length===0?`<div class="card-body"><div class="empty"><div class="empty-icon">📋</div><h3>記録がまだありません</h3><p>「スキャン入力」からデータを追加してください</p></div></div>`:
+    `<div class="tbl-wrap">
+    <table><thead><tr><th>スキャン日</th><th>耳標番号</th><th>日齢</th><th>右肺</th><th>左肺</th><th>スコア</th><th>治療</th></tr></thead>
+    <tbody>${recent.map(s=>`<tr>
+      <td>${fmtDate(s.scanDate)}<br><span style="font-size:10px;color:var(--text-4)">R${s.round||1}</span></td>
+      <td><span class="tbl-link" onclick="App.openAnimalModal('${h(s.animalId)}')">${h(s.tagId)}</span></td>
+      <td>${s.ageAtScan!=null?s.ageAtScan+'日':'－'}</td>
+      <td>${miniLung(s.right)}</td><td>${miniLung(s.left)}</td>
+      <td><span class="score-badge ${scClass(s.obScore)}">${s.obScore}</span></td>
+      <td>${s.treated?'<span class="badge b-red">あり</span>':'<span style="color:var(--text-4)">－</span>'}</td>
+    </tr>`).join('')}</tbody></table></div>`}
+  </div>`);
+
+  if(typeof Chart==='undefined')return;
+  const bd=Calc.byDate(fid);
+  bd.length?mkChart('ch-prev',{type:'line',data:{labels:bd.map(d=>d.d.slice(5)),datasets:[{label:'有病率(%)',data:bd.map(d=>d.r),borderColor:'#1a3a5c',backgroundColor:'rgba(26,58,92,.06)',borderWidth:2.5,tension:.35,fill:true,pointBackgroundColor:bd.map(d=>d.r>bm.tgt?'#ef4444':'#10b981'),pointRadius:5},{label:`目標 ${bm.tgt}%`,data:bd.map(()=>bm.tgt),borderColor:'#f97316',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}},plugins:{legend:{position:'bottom',labels:{font:{size:11},padding:10}}}}})
+  :($('ch-prev')&&($('ch-prev').parentElement.innerHTML='<div class="empty" style="padding:24px"><p>データが蓄積されるとグラフが表示されます</p></div>'));
+
+  const dist=Calc.dist(fid);
+  dist.some(n=>n>0)?mkChart('ch-dist',{type:'doughnut',data:{labels:['0:正常','1:間質','2:小葉性','3:葉性','4:重症','5:最重症'],datasets:[{data:dist,backgroundColor:SC,borderWidth:2,borderColor:'#fff',hoverOffset:5}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right',labels:{font:{size:11},padding:8}},tooltip:{callbacks:{label:ctx=>{const t=dist.reduce((a,b)=>a+b,0);return`${ctx.label}: ${ctx.parsed}頭 (${t?+(ctx.parsed/t*100).toFixed(1):0}%)`;}}}}}}):
+  ($('ch-dist')&&($('ch-dist').parentElement.innerHTML='<div class="empty" style="padding:24px"><p>スキャンデータが入ると表示されます</p></div>'));
+};
+
+// NEW SCAN
+const renderNewScan=(editScan=null)=>{
+  const fid=DB.activeId();const farm=DB.getFarm(fid);
+  if(!fid||!farm){renderHome();return;}
+  editScan?loadSS(editScan):resetSS();
+  const s=editScan||{};const isEdit=!!editScan;
+
+  setView(`
+  <div class="page-hd">
+    <div class="page-title">${isEdit?'スキャン記録を編集':'スキャン入力'}</div>
+    <div class="page-sub">${h(farm.name)}　Protocol ${farm.protocol}</div>
+  </div>
+
+  <form id="scan-form" onsubmit="App.submitScan(event)">
+
+  <!-- 基本情報 -->
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-hd-icon blue">ℹ</div>
+      <div class="card-hd-title">基本情報</div>
+    </div>
+    <div class="card-body">
+      <div class="form-row">
+        <div class="form-group">
+          <label class="form-label">耳標番号<span class="req">*</span></label>
+          <input class="form-input" id="f-tag" value="${h(s.tagId||'')}" placeholder="例：1234567890（10桁）" oninput="App.onTag(this.value)" required list="tag-dl" style="font-family:'Courier New',monospace;letter-spacing:1px">
+          <datalist id="tag-dl">${DB.getAnimals(fid).sort((a,b)=>get拡4(a.tagId).localeCompare(get拡4(b.tagId))).map(a=>`<option value="${h(a.tagId)}">${get拡4(a.tagId)} ｜ ${h(a.breed||'品種未設定')}</option>`).join('')}</datalist>
+          <div id="tag-hint" class="form-hint"></div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">スキャン日<span class="req">*</span></label>
+          <input class="form-input" id="f-date" type="date" value="${s.scanDate||today()}" onchange="App.onDateCh()" required>
+        </div>
+        <div class="form-group">
+          <label class="form-label">日齢（日）</label>
+          <input class="form-input" id="f-age" type="number" min="0" max="365" value="${s.ageAtScan||''}" placeholder="例：28">
+          <div class="form-hint">生年月日登録済みの場合は自動計算</div>
+        </div>
+        <div class="form-group">
+          <label class="form-label">検診ラウンド</label>
+          <input class="form-input" id="f-round" type="number" min="1" max="20" value="${s.round||1}">
+        </div>
+        <div class="form-group">
+          <label class="form-label">ハッチ番号</label>
+          ${(()=>{const hutches=HutchUtil.get(fid);
+            if(!hutches.length) return `<input class="form-input" id="f-hutch-free" value="${h(s.hutchFree||'')}" placeholder="例：L-3（任意）" list="hutch-free-dl"><datalist id="hutch-free-dl"></datalist><div class="form-hint"><a href="#" onclick="App.nav('/hatch-map');return false">ハッチマップ</a>でハッチを設定すると選択式になります</div>`;
+            return `<select class="form-select" id="f-hutch-sel">
+              <option value="">── 未指定 ──</option>
+              ${hutches.map(ht=>`<option value="${ht.id}" ${s.hutchId===ht.id?'selected':''}>${h(ht.label)}</option>`).join('')}
+            </select>`;
+          })()}
+        </div>
+      </div>
+      <div id="new-animal-area" style="display:none;margin-top:10px">
+        <div class="callout cl-blue"><div class="callout-i">ℹ️</div><div>新規個体として登録します。以下は任意入力です。</div></div>
+        <div class="form-row" style="margin-top:10px">
+          <div class="form-group"><label class="form-label">生年月日</label><input class="form-input" id="f-bd" type="date" onchange="App.onBd()"></div>
+          <div class="form-group"><label class="form-label">品種</label><input class="form-input" id="f-breed" placeholder="例：ホルスタイン" list="breed-dl"><datalist id="breed-dl"><option value="ホルスタイン"><option value="和牛（黒毛）"><option value="交雑種（F1）"><option value="ジャージー"></datalist></div>
+          <div class="form-group"><label class="form-label">性別</label><select class="form-select" id="f-sex"><option value="">不明</option><option value="F">雌</option><option value="M">雄</option></select></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 肺エコー所見 -->
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-hd-icon teal">🔬</div>
+      <div class="card-hd-title">肺エコー所見</div>
+      <div class="card-hd-sub">
+        <div class="lung-quick">
+          <button type="button" class="btn-sm btn-ghost" onclick="App.fillNormal()">すべて正常に設定</button>
+          <button type="button" class="btn-sm btn-ghost" onclick="App.clearFindings()">クリア</button>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <div class="callout cl-blue" style="margin-bottom:14px">
+        <div class="callout-i">💡</div>
+        <div style="width:100%">
+          <div style="margin-bottom:8px;font-size:13px">各ボタンをタップするたびに所見が切り替わります。</div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:5px">
+            <div style="background:#f9fafb;border:1.5px solid var(--border-2);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--text-3)"><strong>未入力</strong><br><span style="font-size:10px">記録なし</span></div>
+            <div style="background:var(--sb0);border:1.5px solid var(--fn);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fn)"><strong>正常</strong><br><span style="font-size:10px">Aライン正常</span></div>
+            <div style="background:var(--sb1);border:1.5px solid var(--fb);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fb)"><strong>B線↑</strong><br><span style="font-size:10px">Bライン増多</span></div>
+            <div style="background:var(--sb3);border:1.5px solid var(--fc);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fc)"><strong>コンソリ</strong><br><span style="font-size:10px">consolidation ≥1cm</span></div>
+            <div style="background:#fef2f2;border:1.5px solid var(--fh);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fh)"><strong>肝変化</strong><br><span style="font-size:10px">hepatization 完全型</span></div>
+            <div style="background:#ede9fe;border:1.5px solid var(--fe);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fe)"><strong>胸水</strong><br><span style="font-size:10px">無エコー液貯留</span></div>
+            <div style="background:var(--sb4);border:1.5px solid var(--fa);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fa)"><strong>膿瘍</strong><br><span style="font-size:10px">被包化膿瘍</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="lung-block">
+        <div class="lung-block-title"><span class="lung-tag right">右肺 Right</span></div>
+        <div class="lung-grid r4">${RPOS.map(p=>`<div class="lung-cell"><div class="lung-cell-lbl">${RLBL[p]}</div><button type="button" class="lung-btn ${FSTATE[SS.right[p]]}" data-side="right" data-pos="${p}" onclick="App.togFinding(this)">${FBTN[SS.right[p]]||'未入力'}</button></div>`).join('')}</div>
+      </div>
+      <div class="lung-block">
+        <div class="lung-block-title"><span class="lung-tag left">左肺 Left</span></div>
+        <div class="lung-grid l3">${LPOS.map(p=>`<div class="lung-cell"><div class="lung-cell-lbl">${RLBL[p]}</div><button type="button" class="lung-btn ${FSTATE[SS.left[p]]}" data-side="left" data-pos="${p}" onclick="App.togFinding(this)">${FBTN[SS.left[p]]||'未入力'}</button></div>`).join('')}</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- OBスコア -->
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-hd-icon amber">📊</div>
+      <div class="card-hd-title">Ollivett-Buczinski スコア</div>
+    </div>
+    <div class="card-body">
+      <div class="score-row">
+        <input type="range" class="score-slider" id="f-score" min="0" max="5" value="${SS.score}" oninput="App.onScore(this.value)" style="flex:1">
+        <div class="score-pill" id="score-pill" style="background:${SC[SS.score]}">${SS.score}</div>
+      </div>
+      <div class="score-desc" id="score-desc">スコア ${SS.score}：${SLBL[SS.score]}　／　対応：${SACT[SS.score]}</div>
+      <div class="score-desc" id="score-auto" style="color:var(--blue);margin-top:3px">所見グリッドからの自動提案：<strong id="auto-sc">－</strong></div>
+      <div style="display:flex;gap:6px;margin-top:12px;flex-wrap:wrap">${[0,1,2,3,4,5].map(n=>`<span style="display:inline-flex;align-items:center;gap:4px;font-size:11px;padding:2px 7px;border-radius:5px;background:${SCB[n]};color:var(--text-2)"><strong style="color:${SC[n]}">${n}</strong>${SLBL[n].slice(0,8)}...</span>`).join('')}</div>
+    </div>
+  </div>
+
+  <!-- 治療・メモ -->
+  <div class="card">
+    <div class="card-hd">
+      <div class="card-hd-icon red">💊</div>
+      <div class="card-hd-title">主な所見・治療</div>
+    </div>
+    <div class="card-body">
+      <div class="form-group full" style="margin-bottom:14px">
+        <label class="form-label">主な所見（自由記述）</label>
+        <input class="form-input" id="f-findings" value="${h(s.mainFindings||'')}" placeholder="例：右R3〜R4に実質化（2cm程度）、胸水なし">
+      </div>
+      <div style="margin-bottom:14px">
+        <div class="toggle-row">
+          <label class="toggle"><input type="checkbox" id="f-treated" ${s.treated?'checked':''} onchange="App.onTreat(this.checked)"><span class="tgl-slider"></span></label>
+          <span style="font-weight:600;font-size:14px">治療介入あり</span>
+          <span class="badge ${SS.score>=2?'b-amber':'b-teal'}" id="treat-badge">${SS.score>=2?'スコア≥2：治療推奨':'スコア<2：観察'}</span>
+        </div>
+      </div>
+      <div class="form-row" id="drug-area" style="${s.treated?'':'display:none'}">
+        <div class="form-group">
+          <label class="form-label">使用薬剤・投与量</label>
+          <input class="form-input" id="f-drug" value="${h(s.drug||'')}" placeholder="例：エンロフロキサシン 2.5mg/kg 3日" list="drug-dl">
+          <datalist id="drug-dl"><option value="エンロフロキサシン 2.5mg/kg"><option value="フロルフェニコール 20mg/kg"><option value="チルミコシン 10mg/kg"><option value="ツラスロマイシン 2.5mg/kg"><option value="ガンママイシン 6mg/kg"></datalist>
+        </div>
+      </div>
+      <div class="form-group full" style="margin-top:6px">
+        <label class="form-label">備考・次回予定</label>
+        <textarea class="form-textarea" id="f-notes" placeholder="例：7日後に再スキャン予定。治療反応を確認する。">${h(s.notes||'')}</textarea>
+      </div>
+    </div>
+  </div>
+
+  <div id="form-err" style="color:var(--red);font-size:13px;margin-bottom:12px;display:none"></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end">
+    <button type="button" class="btn-sm btn-ghost" onclick="App.nav('/history')" style="padding:10px 20px">キャンセル</button>
+    <button type="submit" class="btn-primary" style="padding:10px 28px;font-size:14px">${isEdit?'✓ 更新する':'✓ 記録を保存する'}</button>
+  </div>
+  </form>`);
+
+  App.updateAutoSc();
+  if(s.tagId) App.onTag(s.tagId,true);
+};
+
+// HISTORY
+let HS={sort:'scanDate',dir:'desc',f:{}};
+const renderHistory=()=>{
+  const fid=DB.activeId();const farm=DB.getFarm(fid);
+  if(!fid||!farm){renderHome();return;}
+  let sc=DB.getScans(fid);
+  const f=HS.f;
+  if(f.tag) sc=sc.filter(s=>s.tagId&&s.tagId.includes(f.tag));
+  if(f.sm!=null) sc=sc.filter(s=>s.obScore>=f.sm);
+  if(f.tr==='y') sc=sc.filter(s=>s.treated);
+  if(f.tr==='n') sc=sc.filter(s=>!s.treated);
+  if(f.df) sc=sc.filter(s=>s.scanDate>=f.df);
+  if(f.dt) sc=sc.filter(s=>s.scanDate<=f.dt);
+  const k=HS.sort,d=HS.dir==='asc'?1:-1;
+  sc.sort((a,b)=>k==='obScore'?(a.obScore-b.obScore)*d:k==='ageAtScan'?(a.ageAtScan-b.ageAtScan)*d:(a[k]||'').localeCompare(b[k]||'')*d);
+  const hutches=HutchUtil.get(fid);
+  const hutchLabel=s=>s.hutchId?(hutches.find(h=>h.id===s.hutchId)?.label||s.hutchId):s.hutchFree||'';
+  const mkTh=(col,lbl)=>`<th class="${HS.sort===col?'sort-'+HS.dir:''}" onclick="App.sortH('${col}')">${lbl}</th>`;
+
+  setView(`
+  <div class="page-hd">
+    <div class="page-title">記録履歴</div>
+    <div class="page-sub">${h(farm.name)}　全 ${DB.getScans(fid).length} 件</div>
+  </div>
+  <div class="filter-bar">
+    <input class="form-input" placeholder="耳標番号で検索" value="${h(f.tag||'')}" oninput="App.setF('tag',this.value)" style="width:155px">
+    <select class="form-select" onchange="App.setF('sm',this.value?Number(this.value):null)">
+      <option value="">スコア：全て</option>
+      ${[1,2,3,4,5].map(n=>`<option value="${n}" ${f.sm===n?'selected':''}>≥${n}</option>`).join('')}
+    </select>
+    <select class="form-select" onchange="App.setF('tr',this.value)">
+      <option value="">治療：全て</option>
+      <option value="y" ${f.tr==='y'?'selected':''}>治療あり</option>
+      <option value="n" ${f.tr==='n'?'selected':''}>治療なし</option>
+    </select>
+    <input class="form-input" type="date" value="${f.df||''}" onchange="App.setF('df',this.value)" style="width:138px" title="開始日">
+    <span style="color:var(--text-4);font-size:12px">〜</span>
+    <input class="form-input" type="date" value="${f.dt||''}" onchange="App.setF('dt',this.value)" style="width:138px" title="終了日">
+    <button class="btn-sm btn-ghost" onclick="App.clrF()">リセット</button>
+    <span style="margin-left:auto;font-size:12px;color:var(--text-3)">${sc.length} 件</span>
+  </div>
+  ${sc.length===0?`<div class="card"><div class="card-body"><div class="empty"><div class="empty-icon">🔍</div><h3>該当する記録がありません</h3><p>フィルタ条件を変更してください</p></div></div></div>`:
+  `<div class="card" style="overflow:hidden"><div class="tbl-wrap"><table>
+  <thead><tr>${mkTh('scanDate','スキャン日')}${mkTh('tagId','耳標番号')}${mkTh('ageAtScan','日齢')}<th>場所</th>${mkTh('obScore','スコア')}<th>右肺</th><th>左肺</th><th>治療</th><th>薬剤</th><th>備考</th><th>操作</th></tr></thead>
+  <tbody>${sc.map(s=>`<tr>
+    <td>${fmtDate(s.scanDate)}<br><span style="font-size:10px;color:var(--text-4)">R${s.round||1}</span></td>
+    <td><span class="tbl-link" onclick="App.openAnimalModal('${h(s.animalId)}')">${h(s.tagId)}</span></td>
+    <td>${s.ageAtScan!=null?s.ageAtScan+'日':'－'}</td>
+    <td style="font-size:12px;color:var(--text-3)">${h(hutchLabel(s))}</td>
+    <td><span class="score-badge ${scClass(s.obScore)}">${s.obScore}</span></td>
+    <td>${miniLung(s.right)}</td><td>${miniLung(s.left)}</td>
+    <td>${s.treated?'<span class="badge b-red">あり</span>':'<span style="color:var(--text-4)">－</span>'}</td>
+    <td style="font-size:12px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-3)">${h(s.drug||'')}</td>
+    <td style="font-size:12px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-3)">${h(s.notes||'')}</td>
+    <td style="white-space:nowrap">
+      <button class="btn-sm btn-edit" onclick="App.editScan('${s.id}')" style="margin-right:4px">編集</button>
+      <button class="btn-sm btn-danger" onclick="App.delScan('${s.id}')">削除</button>
+    </td>
+  </tr>`).join('')}</tbody></table></div></div>`}
+  `);
+};
+
+// ANALYSIS
+const renderAnalysis=()=>{
+  const fid=DB.activeId();const farm=DB.getFarm(fid);
+  if(!fid||!farm){renderHome();return;}
+  const sc=DB.getScans(fid);const bd=Calc.byDate(fid);const dist=Calc.dist(fid);
+  const tr=Calc.treatRate(fid);const bm=Calc.bm(fid);const tgt=BM[farm.protocol||'B'];
+  const heavy=dist[4]+dist[5];const heavyR=sc.length?+(heavy/sc.length*100).toFixed(1):0;
+
+  setView(`
+  <div class="page-hd"><div class="page-title">分析・トレンド</div><div class="page-sub">${h(farm.name)}　全 ${sc.length} スキャン</div></div>
+  <div class="kpi-grid">
+    <div class="kpi-card ${bm.status==='ok'?'teal':bm.status==='warn'?'amber':'red'}">
+      <div class="kpi-label">最新有病率</div>
+      <div class="kpi-val" style="font-size:34px">${bm.cur!==null?bm.cur+'%':'－'}</div>
+      <div class="kpi-note">目標 ${tgt}%以下</div>
+    </div>
+    <div class="kpi-card blue">
+      <div class="kpi-label">スコア≥2（全期間）</div>
+      <div class="kpi-val">${Calc.prev(sc).p}<span class="kpi-unit">頭</span></div>
+      <div class="kpi-note">全体 ${Calc.prev(sc).r}%</div>
+    </div>
+    <div class="kpi-card amber">
+      <div class="kpi-label">治療介入</div>
+      <div class="kpi-val">${tr.t}<span class="kpi-unit">件</span></div>
+      <div class="kpi-note">治療率 ${tr.r}%</div>
+    </div>
+    <div class="kpi-card ${heavyR>5?'red':'teal'}">
+      <div class="kpi-label">重症（スコア≥4）</div>
+      <div class="kpi-val">${heavy}<span class="kpi-unit">件</span></div>
+      <div class="kpi-note">全体の ${heavyR}%</div>
+    </div>
+  </div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-hd"><div class="card-hd-icon blue">📈</div><div class="card-hd-title">有病率 時系列推移</div></div>
+    <div class="card-body"><div style="position:relative;height:230px"><canvas id="ch-trend"></canvas></div></div>
+  </div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px">
+    <div class="card">
+      <div class="card-hd"><div class="card-hd-icon amber">📊</div><div class="card-hd-title">スコア分布</div></div>
+      <div class="card-body"><div style="position:relative;height:200px"><canvas id="ch-sbar"></canvas></div></div>
+    </div>
+    <div class="card">
+      <div class="card-hd"><div class="card-hd-icon teal">🎯</div><div class="card-hd-title">ベンチマーク比較</div></div>
+      <div class="card-body">
+        ${[{lbl:'有病率目標',cur:bm.cur,tgt},{lbl:'重症割合目標',cur:heavyR,tgt:5},{lbl:'治療率（参考）',cur:tr.r,tgt:30}].map(x=>{
+          const cls=x.cur==null?'':x.cur<=x.tgt?'bm-ok':x.cur<=x.tgt*1.5?'bm-warn':'bm-alert';
+          return`<div class="bm-item">
+            <div class="bm-row"><span>${x.lbl}</span><span style="font-weight:700;color:${cls==='bm-ok'?'var(--teal)':cls==='bm-warn'?'var(--amber)':'var(--red)'}">${x.cur!=null?x.cur+'%':'－'}<span style="font-weight:400;color:var(--text-3);font-size:11px"> / 目標 ${x.tgt}%</span></span></div>
+            <div class="bm-bar-bg"><div class="bm-bar ${cls}" style="width:${Math.min(x.cur||0,100)}%"></div></div>
+          </div>`;}).join('')}
+      </div>
+    </div>
+  </div>
+  <div class="card">
+    <div class="card-hd"><div class="card-hd-icon blue">🔢</div><div class="card-hd-title">スコア別詳細</div></div>
+    <div class="tbl-wrap"><table>
+    <thead><tr><th>スコア</th><th>件数</th><th>割合</th><th>解釈</th><th>推奨対応</th></tr></thead>
+    <tbody>${dist.map((cnt,n)=>`<tr style="background:${SCB[n]}20">
+      <td><span class="score-badge ${scClass(n)}">${n}</span></td>
+      <td style="font-weight:700">${cnt}</td>
+      <td>${sc.length?+(cnt/sc.length*100).toFixed(1):0}%</td>
+      <td style="font-size:12px">${SLBL[n]}</td>
+      <td style="font-size:12px">${SACT[n]}</td>
+    </tr>`).join('')}</tbody></table></div>
+  </div>`);
+
+  if(typeof Chart==='undefined')return;
+  bd.length&&mkChart('ch-trend',{type:'line',data:{labels:bd.map(d=>d.d.slice(5)),datasets:[{label:'有病率(%)',data:bd.map(d=>d.r),borderColor:'#1a3a5c',backgroundColor:'rgba(26,58,92,.05)',borderWidth:2.5,tension:.35,fill:true,pointBackgroundColor:bd.map(d=>d.r>tgt?'#ef4444':'#10b981'),pointRadius:5},{label:`目標 ${tgt}%`,data:bd.map(()=>tgt),borderColor:'#f97316',borderDash:[5,4],borderWidth:1.5,pointRadius:0,fill:false}]},options:{responsive:true,maintainAspectRatio:false,interaction:{mode:'index',intersect:false},scales:{y:{min:0,max:100,ticks:{callback:v=>v+'%'}},x:{grid:{display:false}}},plugins:{legend:{position:'bottom',labels:{font:{size:11}}},tooltip:{callbacks:{afterLabel:ctx=>{if(ctx.datasetIndex===0){const d=bd[ctx.dataIndex];return`スキャン: ${d.t}頭`;}}}}}}});
+  mkChart('ch-sbar',{type:'bar',data:{labels:['0','1','2','3','4','5'],datasets:[{label:'件数',data:dist,backgroundColor:SC,borderRadius:6,borderSkipped:false}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{beginAtZero:true,title:{display:true,text:'件数'}},x:{title:{display:true,text:'OBスコア'}}},plugins:{legend:{display:false},tooltip:{callbacks:{title:c=>`スコア ${c[0].label}`,label:c=>`${c.parsed.y}件`}}}}});
+};
+
+// ─── FOLLOW-UP VIEW ──────────────────────────────
+const renderFollowup=()=>{
+  const fid=DB.activeId();const farm=DB.getFarm(fid);
+  if(!fid||!farm){renderHome();return;}
+  const animals=DB.getAnimals(fid);
+  const allScans=DB.getScans(fid);
+
+  // 各個体の最終スキャンを取得してフォロー要否を判定
+  const rows=animals.map(a=>{
+    const sc=allScans.filter(s=>s.animalId===a.id).sort((x,y)=>y.scanDate.localeCompare(x.scanDate));
+    const last=sc[0];if(!last)return null;
+    const daysSince=Math.floor((new Date(today())-new Date(last.scanDate))/86400000);
+    let status='ok',badge='',action='';
+    if(last.obScore>=2&&!last.treated){
+      status='urgent';badge='<span class="fu-badge fu-urgent">🚨 未治療・要介入</span>';
+      action='スコア≥2で治療未実施。即時対応を推奨。';
+    } else if(last.obScore>=2&&last.treated&&daysSince<7){
+      status='ok';badge='<span class="fu-badge fu-ok">⏳ 治療中</span>';
+      action=`治療後${daysSince}日。再スキャンは${7-daysSince}日後以降。`;
+    } else if(last.obScore>=2&&last.treated&&daysSince>=7){
+      status='urgent';badge='<span class="fu-badge fu-urgent">🔴 再スキャン期限超過</span>';
+      action=`治療後${daysSince}日経過。7〜10日後再スキャン期限を過ぎています。`;
+    } else if(last.obScore===1&&daysSince<5){
+      status='ok';badge='<span class="fu-badge fu-ok">⏳ 観察中</span>';
+      action=`スコア1。再スキャンまで${5-daysSince}日。`;
+    } else if(last.obScore===1&&daysSince>=5){
+      status='soon';badge='<span class="fu-badge fu-soon">🟡 再スキャン推奨</span>';
+      action=`スコア1・${daysSince}日経過。5〜10日後再スキャン時期です。`;
+    } else {
+      status='ok';badge='<span class="fu-badge fu-ok">✅ 問題なし</span>';
+      action='次回定期スキャンまで観察継続。';
+    }
+    return{a,last,daysSince,status,badge,action};
+  }).filter(Boolean);
+
+  const urgentN=rows.filter(r=>r.status==='urgent').length;
+  const soonN=rows.filter(r=>r.status==='soon').length;
+  const sorted=rows.sort((a,b)=>{const o={urgent:0,soon:1,ok:2};return o[a.status]-o[b.status]||b.daysSince-a.daysSince;});
+
+  setView(`
+  <div class="page-hd">
+    <div class="page-title">要フォロー管理</div>
+    <div class="page-sub">${h(farm.name)}　🚨 緊急 ${urgentN}頭　🟡 要注意 ${soonN}頭</div>
+  </div>
+  ${urgentN>0?`<div class="callout cl-red no-print" style="margin-bottom:14px"><div class="callout-i">🚨</div><div><strong>${urgentN}頭が緊急対応または再スキャン期限超過です。</strong>早急に確認してください。</div></div>`:''}
+  ${rows.length===0?`<div class="card"><div class="card-body"><div class="empty"><div class="empty-icon">✅</div><h3>フォローが必要な個体はいません</h3><p>スキャンデータが入ると自動で表示されます</p></div></div></div>`:`
+  <div class="card" style="overflow:hidden"><div class="tbl-wrap"><table>
+  <thead><tr>
+    <th>耳標番号</th><th>最終スキャン日</th><th>日齢</th>
+    <th>スコア</th><th>治療</th><th>経過日数</th>
+    <th>ステータス</th><th>推奨アクション</th><th class="no-print">操作</th>
+  </tr></thead>
+  <tbody>${sorted.map(({a,last,daysSince,status,badge,action})=>`<tr class="fu-row-${status}">
+    <td><span class="tbl-link" onclick="App.openAnimalModal('${h(a.id)}')">${fmtTagId(a.tagId)}</span></td>
+    <td>${fmtDate(last.scanDate)}<br><span style="font-size:10px;color:var(--text-4)">R${last.round||1}</span></td>
+    <td>${last.ageAtScan!=null?last.ageAtScan+'日':'－'}</td>
+    <td><span class="score-badge ${scClass(last.obScore)}">${last.obScore}</span></td>
+    <td>${last.treated?'<span class="badge b-red">あり</span>':'<span style="color:var(--text-4)">－</span>'}</td>
+    <td><span class="fu-days" style="color:${status==='urgent'?'var(--red)':status==='soon'?'var(--amber)':'var(--teal)'}">${daysSince}日</span></td>
+    <td>${badge}</td>
+    <td style="font-size:11px;max-width:200px;color:var(--text-2)">${h(action)}</td>
+    <td class="no-print" style="white-space:nowrap">
+      <button class="btn-sm btn-edit" onclick="App.addScanFor('${h(a.tagId)}')">スキャン入力</button>
+    </td>
+  </tr>`).join('')}</tbody></table></div></div>`}
+  <div style="margin-top:10px;font-size:11px;color:var(--text-3);padding:0 4px">
+    ※ 判定基準：スコア≥2 治療後7〜10日 → 再スキャン必須。スコア1 → 5〜10日後に再スキャン。スコア≥2 未治療 → 即時介入。
+    （Ollivett &amp; Buczinski, Vet Clin NA Food Anim Pract. 2016;32:19-35）
+  </div>
+  `);
+};
+
+// ─── FIELD NOTES VIEW ────────────────────────────
+let NS={prefill:true,date:today(),examiner:''};
+let RS={date:'',examiner:''};
+const renderNotes=()=>{
+  const fid=DB.activeId();const farm=DB.getFarm(fid);
+  if(!fid||!farm){renderHome();return;}
+  const animals=DB.getAnimals(fid).sort((a,b)=>get拡4(a.tagId).localeCompare(get拡4(b.tagId)));
+  const allScans=DB.getScans(fid);
+  const ROW_COUNT=40;
+
+  // テーブル行データ生成
+  const rows=[];
+  if(NS.prefill&&animals.length){
+    animals.slice(0,ROW_COUNT).forEach((a,i)=>{
+      const sc=allScans.filter(s=>s.animalId===a.id).sort((x,y)=>y.scanDate.localeCompare(x.scanDate));
+      const last=sc[0];
+      rows.push({no:i+1,tag:a.tagId,prefillScore:last?last.obScore:null,prevDate:last?last.scanDate:'',round:last?last.round+1:1});
+    });
+    while(rows.length<ROW_COUNT)rows.push({no:rows.length+1});
+  } else {
+    for(let i=0;i<ROW_COUNT;i++)rows.push({no:i+1});
+  }
+
+  const lobeHdR=['葉①<br>右前-前','葉②<br>右前-後','葉③<br>右中','葉④<br>右後'];
+  const lobeHdL=['葉⑤<br>左前-前','葉⑥<br>左前-後','葉⑦<br>左後'];
+
+  setView(`
+  <div class="page-hd no-print">
+    <div class="page-title">野帳（フィールドノート）</div>
+    <div class="page-sub">${h(farm.name)}　印刷してそのまま野帳として使用できます</div>
+  </div>
+
+  <div class="note-opts no-print">
+    <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+      <input type="checkbox" ${NS.prefill?'checked':''} onchange="NS.prefill=this.checked;renderNotes()" style="width:15px;height:15px">
+      登録個体を自動入力
+    </label>
+    <div style="display:flex;align-items:center;gap:6px;font-size:13px">
+      <span style="color:var(--text-3);font-weight:600">検査日：</span>
+      <input type="date" value="${NS.date}" onchange="NS.date=this.value" style="font-size:13px;padding:5px 8px;border:1.5px solid var(--border-2);border-radius:7px">
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:13px">
+      <span style="color:var(--text-3);font-weight:600">検査者：</span>
+      <input type="text" value="${h(NS.examiner)}" oninput="NS.examiner=this.value" placeholder="氏名を入力" style="font-size:13px;padding:5px 8px;border:1.5px solid var(--border-2);border-radius:7px;width:130px">
+    </div>
+    <button class="btn-primary" onclick="window.print()" style="margin-left:auto">🖨 印刷・PDF出力</button>
+  </div>
+
+  <div class="note-wrap">
+    <div class="note-hd">
+      <div>
+        <div class="note-hd-title">子牛　肺エコー検診　野帳（CalfScan 7葉方式）</div>
+        <div class="note-hd-sub">Ollivett &amp; Buczinski 2016 / UW-Madison CalfScan App 準拠</div>
+      </div>
+      <div style="display:flex;gap:20px;font-size:11px;opacity:.85">
+        <span>農場：${h(farm.name)}</span>
+        <span>Pattern：${farm.protocol}</span>
+      </div>
+    </div>
+    <div class="note-meta">
+      <div><div class="note-meta-lbl">検査日</div><div class="note-meta-val">${NS.date.replace(/-/g,'/')}</div></div>
+      <div><div class="note-meta-lbl">検査者</div><div class="note-meta-val">${h(NS.examiner)||'　'}</div></div>
+      <div><div class="note-meta-lbl">農場名</div><div class="note-meta-val">${h(farm.name)}</div></div>
+      <div><div class="note-meta-lbl">パターン / 代表者</div><div class="note-meta-val">${farm.protocol}　${h(farm.ownerName||'')}</div></div>
+    </div>
+    <div class="note-legend">
+      <div class="note-legend-row">
+        <strong>所見コード：</strong>
+        <span><strong>A</strong>=正常Aライン</span>
+        <span><strong>B</strong>=Bライン増多</span>
+        <span><strong>C</strong>=実質化（≥1cm）</span>
+        <span><strong>H</strong>=肝変化</span>
+        <span><strong>E</strong>=胸水</span>
+        <span><strong>P</strong>=膿瘍</span>
+      </div>
+      <div class="note-legend-score">スコア：0=正常　1=B線↑　2=小葉性C　3=1葉H　4=2葉　5=3葉以上（P=自動スコア5）</div>
+    </div>
+    <div class="note-tbl-wrap">
+      <table class="note-tbl">
+        <thead>
+          <tr>
+            <th rowspan="2" style="width:24px">No</th>
+            <th rowspan="2" style="width:36px">拡大<br>4桁</th>
+            <th rowspan="2" style="width:80px">個体識別番号</th>
+            <th rowspan="2" style="width:30px">日齢</th>
+            <th rowspan="2" style="min-width:50px">場所</th>
+            <th rowspan="2" style="width:28px">検診<br>回数</th>
+            <th colspan="4" class="th-r">右肺 Right</th>
+            <th colspan="3" class="th-l">左肺 Left</th>
+            <th rowspan="2" class="th-sp" style="width:28px">前回<br>スコア</th>
+            <th rowspan="2" style="min-width:60px">主な所見</th>
+            <th rowspan="2" style="width:28px">治療<br>○/－</th>
+            <th rowspan="2" style="min-width:70px">使用薬・投与量</th>
+            <th rowspan="2" style="min-width:60px">備考</th>
+          </tr>
+          <tr>
+            ${lobeHdR.map(l=>`<th class="th-r" style="width:30px">${l}</th>`).join('')}
+            ${lobeHdL.map(l=>`<th class="th-l" style="width:30px">${l}</th>`).join('')}
+          </tr>
+        </thead>
+        <tbody>
+          ${rows.map(r=>`<tr>
+            <td class="td-no">${r.no}</td>
+            <td class="td-pre">${r.tag?get拡4(r.tag):''}</td>
+            <td class="td-tag">${r.tag?h(r.tag):''}</td>
+            <td></td>
+            <td></td>
+            <td style="font-size:10px;color:var(--text-3)">${r.round||''}</td>
+            <td></td><td></td><td></td><td></td>
+            <td></td><td></td><td></td>
+            <td class="td-score" style="color:${r.prefillScore!=null?SC[r.prefillScore]:'var(--text-4)'};font-size:10px">${r.prefillScore!=null?r.prefillScore:''}</td>
+            <td class="td-wide"></td>
+            <td></td>
+            <td class="td-wide"></td>
+            <td class="td-wide"></td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+  </div>
+  <div style="margin-top:8px;font-size:10px;color:var(--text-4);text-align:right;padding-right:4px" class="no-print">
+    印刷ボタンを押すとA4横向きに最適化されます。ブラウザの印刷設定で「余白：最小」を選ぶと見やすくなります。
+  </div>
+  `);
+};
+
+// ─── REPORT VIEW ────────────────────────────
+const renderReport=()=>{
+  const fid=DB.activeId();const farm=DB.getFarm(fid);
+  if(!fid||!farm){renderHome();return;}
+  const allScans=DB.getScans(fid);
+  const dates=[...new Set(allScans.map(s=>s.scanDate))].sort((a,b)=>b.localeCompare(a));
+  if(!RS.date||!dates.includes(RS.date)) RS.date=dates[0]||'';
+  const scans=RS.date?allScans.filter(s=>s.scanDate===RS.date).sort((a,b)=>get拡4(a.tagId).localeCompare(get拡4(b.tagId))):[];
+  const total=scans.length;
+  const treated=scans.filter(s=>s.treated).length;
+  const score2=scans.filter(s=>s.obScore>=2).length;
+  const prev=total?Math.round(score2/total*100):0;
+  const JLBL=['正常','経過観察','要治療','要治療','重症','重症'];
+  const JBG=['#d1fae5','#dbeafe','#fef3c7','#ffedd5','#fee2e2','#fecaca'];
+
+  const mkBadge=(s)=>`<span class="rpt-score-badge" style="background:${JBG[s.obScore]};color:${SC[s.obScore]}">${JLBL[s.obScore]}</span>`;
+  const treatCell=(s)=>`<span style="color:${s.treated?'#ef4444':'#94a3b8'};font-weight:700">${s.treated?'実施':'－'}</span>`;
+
+  setView(`
+  <style>@media print{@page{size:A4 portrait;margin:12mm}}</style>
+  <div class="page-hd no-print">
+    <div class="page-title">検診レポート</div>
+    <div class="page-sub">${h(farm.name)}　農場向け検診結果レポート</div>
+  </div>
+  <div class="note-opts no-print">
+    <div style="display:flex;align-items:center;gap:6px">
+      <label style="font-size:13px;font-weight:600">検診日</label>
+      <select style="font-size:13px;padding:5px 10px;border-radius:6px;border:1.5px solid var(--border-2);background:#fff" onchange="App.onRepDate(this.value)">
+        ${dates.length?dates.map(d=>`<option value="${d}"${d===RS.date?' selected':''}>${fmtDate(d)}</option>`).join(''):'<option>スキャン記録なし</option>'}
+      </select>
+    </div>
+    <div style="display:flex;align-items:center;gap:6px">
+      <label style="font-size:13px;font-weight:600">担当獣医師</label>
+      <input class="form-input" style="width:150px;font-size:13px;padding:5px 10px" value="${h(RS.examiner)}" placeholder="氏名" oninput="App.onRepExaminer(this.value)">
+    </div>
+    <button class="btn btn-primary" onclick="window.print()" style="margin-left:auto">🖨 印刷 / PDF保存</button>
+  </div>
+
+  ${!dates.length?`<div class="callout cl-blue"><div class="callout-i">💡</div><div>まだスキャン記録がありません。スキャン入力から記録を追加してください。</div></div>`:`
+  <div class="rpt-wrap">
+
+    <!-- ヘッダー -->
+    <div class="rpt-header">
+      <div class="rpt-title">${h(farm.name)}　肺エコー検診レポート</div>
+      <div class="rpt-subtitle">検診日: ${RS.date?fmtDate(RS.date):'－'}　頭数: ${total}頭　作成日: ${fmtDate(today())}　担当獣医師: ${h(RS.examiner)||'　　　　　　'}</div>
+    </div>
+
+    <!-- ① 概要 -->
+    <div class="rpt-section">
+      <div class="rpt-section-hd">
+        <div class="rpt-badge">①</div>
+        <div class="rpt-section-title">概要</div>
+      </div>
+      <div class="rpt-kpi-grid">
+        <div class="rpt-kpi">
+          <div class="rpt-kpi-lbl">検診頭数</div>
+          <div class="rpt-kpi-val">${total}<span class="rpt-kpi-unit">頭</span></div>
+        </div>
+        <div class="rpt-kpi">
+          <div class="rpt-kpi-lbl">要治療（スコア2以上）</div>
+          <div class="rpt-kpi-val" style="color:${score2>0?'#ef4444':'#1e293b'}">${score2}<span class="rpt-kpi-unit">頭</span></div>
+          <div class="rpt-kpi-sub">${prev}%</div>
+        </div>
+        <div class="rpt-kpi">
+          <div class="rpt-kpi-lbl">治療実施</div>
+          <div class="rpt-kpi-val" style="color:${treated>0?'#ef4444':'#1e293b'}">${treated}<span class="rpt-kpi-unit">頭</span></div>
+        </div>
+        <div class="rpt-kpi">
+          <div class="rpt-kpi-lbl">正常・経過観察（スコア0〜1）</div>
+          <div class="rpt-kpi-val" style="color:#10b981">${total-score2}<span class="rpt-kpi-unit">頭</span></div>
+          <div class="rpt-kpi-sub">${total?100-prev:0}%</div>
+        </div>
+      </div>
+      <div>
+        <div class="rpt-dist-title">スコア分布</div>
+        ${[0,1,2,3,4,5].map(n=>{
+          const cnt=scans.filter(s=>s.obScore===n).length;
+          const pct=total?Math.round(cnt/total*100):0;
+          return`<div class="rpt-bar-row">
+            <div class="rpt-bar-lbl">スコア${n}　${JLBL[n]}</div>
+            <div class="rpt-bar-wrap"><div class="rpt-bar-fill" style="width:${pct}%;background:${SC[n]}">${cnt>0?cnt+'頭':''}</div></div>
+            <div class="rpt-bar-pct">${pct}%</div>
+          </div>`;
+        }).join('')}
+      </div>
+    </div>
+
+    <!-- ② 要治療個体リスト -->
+    <div class="rpt-section">
+      <div class="rpt-section-hd">
+        <div class="rpt-badge" style="background:#ef4444">②</div>
+        <div class="rpt-section-title" style="color:#ef4444">要治療個体（スコア2以上）</div>
+      </div>
+      ${score2===0
+        ?`<div class="rpt-no-data">該当個体はいません</div>`
+        :`<table class="rpt-tbl">
+          <thead><tr>
+            <th>#コード</th><th>日齢</th><th>スコア</th><th>判定</th><th>治療</th><th>使用薬・投与量</th><th>備考・次回予定</th>
+          </tr></thead>
+          <tbody>
+            ${scans.filter(s=>s.obScore>=2).sort((a,b)=>b.obScore-a.obScore).map(s=>`<tr>
+              <td class="rpt-id">#${get拡4(s.tagId)}</td>
+              <td>${s.ageAtScan!=null?s.ageAtScan+'日':''}</td>
+              <td style="font-size:22px;font-weight:800;color:${SC[s.obScore]}">${s.obScore}</td>
+              <td>${mkBadge(s)}</td>
+              <td>${treatCell(s)}</td>
+              <td>${h(s.drug||'')}</td>
+              <td>${h(s.notes||s.mainFindings||'')}</td>
+            </tr>`).join('')}
+          </tbody>
+        </table>`}
+    </div>
+
+    <!-- ③ 全個体一覧 -->
+    <div class="rpt-section">
+      <div class="rpt-section-hd">
+        <div class="rpt-badge" style="background:#64748b">③</div>
+        <div class="rpt-section-title" style="color:#475569">全個体一覧</div>
+      </div>
+      <table class="rpt-tbl">
+        <thead><tr>
+          <th>#コード</th><th>個体識別番号</th><th>日齢</th><th>スコア</th><th>判定</th><th>治療</th><th>使用薬</th><th>備考</th>
+        </tr></thead>
+        <tbody>
+          ${scans.map(s=>`<tr>
+            <td class="rpt-id">#${get拡4(s.tagId)}</td>
+            <td style="font-size:11px;color:#64748b;font-family:'Courier New',monospace">${h(s.tagId)}</td>
+            <td>${s.ageAtScan!=null?s.ageAtScan+'日':''}</td>
+            <td style="font-weight:800;font-size:16px;color:${SC[s.obScore]}">${s.obScore}</td>
+            <td>${mkBadge(s)}</td>
+            <td>${treatCell(s)}</td>
+            <td style="font-size:11px">${h(s.drug||'')}</td>
+            <td style="font-size:11px">${h(s.notes||'')}</td>
+          </tr>`).join('')}
+        </tbody>
+      </table>
+    </div>
+
+    <!-- フッター -->
+    <div class="rpt-footer">
+      <span>牛肺超音波検査（CalfScan / Ollivett-Buczinski スコアリング）　スコア2以上：治療推奨</span>
+      <span>作成: ${fmtDate(today())}</span>
+    </div>
+
+  </div>
+  <div style="margin-top:10px;font-size:10px;color:var(--text-4);text-align:right" class="no-print">
+    印刷設定：A4縦・余白：標準
+  </div>
+  `}
+  `);
+};
+
+// ─── SCORE GUIDE VIEW ────────────────────────────
+const renderGuide=()=>{
+  const lobes=[
+    {no:'葉①',jp:'右前葉・前部',en:'Cranial part of right cranial lobe',ics:'右 ICS 1-2',col:'#2E86C1'},
+    {no:'葉②',jp:'右前葉・後部',en:'Caudal part of right cranial lobe',ics:'右 ICS 3-4',col:'#1ABC9C'},
+    {no:'葉③',jp:'右中葉',en:'Right middle lobe',ics:'右 ICS 5',col:'#3498DB'},
+    {no:'葉④',jp:'右後葉',en:'Right caudal lobe',ics:'右 ICS 6-10',col:'#16A085'},
+    {no:'葉⑤',jp:'左前葉・前部',en:'Cranial part of left cranial lobe',ics:'左 ICS 2-3',col:'#8E44AD'},
+    {no:'葉⑥',jp:'左前葉・後部',en:'Caudal part of left cranial lobe',ics:'左 ICS 4-5',col:'#E91E63'},
+    {no:'葉⑦',jp:'左後葉',en:'Left caudal lobe',ics:'左 ICS 6-10',col:'#00897B'},
+  ];
+  const scores=[
+    {n:0,jp:'正常',en:'Normal A-lines',tx:'コンソリなし・Bライン少量',act:'次回定期スキャンまで観察',trt:'不要'},
+    {n:1,jp:'Bライン増多',en:'Interstitial pattern',tx:'びまん性Bライン増多（3本以上/肋間）',act:'5〜10日後に再スキャン',trt:'不要'},
+    {n:2,jp:'小葉性実質化',en:'Lobular consolidation',tx:'≥1cmの局所実質化（C所見）1ヶ所以上',act:'抗菌薬治療開始・7〜10日後再スキャン',trt:'要'},
+    {n:3,jp:'1葉全体の実質化',en:'Lobar consolidation',tx:'葉①〜⑦いずれか1葉全体（H所見）',act:'治療介入・薬剤選択再評価',trt:'要'},
+    {n:4,jp:'2葉全体の実質化',en:'2-lobe consolidation',tx:'いずれか2葉全体（H所見2葉）',act:'積極的治療・廃用リスクを説明',trt:'要'},
+    {n:5,jp:'3葉以上の実質化',en:'≥3-lobe / abscess',tx:'3葉以上・胸水合併・膿瘍（P）',act:'緊急対応・予後不良を説明',trt:'緊急'},
+  ];
+
+  setView(`
+  <div class="page-hd">
+    <div class="page-title">スコアガイド</div>
+    <div class="page-sub">CalfScan 7葉方式 + Ollivett-Buczinski スコア 現場参照用</div>
+  </div>
+
+  <!-- 7葉定義 -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-hd">
+      <div class="card-hd-icon blue">🫁</div>
+      <div class="card-hd-title">CalfScan 7葉定義</div>
+      <div class="card-hd-sub" style="font-size:11px;color:var(--text-3)">前葉の前部・後部は独立した別葉としてカウント</div>
+    </div>
+    <div class="card-body">
+      <div class="sg-lobe-grid">
+        ${lobes.map(l=>`<div class="sg-lobe" style="background:${l.col}18;border-color:${l.col};color:${l.col}">
+          <div style="font-size:13px;font-weight:800">${l.no}</div>
+          <div style="font-size:10px;font-weight:700;margin:2px 0">${l.jp}</div>
+          <div style="font-size:9px;opacity:.75">${l.ics}</div>
+        </div>`).join('')}
+      </div>
+      <div style="margin-top:10px;overflow-x:auto">
+        <table style="width:100%;font-size:12px;border-collapse:collapse">
+          <thead><tr style="background:var(--navy-2);color:#fff">
+            <th style="padding:6px 10px;text-align:center">葉番号</th>
+            <th style="padding:6px 10px;text-align:left">日本語名</th>
+            <th style="padding:6px 10px;text-align:left">English</th>
+            <th style="padding:6px 10px;text-align:center">走査ICS</th>
+          </tr></thead>
+          <tbody>${lobes.map((l,i)=>`<tr style="background:${i%2?'#f8fafc':'#fff'}">
+            <td style="padding:6px 10px;text-align:center"><strong style="color:${l.col}">${l.no}</strong></td>
+            <td style="padding:6px 10px">${l.jp}</td>
+            <td style="padding:6px 10px;font-size:11px;color:var(--text-3)">${l.en}</td>
+            <td style="padding:6px 10px;text-align:center;font-family:'Courier New',monospace;font-size:11px">${l.ics}</td>
+          </tr>`).join('')}</tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- OBスコア早見 -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-hd">
+      <div class="card-hd-icon amber">📊</div>
+      <div class="card-hd-title">Ollivett-Buczinski スコア早見表</div>
+      <div class="card-hd-sub" style="font-size:11px;color:var(--text-3)">治療閾値：スコア≥2 → 即時治療介入　スコア1 → 5〜10日後再スキャン</div>
+    </div>
+    <div class="card-body" style="padding:0">
+      ${scores.map(s=>`<div class="sg-score-row" style="background:${SCB[s.n]}30">
+        <div class="sg-score-cell sg-score-n"><span class="score-badge ${scClass(s.n)}" style="font-size:18px;width:36px;height:36px">${s.n}</span></div>
+        <div class="sg-score-cell" style="flex-direction:column;align-items:flex-start;gap:2px">
+          <div style="font-weight:700;color:${SC[s.n]}">${s.jp}</div>
+          <div style="font-size:11px;color:var(--text-3)">${s.en}</div>
+        </div>
+        <div class="sg-score-cell" style="font-size:12px;color:var(--text-2)">${s.tx}</div>
+        <div class="sg-score-cell" style="flex-direction:column;align-items:flex-start;gap:4px">
+          <div style="font-size:12px">${s.act}</div>
+          <span class="badge ${s.trt==='要'||s.trt==='緊急'?'b-red':'b-teal'}">${s.trt==='要'?'治療要':s.trt==='緊急'?'緊急治療':'治療不要'}</span>
+        </div>
+      </div>`).join('')}
+    </div>
+  </div>
+
+  <!-- 所見コード -->
+  <div class="card" style="margin-bottom:14px">
+    <div class="card-hd"><div class="card-hd-icon teal">🔬</div><div class="card-hd-title">所見コード一覧</div></div>
+    <div class="card-body">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">
+        ${Object.entries(FLBL).filter(([k])=>k).map(([k,v])=>`<div class="finding-chip ${FCHIP[k]}" style="padding:8px 12px;font-size:13px;border-radius:8px;display:flex;align-items:center;gap:8px;width:auto;height:auto">
+          <strong style="font-size:16px">${k}</strong><span>${v}</span>
+        </div>`).join('')}
+      </div>
+    </div>
+  </div>
+
+  <!-- 出典 -->
+  <div class="callout cl-blue">
+    <div class="callout-i">📚</div>
+    <div style="font-size:12px;line-height:1.7">
+      <strong>出典 / References</strong><br>
+      Ollivett TL, Buczinski S. On-farm use of ultrasonography for bovine respiratory disease.
+      <em>Vet Clin North Am Food Anim Pract.</em> 2016;32(1):19-35. doi:10.1016/j.cvfa.2015.09.001<br>
+      CalfScan App, University of Wisconsin-Madison School of Veterinary Medicine<br>
+      Buczinski S, et al. Invited review: Lung ultrasonography in young calves. <em>J Dairy Sci.</em> 2025. doi:10.3168/jds.2024-25823
+    </div>
+  </div>
+  `);
+};
+
+// ANIMALS VIEW
+let AS={sort:'exp4',dir:'asc',q:''};
+const renderAnimals=()=>{
+  const fid=DB.activeId();const farm=DB.getFarm(fid);
+  if(!fid||!farm){renderHome();return;}
+  let animals=DB.getAnimals(fid);
+  const scans=DB.getScans(fid);
+  if(AS.q) animals=animals.filter(a=>a.tagId.includes(AS.q)||get拡4(a.tagId).includes(AS.q));
+  const d=AS.dir==='asc'?1:-1;
+  if(AS.sort==='exp4') animals.sort((a,b)=>get拡4(a.tagId).localeCompare(get拡4(b.tagId))*d);
+  else if(AS.sort==='tagId') animals.sort((a,b)=>a.tagId.localeCompare(b.tagId)*d);
+  else if(AS.sort==='birthDate') animals.sort((a,b)=>(a.birthDate||'').localeCompare(b.birthDate||'')*d);
+  else if(AS.sort==='scanCnt'){
+    const cnt=a=>scans.filter(s=>s.animalId===a.id).length;
+    animals.sort((a,b)=>(cnt(a)-cnt(b))*d);
+  }
+  const mkTh=(col,lbl)=>`<th class="${AS.sort===col?'sort-'+AS.dir:''}" style="cursor:pointer" onclick="App.sortA('${col}')">${lbl}</th>`;
+
+  setView(`
+  <div class="page-hd">
+    <div class="page-title">個体管理</div>
+    <div class="page-sub">${h(farm.name)}　登録 ${DB.getAnimals(fid).length} 頭</div>
+  </div>
+  <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+    <button class="btn-primary" onclick="App.openAnimalRegModal()">＋ 個体を登録</button>
+  </div>
+  <div class="filter-bar">
+    <input class="form-input" placeholder="個体識別番号 または 拡大4桁で検索" value="${h(AS.q)}" oninput="App.setAq(this.value)" style="width:260px">
+    <button class="btn-sm btn-ghost" onclick="App.clrAq()">リセット</button>
+    <span style="margin-left:auto;font-size:12px;color:var(--text-3)">${animals.length} 頭表示</span>
+  </div>
+  ${animals.length===0?`
+  <div class="card"><div class="card-body"><div class="empty">
+    <div class="empty-icon">🐄</div>
+    <h3>個体が登録されていません</h3>
+    <p>「個体を登録」から追加するか、スキャン入力で自動登録されます</p>
+  </div></div></div>`:`
+  <div class="card" style="overflow:hidden"><div class="tbl-wrap"><table>
+  <thead><tr>
+    ${mkTh('exp4','拡大4桁')}
+    ${mkTh('tagId','個体識別番号（10桁）')}
+    <th>品種</th><th>性別</th>
+    ${mkTh('birthDate','生年月日')}
+    ${mkTh('scanCnt','スキャン数')}
+    <th>最新スコア</th><th>操作</th>
+  </tr></thead>
+  <tbody>${animals.map(a=>{
+    const anScans=scans.filter(s=>s.animalId===a.id).sort((x,y)=>x.scanDate.localeCompare(y.scanDate));
+    const last=anScans[anScans.length-1];
+    return`<tr>
+      <td><span class="tag-exp-lg">${get拡4(a.tagId)||'－'}</span></td>
+      <td class="tag-cell">${fmtTagId(a.tagId)}</td>
+      <td>${h(a.breed||'－')}</td>
+      <td>${a.sex==='F'?'♀ 雌':a.sex==='M'?'♂ 雄':'－'}</td>
+      <td>${fmtDate(a.birthDate)||'－'}</td>
+      <td style="text-align:center;font-weight:700;color:var(--navy)">${anScans.length}</td>
+      <td>${last?`<span class="score-badge ${scClass(last.obScore)}">${last.obScore}</span>`:'－'}</td>
+      <td style="white-space:nowrap">
+        <button class="btn-sm btn-ghost" onclick="App.openAnimalModal('${a.id}')" style="margin-right:3px">履歴</button>
+        <button class="btn-sm btn-edit" onclick="App.addScanFor('${h(a.tagId)}')" style="margin-right:3px">スキャン</button>
+        <button class="btn-sm btn-edit" onclick="App.openAnimalRegModal('${a.id}')" style="margin-right:3px">編集</button>
+        <button class="btn-sm btn-danger" onclick="App.delAnimal('${a.id}','${h(a.tagId)}')">削除</button>
+      </td>
+    </tr>`;
+  }).join('')}</tbody></table></div></div>`}
+  `);
+};
+
+// ─── HATCH MAP VIEW ───────────────────────────────
+const renderHatchMap=()=>{
+  const fid=DB.activeId();const farm=DB.getFarm(fid);
+  if(!fid||!farm){renderHome();return;}
+  const hutches=HutchUtil.get(fid);
+
+  if(!hutches.length){
+    setView(`
+    <div class="page-hd">
+      <div class="page-title">🏠 ハッチマップ</div>
+      <div class="page-sub">${h(farm.name)}</div>
+    </div>
+    <div class="card">
+      <div class="card-body">
+        <div class="empty">
+          <div class="empty-icon">🏠</div>
+          <h3>ハッチが設定されていません</h3>
+          <p>農場のハッチ（子牛舎）の配置を登録すると、スコアのヒートマップと時系列追跡ができます。</p>
+          <button class="btn-primary" style="margin-top:16px" onclick="App.openHutchSetup()">ハッチを設定する</button>
+        </div>
+      </div>
+    </div>`);
+    return;
+  }
+
+  // 日付決定
+  const dates=HutchUtil.scanDates(fid);
+  if(!HM.date) HM.date=dates.length?dates[dates.length-1]:today();
+  const viewDate=HM.date;
+  const dateIdx=dates.indexOf(viewDate);
+
+  // 列ごとにハッチをグループ化
+  const {cols}=HutchUtil.gridSize(hutches);
+  const byCols=[];
+  for(let c=0;c<cols;c++) byCols.push(hutches.filter(h=>h.col===c).sort((a,b)=>a.row-b.row));
+
+  // 各ハッチの占有状態を取得
+  const occ={};
+  hutches.forEach(ht=>{occ[ht.id]=HutchUtil.occupant(fid,ht.id,viewDate);});
+
+  // ハッチセルHTML生成
+  const cellHtml=(ht)=>{
+    const o=occ[ht.id];
+    if(!o) return `<div class="hm-cell hm-cell-empty" onclick="App.focusHutch('${ht.id}',this)" data-hid="${ht.id}" ${HM.focusHutch===ht.id?'class="hm-cell hm-cell-empty hm-active"':''}>
+      <div class="hm-cell-no">${h(ht.label)}</div>
+      <div class="hm-cell-tag" style="font-size:11px;font-family:inherit;color:var(--text-4)">空ハッチ</div>
+    </div>`;
+    const sc=o.scan;const tag拡4=get拡4(sc.tagId)||sc.tagId.slice(-4);
+    return `<div class="hm-cell hm-s${sc.obScore}${HM.focusHutch===ht.id?' hm-active':''}" onclick="App.focusHutch('${ht.id}',this)" data-hid="${ht.id}">
+      <div class="hm-cell-no">${h(ht.label)}</div>
+      <div class="hm-cell-score">${sc.obScore}</div>
+      <div class="hm-cell-tag">${tag拡4}</div>
+      <div class="hm-cell-info">${fmtDate(sc.scanDate)}・${sc.ageAtScan!=null?sc.ageAtScan+'日齢':'－'}</div>
+    </div>`;
+  };
+
+  // 詳細パネル HTML
+  const detailHtml=()=>{
+    if(!HM.focusHutch) return '';
+    const ht=hutches.find(h=>h.id===HM.focusHutch);if(!ht)return'';
+    const hist=HutchUtil.history(fid,HM.focusHutch);
+    const animals=DB.getAnimals(fid);
+    const tlItems=hist.map(g=>{
+      const a=animals.find(x=>x.id===g.animalId);
+      const name=a?get拡4(a.tagId)||a.tagId:g.tagId;
+      const isCurrent=g.to===hist[hist.length-1]?.to&&g.animalId===hist[hist.length-1]?.animalId;
+      const moves=HutchUtil.animalMoves(fid,g.animalId);
+      const moveStr=moves.length>1?moves.map(m=>h(m.hutchLabel)).join(' → '):'';
+      return `<div class="hm-tl-item${isCurrent?' '+'':''}">
+        <div>
+          <div class="hm-tl-date">${fmtDate(g.from)}${g.from!==g.to?` ～ ${fmtDate(g.to)}`:''}</div>
+          <div style="font-size:10px;color:var(--text-4);margin-top:1px">${g.scans.length}回スキャン</div>
+          ${moveStr?`<div style="font-size:10px;color:var(--blue);margin-top:2px">移動: ${moveStr}</div>`:''}
+        </div>
+        <div>
+          <div class="hm-tl-tag">${name}</div>
+          ${a?.breed?`<div style="font-size:10px;color:var(--text-3)">${h(a.breed)}</div>`:''}
+        </div>
+        <div style="text-align:right">
+          <span class="score-badge ${scClass(g.lastScore)}" style="font-size:13px;width:26px;height:26px">${g.lastScore}</span>
+          ${isCurrent?'<div style="font-size:10px;color:var(--teal);margin-top:2px">在舎中</div>':'<div style="font-size:10px;color:var(--text-4);margin-top:2px">退去</div>'}
+        </div>
+      </div>`;
+    }).join('');
+
+    // ハッチのスコア推移（全スキャンのスコアを時系列で）
+    const allScans=DB.getScans(fid).filter(s=>s.hutchId===HM.focusHutch).sort((a,b)=>a.scanDate.localeCompare(b.scanDate));
+    const sparkDots=allScans.map(s=>`<div class="hm-tl-dot" style="background:${['#10b981','#3b82f6','#f59e0b','#f97316','#ef4444','#7f1d1d'][s.obScore]}" title="${fmtDate(s.scanDate)} スコア${s.obScore}"></div>`).join('');
+
+    return `<div class="hm-detail">
+      <div class="hm-detail-hd">
+        🏠 ${h(ht.label)} の記録履歴
+        ${allScans.length?`<div style="display:flex;align-items:center;gap:3px;margin-left:auto;font-size:11px;color:var(--text-3)">スコア推移: ${sparkDots}</div>`:''}
+        <button class="btn-sm btn-ghost" style="margin-left:8px" onclick="App.focusHutch(null)">×</button>
+      </div>
+      ${hist.length===0
+        ?`<div class="hm-no-data">このハッチにはまだスキャン記録がありません</div>`
+        :`<div class="hm-timeline">${tlItems}</div>`}
+    </div>`;
+  };
+
+  setView(`
+  <div class="page-hd">
+    <div class="page-title">🏠 ハッチマップ</div>
+    <div class="page-sub">${h(farm.name)}　ハッチ ${hutches.length}個</div>
+    <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn-sm btn-ghost" onclick="App.openHutchSetup()">⚙ ハッチを編集</button>
+    </div>
+  </div>
+
+  <!-- コントロール -->
+  <div class="hm-controls">
+    <div style="font-size:12px;color:var(--text-3)">表示日</div>
+    <div class="hm-date-nav">
+      <button onclick="App.hmPrevDate()" title="前の検診日" ${dateIdx<=0?'disabled':''}>◀</button>
+      <input type="date" value="${viewDate}" onchange="App.hmSetDate(this.value)"
+        style="border:1px solid var(--border-2);border-radius:6px;padding:3px 8px;font-size:13px;font-weight:700;color:var(--navy-2)">
+      <button onclick="App.hmNextDate()" title="次の検診日" ${dateIdx>=dates.length-1||!dates.length?'disabled':''}>▶</button>
+    </div>
+    ${dates.length?`<div style="font-size:11px;color:var(--text-4)">${dateIdx>=0?`${dateIdx+1}/${dates.length}回目の検診日`:'最近の検診日前'}</div>`:''}
+    <div class="hm-legend">
+      ${[0,1,2,3,4,5].map(n=>`<div class="hm-legend-item"><div class="hm-legend-dot" style="background:${['#10b981','#3b82f6','#f59e0b','#f97316','#ef4444','#7f1d1d'][n]}"></div>スコア${n}</div>`).join('')}
+      <div class="hm-legend-item"><div class="hm-legend-dot" style="background:var(--border-2)"></div>空</div>
+    </div>
+  </div>
+
+  <!-- マップグリッド -->
+  <div class="hm-outer">
+    ${byCols.map((col,ci)=>`
+    <div class="hm-column hm-col-${ci===0?'left':'right'}">
+      <div class="hm-col-header">${h(HutchUtil.colLabel(farm,ci))}</div>
+      ${col.map(ht=>cellHtml(ht)).join('')}
+    </div>`).join('')}
+  </div>
+
+  <!-- 詳細パネル -->
+  <div id="hm-detail-wrap">${detailHtml()}</div>
+  `);
+};
+
+// FARM MODAL
+const renderFarmModal=()=>{
+  const farms=DB.getFarms();const aid=DB.activeId();
+  const bg=$('modal-bg');bg.style.display='flex';
+  bg.innerHTML=`<div class="modal">
+    <div class="modal-hd"><div class="modal-title">農場の管理</div><button class="modal-x" onclick="App.closeModal()">×</button></div>
+    <div class="modal-body">
+      <div style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">登録農場</div>
+      ${farms.length===0?`<div class="empty" style="padding:20px"><p>農場が登録されていません</p></div>`:''}
+      ${farms.map(f=>`<div class="farm-item ${f.id===aid?'active':''}">
+        <div class="farm-status-dot ${f.id===aid?'fsd-active':'fsd-inactive'}"></div>
+        <div class="farm-item-info" onclick="App.switchFarm('${f.id}')">
+          <div class="farm-name-txt">${h(f.name)}</div>
+          <div class="farm-meta-txt">Protocol ${f.protocol}（${PROT[f.protocol]||''}）</div>
+        </div>
+        ${f.id===aid?'<span class="badge b-teal">選択中</span>':`<button class="btn-sm btn-ghost" onclick="App.switchFarm('${f.id}')">切り替え</button>`}
+        <button class="btn-sm btn-danger" onclick="App.confirmDelFarm('${f.id}','${h(f.name)}')">削除</button>
+      </div>`).join('')}
+
+      <div style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin:18px 0 10px">新しい農場を追加</div>
+      <form id="farm-form" onsubmit="App.createFarm(event)">
+        <div class="form-row" style="margin-bottom:12px">
+          <div class="form-group full"><label class="form-label">農場名<span class="req">*</span></label><input class="form-input" id="nf-name" placeholder="例：○○牧場" required></div>
+          <div class="form-group"><label class="form-label">検診パターン</label>
+            <select class="form-select" id="nf-prot">
+              <option value="A">A：集中型（7日間隔、7〜8回）</option>
+              <option value="B" selected>B：標準型（14日間隔、4〜5回）</option>
+              <option value="C">C：簡易型（3点固定）</option>
+            </select>
+          </div>
+          <div class="form-group"><label class="form-label">代表者名（任意）</label><input class="form-input" id="nf-owner" placeholder="例：田中太郎"></div>
+        </div>
+        <div style="display:flex;justify-content:flex-end"><button type="submit" class="btn-primary">＋ 農場を作成</button></div>
+      </form>
+    </div>
+  </div>`;
+};
+
+// HUTCH SETUP MODAL
+const renderHutchSetupModal=(fid)=>{
+  if(!fid) return;
+  const farm=DB.getFarm(fid);if(!farm)return;
+  const current=farm.hutches||[];
+  const hasCustom=current.some(h=>h.col>1);
+  const mode=farm.hutchMode||'standard';
+
+  // 標準モード：プレビュー生成用
+  const previewHtml=(leftN,rightN,lbl0,lbl1)=>{
+    const lh=[]; const rh=[];
+    for(let i=0;i<Math.min(leftN,8);i++) lh.push(`<div class="hutch-preview-cell">${lbl0}-${i+1}</div>`);
+    for(let i=0;i<Math.min(rightN,8);i++) rh.push(`<div class="hutch-preview-cell">${lbl1}-${i+1}</div>`);
+    return `<div class="hutch-preview-col"><div class="hutch-preview-col-hd">${lbl0}</div>${lh.join('')}${leftN>8?`<div style="font-size:10px;color:var(--text-4);text-align:center">...他${leftN-8}個</div>`:''}</div>
+            <div class="hutch-preview-col"><div class="hutch-preview-col-hd">${lbl1}</div>${rh.join('')}${rightN>8?`<div style="font-size:10px;color:var(--text-4);text-align:center">...他${rightN-8}個</div>`:''}</div>`;
+  };
+
+  // カスタムモード：既存ハッチ一覧テーブル
+  const customRows=current.map(ht=>`<tr>
+    <td><input value="${h(ht.label)}" onchange="App._hcLabelChange('${ht.id}',this.value)" style="width:90px"></td>
+    <td><input type="number" min="0" max="9" value="${ht.col}" onchange="App._hcColChange('${ht.id}',parseInt(this.value))" style="width:48px"></td>
+    <td><input type="number" min="0" max="99" value="${ht.row}" onchange="App._hcRowChange('${ht.id}',parseInt(this.value))" style="width:48px"></td>
+    <td><button class="btn-sm btn-danger" onclick="App._hcDel('${ht.id}')">削除</button></td>
+  </tr>`).join('');
+
+  const bg=$('modal-bg');bg.style.display='flex';
+  bg.innerHTML=`<div class="modal" style="max-width:540px">
+    <div class="modal-hd">
+      <div class="modal-title">🏠 ハッチ設定 ─ ${h(farm.name)}</div>
+      <button class="modal-x" onclick="App.closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+
+      <div style="display:flex;gap:8px;margin-bottom:16px">
+        <button class="btn-outline${mode==='standard'?' btn-primary':''}" onclick="App._hcMode('standard')" style="${mode==='standard'?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">
+          標準（左右列）
+        </button>
+        <button class="btn-outline${mode==='custom'?' btn-primary':''}" onclick="App._hcMode('custom')" style="${mode==='custom'?'background:var(--navy);color:#fff;border-color:var(--navy)':''}">
+          カスタム（自由配置）
+        </button>
+      </div>
+
+      <div id="hc-standard" style="display:${mode==='standard'?'block':'none'}">
+        <div class="hutch-setup-grid">
+          <div class="form-group"><label class="form-label">左列のラベル</label>
+            <input class="form-input" id="hc-lbl0" value="${h(farm.hutchColLabels?.[0]||'左列')}" oninput="App._hcPreview()"></div>
+          <div class="form-group"><label class="form-label">右列のラベル</label>
+            <input class="form-input" id="hc-lbl1" value="${h(farm.hutchColLabels?.[1]||'右列')}" oninput="App._hcPreview()"></div>
+          <div class="form-group"><label class="form-label">左列のハッチ数</label>
+            <input class="form-input" id="hc-ln" type="number" min="0" max="30" value="${current.filter(h=>h.col===0).length||6}" oninput="App._hcPreview()"></div>
+          <div class="form-group"><label class="form-label">右列のハッチ数</label>
+            <input class="form-input" id="hc-rn" type="number" min="0" max="30" value="${current.filter(h=>h.col===1).length||6}" oninput="App._hcPreview()"></div>
+        </div>
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:8px">プレビュー</div>
+        <div class="hutch-preview" id="hc-preview">
+          ${previewHtml(current.filter(h=>h.col===0).length||6, current.filter(h=>h.col===1).length||6,
+            farm.hutchColLabels?.[0]||'左列', farm.hutchColLabels?.[1]||'右列')}
+        </div>
+        <div class="callout cl-amber" style="margin-top:12px">
+          <div class="callout-i">⚠️</div>
+          <div style="font-size:12px">設定を適用すると既存のハッチ割り当て（スキャンの hutchId）は保持されますが、削除されたハッチのIDは解放されます。</div>
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:14px">
+          <button class="btn-primary" onclick="App.applyStandardHutch()">✓ 標準レイアウトを適用</button>
+        </div>
+      </div>
+
+      <div id="hc-custom" style="display:${mode==='custom'?'block':'none'}">
+        <div style="font-size:12px;color:var(--text-3);margin-bottom:6px">
+          列（col）と行（row）の番号でハッチの位置を指定します。<br>
+          左列 = col 0、右列 = col 1、追加列 = col 2, 3... 行は0から始まる順番です。
+        </div>
+        <table class="hutch-custom-tbl">
+          <thead><tr><th>ラベル</th><th>列(col)</th><th>行(row)</th><th></th></tr></thead>
+          <tbody id="hc-tbody">${customRows}</tbody>
+        </table>
+        <button class="btn-outline" style="margin-top:10px;width:100%" onclick="App._hcAddRow()">＋ ハッチを追加</button>
+        <div style="display:flex;justify-content:flex-end;margin-top:14px">
+          <button class="btn-primary" onclick="App.applyCustomHutch()">✓ カスタムレイアウトを適用</button>
+        </div>
+      </div>
+
+    </div>
+  </div>`;
+};
+
+// ANIMAL REGISTRATION MODAL
+const renderAnimalRegModal=(animalId=null)=>{
+  const fid=DB.activeId();if(!fid)return;
+  const animal=animalId?DB.getAnimals(fid).find(a=>a.id===animalId):null;
+  const isEdit=!!animal;
+  const bg=$('modal-bg');bg.style.display='flex';
+  bg.innerHTML=`<div class="modal">
+    <div class="modal-hd">
+      <div class="modal-title">${isEdit?'個体情報を編集':'個体を新規登録'}</div>
+      <button class="modal-x" onclick="App.closeModal()">×</button>
+    </div>
+    <div class="modal-body">
+      <form id="animal-form" onsubmit="App.saveAnimal(event,'${animalId||''}')">
+        ${isEdit?`
+        <div style="margin-bottom:18px">
+          <div class="form-label" style="margin-bottom:8px">個体識別番号</div>
+          <div class="tag-preview-wrap">${fmtTagId(animal.tagId)}</div>
+          <div style="font-size:12px;color:var(--text-3);margin-top:6px">
+            拡大4桁：<span class="tag-exp" style="font-size:14px">${get拡4(animal.tagId)}</span>
+          </div>
+        </div>`:`
+        <div class="form-group" style="margin-bottom:18px">
+          <label class="form-label">個体識別番号（10桁）<span class="req">*</span></label>
+          <input class="form-input" id="af-tag" placeholder="例：1234567890" maxlength="10"
+            oninput="App.onTagInput(this)" required
+            style="font-family:'Courier New',monospace;font-size:16px;letter-spacing:2px">
+          <div class="tag-preview-wrap" id="af-preview" style="margin-top:8px;color:var(--text-4);font-size:13px">
+            番号を入力すると拡大4桁がプレビューされます
+          </div>
+          <div class="form-hint" style="margin-top:4px">
+            耳標の6〜9桁目が <span class="tag-exp" style="font-size:11px;padding:1px 3px">拡大4桁</span> として強調されます
+          </div>
+        </div>`}
+        <div class="form-row" style="margin-bottom:16px">
+          <div class="form-group">
+            <label class="form-label">生年月日</label>
+            <input class="form-input" id="af-bd" type="date" value="${h(animal?.birthDate||'')}">
+          </div>
+          <div class="form-group">
+            <label class="form-label">品種</label>
+            <input class="form-input" id="af-breed" value="${h(animal?.breed||'')}"
+              placeholder="例：ホルスタイン" list="af-breed-dl">
+            <datalist id="af-breed-dl">
+              <option value="ホルスタイン"><option value="和牛（黒毛）">
+              <option value="交雑種（F1）"><option value="ジャージー">
+            </datalist>
+          </div>
+          <div class="form-group">
+            <label class="form-label">性別</label>
+            <select class="form-select" id="af-sex">
+              <option value="" ${!animal?.sex?'selected':''}>不明</option>
+              <option value="F" ${animal?.sex==='F'?'selected':''}>雌</option>
+              <option value="M" ${animal?.sex==='M'?'selected':''}>雄</option>
+            </select>
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end">
+          <button type="button" class="btn-sm btn-ghost" onclick="App.closeModal()" style="padding:9px 18px">キャンセル</button>
+          <button type="submit" class="btn-primary">${isEdit?'✓ 更新する':'✓ 登録する'}</button>
+        </div>
+      </form>
+    </div>
+  </div>`;
+};
+
+// ANIMAL MODAL
+const renderAnimalModal=(fid,animalId)=>{
+  const animal=DB.getAnimals(fid).find(a=>a.id===animalId);
+  if(!animal){toast('個体情報が見つかりません','err');return;}
+  const scans=DB.byAnimal(fid,animalId);
+  const bg=$('modal-bg');bg.style.display='flex';
+  bg.innerHTML=`<div class="modal lg">
+    <div class="modal-hd"><div class="modal-title">個体詳細：${h(animal.tagId)}</div><button class="modal-x" onclick="App.closeModal()">×</button></div>
+    <div class="modal-body">
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;font-size:13px;color:var(--text-2)">
+        <span><strong>品種：</strong>${h(animal.breed||'未登録')}</span>
+        <span><strong>性別：</strong>${animal.sex==='F'?'雌':animal.sex==='M'?'雄':'不明'}</span>
+        <span><strong>生年月日：</strong>${fmtDate(animal.birthDate||'')}</span>
+        <span><strong>スキャン回数：</strong>${scans.length}回</span>
+      </div>
+      <div style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">スキャン履歴</div>
+      ${scans.length===0?'<p style="color:var(--text-3)">スキャン記録がありません</p>':''}
+      <ul class="timeline">
+      ${scans.map(s=>`<li class="tl-item">
+        <div class="tl-dot" style="background:${SC[s.obScore]}">${s.obScore}</div>
+        <div class="tl-content">
+          <strong>${fmtDate(s.scanDate)}　日齢${s.ageAtScan!=null?s.ageAtScan+'日':'－'}　R${s.round||1}</strong>
+          <div style="margin:5px 0;display:flex;align-items:center;gap:8px">
+            <span class="score-badge ${scClass(s.obScore)}" style="width:28px;height:28px">${s.obScore}</span>
+            <span style="font-size:12px;color:var(--text-2)">${SLBL[s.obScore]}</span>
+          </div>
+          <div class="lung-det-row">
+            <div class="lung-det-side"><div class="lung-det-lbl">右肺</div><div class="lung-det-ics">${Object.entries(s.right||{}).map(([k,v])=>`<span style="display:inline-flex;align-items:center;gap:2px;font-size:11px"><span style="color:var(--text-4)">${RLBL[k]||k}:</span><span class="finding-chip ${FCHIP[v]||'fch-empty'}">${v||'A'}</span></span>`).join('')}</div></div>
+            <div class="lung-det-side"><div class="lung-det-lbl">左肺</div><div class="lung-det-ics">${Object.entries(s.left||{}).map(([k,v])=>`<span style="display:inline-flex;align-items:center;gap:2px;font-size:11px"><span style="color:var(--text-4)">${RLBL[k]||k}:</span><span class="finding-chip ${FCHIP[v]||'fch-empty'}">${v||'A'}</span></span>`).join('')}</div></div>
+          </div>
+          ${s.mainFindings?`<div style="font-size:12px;color:var(--text-3);margin-top:4px">所見：${h(s.mainFindings)}</div>`:''}
+          ${s.treated?`<div style="margin-top:5px"><span class="badge b-red">治療あり</span>${s.drug?` <span style="font-size:12px;color:var(--text-3)">${h(s.drug)}</span>`:''}` :''}
+          ${s.notes?`<div style="font-size:12px;color:var(--text-3);margin-top:3px">備考：${h(s.notes)}</div>`:''}
+        </div>
+      </li>`).join('')}
+      </ul>
+      ${scans.length>1?`<div style="margin-top:14px"><div style="font-size:12px;font-weight:700;color:var(--text-3);margin-bottom:8px">スコア推移</div><div style="position:relative;height:150px"><canvas id="ch-anim"></canvas></div></div>`:''}
+    </div>
+  </div>`;
+  if(scans.length>1&&typeof Chart!=='undefined'){
+    mkChart('ch-anim',{type:'line',data:{labels:scans.map(s=>s.scanDate.slice(5)+' 日齢'+s.ageAtScan),datasets:[{label:'OBスコア',data:scans.map(s=>s.obScore),borderColor:'#1a3a5c',pointBackgroundColor:scans.map(s=>SC[s.obScore]),borderWidth:2,pointRadius:7,fill:false,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:5,ticks:{stepSize:1},title:{display:true,text:'スコア'}},x:{grid:{display:false}}},plugins:{legend:{display:false}}}});
+  }
+};
+
+// ─── App Controller ───────────────────────────────
+const App={
+  nav(p){Router.nav(p)},
+  openFarmModal(){renderFarmModal()},
+  closeModal(){$('modal-bg').style.display='none'},
+  switchFarm(fid){DB.setActive(fid);updateTopBar();this.closeModal();Router.nav('/dashboard');toast('農場を切り替えました','ok')},
+  createFarm(e){
+    e.preventDefault();const name=$('nf-name').value.trim();const prot=$('nf-prot').value;const owner=$('nf-owner').value.trim();
+    if(!name){toast('農場名を入力してください','err');return;}
+    const farm={id:genId(),name,protocol:prot,ownerName:owner,createdAt:today(),updatedAt:today()};
+    DB.saveFarm(farm);DB.setActive(farm.id);updateTopBar();this.closeModal();Router.nav('/dashboard');toast(`「${name}」を作成しました`,'ok');
+  },
+  confirmDelFarm(fid,name){if(!confirm(`農場「${name}」とすべての記録を削除しますか？`))return;DB.delFarm(fid);updateTopBar();renderFarmModal();toast(`「${name}」を削除しました`,'warn');if(!DB.activeId())Router.nav('/dashboard');},
+  openAnimalModal(animalId){const fid=DB.activeId();if(!fid)return;renderAnimalModal(fid,animalId);},
+
+  // Animal management
+  openAnimalRegModal(animalId=null){renderAnimalRegModal(animalId);},
+  onTagInput(el){
+    el.value=el.value.replace(/\D/g,'');
+    const d=el.value;const pre=$('af-preview');if(!pre)return;
+    if(d.length===10){
+      pre.innerHTML=`${fmtTagId(d)}&emsp;<span style="font-size:12px;color:var(--text-3)">拡大4桁：<span class="tag-exp" style="font-size:13px">${d.slice(5,9)}</span></span>`;
+    } else if(d.length>0){
+      pre.innerHTML=`<span style="color:var(--text-3)">${d}</span>&ensp;<span style="font-size:11px;color:var(--text-4)">${d.length} / 10 桁</span>`;
+    } else {
+      pre.innerHTML='<span style="color:var(--text-4);font-size:13px">番号を入力すると拡大4桁がプレビューされます</span>';
+    }
+  },
+  saveAnimal(e,animalId){
+    e.preventDefault();const fid=DB.activeId();if(!fid)return;
+    if(animalId){
+      const animals=DB.getAnimals(fid);const a=animals.find(x=>x.id===animalId);
+      if(!a){toast('個体が見つかりません','err');return;}
+      a.birthDate=$('af-bd').value;a.breed=$('af-breed').value.trim();a.sex=$('af-sex').value;
+      DB.saveAnimals(fid,animals);toast('個体情報を更新しました','ok');
+    } else {
+      const tagId=$('af-tag').value.replace(/\D/g,'');
+      if(tagId.length!==10){toast('個体識別番号は10桁で入力してください','err');return;}
+      if(DB.findByTag(fid,tagId)){toast('この個体識別番号はすでに登録されています','err');return;}
+      DB.upsertAnimal(fid,tagId,{birthDate:$('af-bd').value,breed:$('af-breed').value.trim(),sex:$('af-sex').value});
+      toast(`個体 ${tagId.slice(0,5)}[${tagId.slice(5,9)}]${tagId.slice(9)} を登録しました`,'ok');
+    }
+    this.closeModal();renderAnimals();
+  },
+  delAnimal(animalId,tagId){
+    const fid=DB.activeId();if(!fid)return;
+    const cnt=DB.getScans(fid).filter(s=>s.animalId===animalId).length;
+    const msg=cnt>0?`${tagId} にはスキャン記録が ${cnt} 件あります。個体を削除するとスキャン記録も失われます。削除しますか？`:`${tagId} を削除しますか？`;
+    if(!confirm(msg))return;
+    if(cnt>0)DB.saveScans(fid,DB.getScans(fid).filter(s=>s.animalId!==animalId));
+    DB.saveAnimals(fid,DB.getAnimals(fid).filter(a=>a.id!==animalId));
+    toast('削除しました','warn');renderAnimals();
+  },
+  addScanFor(tagId){
+    Router.nav('/scan/new');
+    setTimeout(()=>{const el=$('f-tag');if(el){el.value=tagId;App.onTag(tagId);}},60);
+  },
+  sortA(col){if(AS.sort===col)AS.dir=AS.dir==='asc'?'desc':'asc';else{AS.sort=col;AS.dir='asc';}renderAnimals();},
+  onRepDate(v){RS.date=v;renderReport();},
+  onRepExaminer(v){RS.examiner=v;},
+  setAq(v){AS.q=v;renderAnimals();},
+  clrAq(){AS.q='';renderAnimals();},
+
+  // ─── Hatch Map ─────────────────────────────────
+  openHutchSetup(){
+    const fid=DB.activeId();if(!fid){toast('農場を選択してください','err');return;}
+    renderHutchSetupModal(fid);
+  },
+  focusHutch(id, el){
+    HM.focusHutch = id||null;
+    // アクティブセルのスタイル切替
+    document.querySelectorAll('.hm-cell').forEach(c=>c.classList.remove('hm-active'));
+    if(el) el.classList.add('hm-active');
+    // 詳細パネルのみ更新
+    const wrap=$('hm-detail-wrap');
+    if(!wrap){renderHatchMap();return;}
+    if(!HM.focusHutch){wrap.innerHTML='';return;}
+    const fid=DB.activeId();const farm=DB.getFarm(fid);
+    const hutches=HutchUtil.get(fid);
+    const ht=hutches.find(h=>h.id===HM.focusHutch);if(!ht){wrap.innerHTML='';return;}
+    const hist=HutchUtil.history(fid,HM.focusHutch);
+    const animals=DB.getAnimals(fid);
+    const allScans=DB.getScans(fid).filter(s=>s.hutchId===HM.focusHutch).sort((a,b)=>a.scanDate.localeCompare(b.scanDate));
+    const sparkDots=allScans.map(s=>`<div class="hm-tl-dot" style="background:${['#10b981','#3b82f6','#f59e0b','#f97316','#ef4444','#7f1d1d'][s.obScore]}" title="${fmtDate(s.scanDate)} スコア${s.obScore}"></div>`).join('');
+    const tlItems=hist.map(g=>{
+      const a=animals.find(x=>x.id===g.animalId);
+      const name=a?get拡4(a.tagId)||a.tagId:g.tagId;
+      const isCurrent=g===hist[hist.length-1];
+      const moves=HutchUtil.animalMoves(fid,g.animalId);
+      const moveStr=moves.length>1?moves.map(m=>h(m.hutchLabel)).join(' → '):'';
+      return `<div class="hm-tl-item">
+        <div>
+          <div class="hm-tl-date">${fmtDate(g.from)}${g.from!==g.to?` ～ ${fmtDate(g.to)}`:''}</div>
+          <div style="font-size:10px;color:var(--text-4);margin-top:1px">${g.scans.length}回スキャン</div>
+          ${moveStr?`<div style="font-size:10px;color:var(--blue);margin-top:2px">移動: ${moveStr}</div>`:''}
+        </div>
+        <div>
+          <div class="hm-tl-tag">${h(name)}</div>
+          ${a?.breed?`<div style="font-size:10px;color:var(--text-3)">${h(a.breed)}</div>`:''}
+        </div>
+        <div style="text-align:right">
+          <span class="score-badge ${scClass(g.lastScore)}" style="font-size:13px;width:26px;height:26px">${g.lastScore}</span>
+          ${isCurrent?'<div style="font-size:10px;color:var(--teal);margin-top:2px">在舎中</div>':'<div style="font-size:10px;color:var(--text-4);margin-top:2px">退去</div>'}
+        </div>
+      </div>`;
+    }).join('');
+    wrap.innerHTML=`<div class="hm-detail">
+      <div class="hm-detail-hd">
+        🏠 ${h(ht.label)} の記録履歴
+        ${allScans.length?`<div style="display:flex;align-items:center;gap:3px;margin-left:auto;font-size:11px;color:var(--text-3)">スコア推移: ${sparkDots}</div>`:''}
+        <button class="btn-sm btn-ghost" style="margin-left:8px" onclick="App.focusHutch(null)">×</button>
+      </div>
+      ${hist.length===0
+        ?`<div class="hm-no-data">このハッチにはまだスキャン記録がありません</div>`
+        :`<div class="hm-timeline">${tlItems}</div>`}
+    </div>`;
+  },
+  hmSetDate(val){HM.date=val;renderHatchMap();},
+  hmPrevDate(){
+    const fid=DB.activeId();const dates=HutchUtil.scanDates(fid);
+    const i=dates.indexOf(HM.date);if(i>0){HM.date=dates[i-1];renderHatchMap();}
+  },
+  hmNextDate(){
+    const fid=DB.activeId();const dates=HutchUtil.scanDates(fid);
+    const i=dates.indexOf(HM.date);if(i<dates.length-1){HM.date=dates[i+1];renderHatchMap();}
+  },
+
+  // ─── Hutch Setup helpers ────────────────────────
+  _tmpHutches: null,
+  _hcMode(mode){
+    const fid=DB.activeId();const farm=DB.getFarm(fid);if(!farm)return;
+    farm.hutchMode=mode;DB.saveFarm(farm);
+    $('hc-standard').style.display=mode==='standard'?'block':'none';
+    $('hc-custom').style.display=mode==='custom'?'block':'none';
+  },
+  _hcPreview(){
+    const ln=parseInt($('hc-ln')?.value)||0;const rn=parseInt($('hc-rn')?.value)||0;
+    const lbl0=$('hc-lbl0')?.value||'左列';const lbl1=$('hc-lbl1')?.value||'右列';
+    const preview=$('hc-preview');if(!preview)return;
+    const lh=[],rh=[];
+    for(let i=0;i<Math.min(ln,8);i++) lh.push(`<div class="hutch-preview-cell">${h(lbl0)}-${i+1}</div>`);
+    for(let i=0;i<Math.min(rn,8);i++) rh.push(`<div class="hutch-preview-cell">${h(lbl1)}-${i+1}</div>`);
+    preview.innerHTML=`<div class="hutch-preview-col"><div class="hutch-preview-col-hd">${h(lbl0)}</div>${lh.join('')}${ln>8?`<div style="font-size:10px;color:var(--text-4);text-align:center">...他${ln-8}個</div>`:''}</div>
+      <div class="hutch-preview-col"><div class="hutch-preview-col-hd">${h(lbl1)}</div>${rh.join('')}${rn>8?`<div style="font-size:10px;color:var(--text-4);text-align:center">...他${rn-8}個</div>`:''}</div>`;
+  },
+  applyStandardHutch(){
+    const fid=DB.activeId();const farm=DB.getFarm(fid);if(!farm)return;
+    const ln=parseInt($('hc-ln')?.value)||0;const rn=parseInt($('hc-rn')?.value)||0;
+    const lbl0=$('hc-lbl0')?.value.trim()||'左列';const lbl1=$('hc-lbl1')?.value.trim()||'右列';
+    const newH=HutchUtil.genStandard(ln,rn,lbl0,lbl1);
+    farm.hutches=newH;farm.hutchColLabels={0:lbl0,1:lbl1};farm.hutchMode='standard';
+    DB.saveFarm(farm);
+    this.closeModal();toast(`ハッチを設定しました（左${ln}個 / 右${rn}個）`,'ok');
+    HM.focusHutch=null;renderHatchMap();
+  },
+  _hcAddRow(){
+    const fid=DB.activeId();const farm=DB.getFarm(fid);if(!farm)return;
+    const hutches=farm.hutches||[];
+    const maxRow=hutches.length?Math.max(...hutches.map(h=>h.row)):-1;
+    const ht={id:genId(),label:`ハッチ${hutches.length+1}`,col:0,row:maxRow+1};
+    farm.hutches=[...hutches,ht];DB.saveFarm(farm);
+    const tbody=$('hc-tbody');if(!tbody)return;
+    const tr=document.createElement('tr');
+    tr.innerHTML=`<td><input value="${h(ht.label)}" onchange="App._hcLabelChange('${ht.id}',this.value)" style="width:90px"></td>
+      <td><input type="number" min="0" max="9" value="${ht.col}" onchange="App._hcColChange('${ht.id}',parseInt(this.value))" style="width:48px"></td>
+      <td><input type="number" min="0" max="99" value="${ht.row}" onchange="App._hcRowChange('${ht.id}',parseInt(this.value))" style="width:48px"></td>
+      <td><button class="btn-sm btn-danger" onclick="App._hcDel('${ht.id}')">削除</button></td>`;
+    tbody.appendChild(tr);
+  },
+  _hcLabelChange(id,val){
+    const fid=DB.activeId();const farm=DB.getFarm(fid);if(!farm)return;
+    const h=farm.hutches?.find(x=>x.id===id);if(h){h.label=val;DB.saveFarm(farm);}
+  },
+  _hcColChange(id,val){
+    const fid=DB.activeId();const farm=DB.getFarm(fid);if(!farm)return;
+    const ht=farm.hutches?.find(x=>x.id===id);if(ht){ht.col=isNaN(val)?0:val;DB.saveFarm(farm);}
+  },
+  _hcRowChange(id,val){
+    const fid=DB.activeId();const farm=DB.getFarm(fid);if(!farm)return;
+    const ht=farm.hutches?.find(x=>x.id===id);if(ht){ht.row=isNaN(val)?0:val;DB.saveFarm(farm);}
+  },
+  _hcDel(id){
+    const fid=DB.activeId();const farm=DB.getFarm(fid);if(!farm)return;
+    farm.hutches=(farm.hutches||[]).filter(x=>x.id!==id);DB.saveFarm(farm);
+    const row=document.querySelector(`[onclick*="${id}"]`)?.closest('tr');if(row)row.remove();
+  },
+  applyCustomHutch(){
+    const fid=DB.activeId();const farm=DB.getFarm(fid);if(!farm)return;
+    farm.hutchMode='custom';DB.saveFarm(farm);
+    this.closeModal();toast('カスタムレイアウトを保存しました','ok');
+    HM.focusHutch=null;renderHatchMap();
+  },
+
+  // Scan form
+  onTag(tag,silent=false){
+    const fid=DB.activeId();if(!fid||!tag.trim())return;
+    const a=DB.findByTag(fid,tag.trim());
+    const hint=$('tag-hint');const naa=$('new-animal-area');
+    if(a){
+      if(hint)hint.innerHTML=`<span style="color:var(--teal)">✓ 登録済み　${fmtTagId(a.tagId)}　拡大4桁：<strong>${get拡4(a.tagId)}</strong>　${a.breed||'品種未設定'}</span>`;
+      if(naa)naa.style.display='none';
+      if(a.birthDate){const ageEl=$('f-age');const dateEl=$('f-date');if(ageEl&&dateEl&&!ageEl.value)ageEl.value=calcAge(a.birthDate,dateEl.value);}
+      const prev=DB.byAnimal(fid,a.id);const re=$('f-round');if(re&&!SS.editId)re.value=prev.length+1;
+    }else{
+      if(hint)hint.innerHTML=`<span style="color:var(--text-3)">新規個体として登録されます</span>`;
+      if(naa)naa.style.display='block';
+    }
+  },
+  onDateCh(){const tag=$('f-tag')?.value;if(tag)this.onTag(tag,true);},
+  onBd(){const bd=$('f-bd')?.value;const sd=$('f-date')?.value||today();const ael=$('f-age');if(bd&&ael)ael.value=calcAge(bd,sd);},
+  onTreat(v){const da=$('drug-area');if(da)da.style.display=v?'grid':'none';},
+  onScore(v){
+    SS.score=parseInt(v)||0;
+    const sl=$('f-score');if(sl)sl.value=SS.score;
+    const pill=$('score-pill');const desc=$('score-desc');const tb=$('treat-badge');
+    if(pill){pill.textContent=SS.score;pill.style.background=SC[SS.score];}
+    if(desc)desc.textContent=`スコア ${SS.score}：${SLBL[SS.score]}　／　対応：${SACT[SS.score]}`;
+    if(tb){tb.textContent=SS.score>=2?'スコア≥2：治療推奨':'スコア<2：観察';tb.className='badge '+(SS.score>=2?'b-amber':'b-teal');}
+  },
+  updateAutoSc(){
+    const sg=Calc.suggest(SS.right,SS.left);
+    const el=$('auto-sc');if(el)el.textContent=`スコア ${sg}（${SLBL[sg]}）`;
+    SS.score=sg;this.onScore(String(sg));
+  },
+  togFinding(btn){
+    const side=btn.dataset.side,pos=btn.dataset.pos;
+    const cur=side==='right'?SS.right[pos]:SS.left[pos];
+    const next=FC[(FC.indexOf(cur)+1)%FC.length];
+    if(side==='right')SS.right[pos]=next;else SS.left[pos]=next;
+    Object.values(FSTATE).filter(c=>c).forEach(c=>btn.classList.remove(c));
+    if(next)btn.classList.add(FSTATE[next]);
+    btn.textContent=FBTN[next]||'未入力';
+    this.updateAutoSc();
+  },
+  fillNormal(){
+    RPOS.forEach(p=>SS.right[p]='A');LPOS.forEach(p=>SS.left[p]='A');
+    document.querySelectorAll('.lung-btn').forEach(b=>{Object.values(FSTATE).filter(c=>c).forEach(c=>b.classList.remove(c));b.classList.add('st-n');b.textContent='正常';});this.updateAutoSc();
+  },
+  clearFindings(){
+    RPOS.forEach(p=>SS.right[p]='');LPOS.forEach(p=>SS.left[p]='');
+    document.querySelectorAll('.lung-btn').forEach(b=>{Object.values(FSTATE).filter(c=>c).forEach(c=>b.classList.remove(c));b.textContent='未入力';});this.updateAutoSc();
+  },
+  submitScan(e){
+    e.preventDefault();const fid=DB.activeId();if(!fid){toast('農場を選択してください','err');return;}
+    const tagId=$('f-tag').value.trim();const scanDate=$('f-date').value;
+    const ageAtScan=parseInt($('f-age').value)||0;const round=parseInt($('f-round').value)||1;
+    const score=parseInt($('f-score').value)||0;
+    if(!tagId||!scanDate){toast('耳標番号とスキャン日は必須です','err');return;}
+    const animal=DB.upsertAnimal(fid,tagId,{...($('f-bd')?.value?{birthDate:$('f-bd').value}:{}),... ($('f-breed')?.value?{breed:$('f-breed').value}:{}),... ($('f-sex')?.value?{sex:$('f-sex').value}:{})});
+    const hutchId=$('f-hutch-sel')?.value||'';
+    const hutchFree=$('f-hutch-free')?.value.trim()||'';
+    const scan={farmId:fid,animalId:animal.id,tagId,scanDate,ageAtScan,round,right:{...SS.right},left:{...SS.left},obScore:score,mainFindings:$('f-findings').value.trim(),treated:$('f-treated').checked,drug:$('f-drug')?.value.trim()||'',notes:$('f-notes').value.trim(),...(hutchId?{hutchId}:{}),...(hutchFree&&!hutchId?{hutchFree}:{})};
+    if(SS.editId){scan.id=SS.editId;DB.updateScan(fid,scan);toast('記録を更新しました','ok');}
+    else{DB.addScan(fid,scan);toast(`${tagId} のスキャンを保存しました（スコア ${score}）`,'ok');}
+    resetSS();Router.nav('/history');
+  },
+  editScan(sid){const fid=DB.activeId();if(!fid)return;const sc=DB.getScans(fid).find(s=>s.id===sid);if(!sc){toast('記録が見つかりません','err');return;}renderNewScan(sc);window.scrollTo(0,0);history.replaceState(null,'','#/scan/new');Router._hl('/scan/new');},
+  delScan(sid){if(!confirm('削除しますか？'))return;const fid=DB.activeId();DB.delScan(fid,sid);toast('削除しました','warn');renderHistory();},
+  setF(k,v){if(v===''||v===null||v===undefined)delete HS.f[k];else HS.f[k]=v;renderHistory();},
+  clrF(){HS.f={};renderHistory();},
+  sortH(col){if(HS.sort===col)HS.dir=HS.dir==='asc'?'desc':'asc';else{HS.sort=col;HS.dir='desc';}renderHistory();},
+  exportFarm(){
+    const fid=DB.activeId();if(!fid){toast('農場を選択してください','err');return;}
+    const json=DB.exportData(fid);if(!json)return;
+    const farm=DB.getFarm(fid);const blob=new Blob([json],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${farm.name}_${today()}.json`;a.click();URL.revokeObjectURL(url);toast('エクスポートしました','ok');
+  },
+  importFarm(file){
+    const r=new FileReader();
+    r.onload=e=>{
+      try{
+        const text=e.target.result;
+        const d=JSON.parse(text);
+        if(!d.farm||!Array.isArray(d.scans)) throw new Error('フォーマットエラー');
+        const baseName=d.farm.name||'農場';
+        const farms=DB.getFarms();
+        const existing=farms.find(f=>f.name===baseName);
+
+        if(existing){
+          const overwrite=confirm(`農場「${baseName}」はすでに存在します。\n\nOK：既存の記録をすべて置き換える\nキャンセル：別名としてインポートします`);
+          if(overwrite){
+            const fid=existing.id;
+            const animals=d.animals||[];
+            const scans=(d.scans||[]).map(s=>({...s,farmId:fid}));
+            const farm={...existing,...d.farm,id:fid,name:existing.name,updatedAt:today()};
+            DB.saveFarm(farm);DB.saveAnimals(fid,animals);DB.saveScans(fid,scans);
+            DB.setActive(fid);updateTopBar();toast('インポートしました（上書き）','ok');Router.nav('/dashboard');return;
+          }
+        }
+
+        let name=baseName;let n=1;
+        while(DB.getFarms().some(f=>f.name===name)){n++;name=`${baseName}（${n}）`;}
+        d.farm.name=name;
+        const nid=DB.importData(JSON.stringify(d));
+        DB.setActive(nid);updateTopBar();toast('インポートしました','ok');Router.nav('/dashboard');
+      }catch(err){
+        toast('インポート失敗：'+err.message,'err');
+      }
+    };
+    r.readAsText(file);
+  },
+  init(){
+    $('file-in').addEventListener('change',ev=>{if(ev.target.files[0])this.importFarm(ev.target.files[0]);ev.target.value='';});
+    $('modal-bg').addEventListener('click',e=>{if(e.target===$('modal-bg'))this.closeModal();});
+    // ファイル未設定でデータがある場合、閉じる前に警告
+    window.addEventListener('beforeunload', e=>{
+      if(!FileStore._handle && DB.getFarms().length > 0){
+        e.preventDefault();
+        e.returnValue = 'ファイルが保存されていません。「💾 名前を付けて保存」でOneDriveに保存してから閉じてください。';
+      }
+    });
+    Router.on('/dashboard',()=>renderDashboard());
+    Router.on('/scan/new',()=>renderNewScan());
+    Router.on('/animals',()=>renderAnimals());
+    Router.on('/history',()=>renderHistory());
+    Router.on('/followup',()=>renderFollowup());
+    Router.on('/notes',()=>renderNotes());
+    Router.on('/report',()=>renderReport());
+    Router.on('/analysis',()=>renderAnalysis());
+    Router.on('/guide',()=>renderGuide());
+    Router.on('/hatch-map',()=>renderHatchMap());
+    updateTopBar();Router.init();
+    if(!DB.activeId()||!DB.getFarm(DB.activeId())){renderHome();setTimeout(()=>this.openFarmModal(),350);}
+  }
+};
+App.init();
+</script>
+</body>
+</html>
