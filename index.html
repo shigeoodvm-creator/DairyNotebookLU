@@ -641,7 +641,7 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
   <div class="tb-actions">
     <button id="btn-file-open"  class="btn-outline" onclick="FileStore.openFile()" title="OneDriveなどのJSONファイルを開いて常時同期">📂 ファイルを開く</button>
     <button id="btn-file-save"  class="btn-outline" onclick="FileStore.saveAs()"   title="現在の全データをJSONファイルに保存">💾 名前を付けて保存</button>
-    <span   id="file-status"    style="font-size:11px;color:var(--text-3);white-space:nowrap;max-width:160px;overflow:hidden;text-overflow:ellipsis"></span>
+    <div    id="file-status"    style="font-size:11px;color:var(--text-3);white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px"></div>
     <button class="btn-outline" onclick="App.exportFarm()">⬇ エクスポート</button>
     <button class="btn-outline" onclick="document.getElementById('file-in').click()">⬆ インポート</button>
     <button class="btn-primary" onclick="App.nav('/scan/new')">＋ 新規スキャン</button>
@@ -689,21 +689,42 @@ const fmtTagId = tag => {
 const $ = id => document.getElementById(id);
 const h = s => String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
 const today = () => new Date().toLocaleDateString('sv-SE');
+const todayCompact = () => { const d=new Date(); return `${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}${String(d.getDate()).padStart(2,'0')}`; };
 const fmtDate = d => d ? d.replace(/-/g,'/') : '－';
 const calcAge = (b,s) => b ? Math.max(0,Math.floor((new Date(s||today()) - new Date(b))/86400000)) : null;
 const genId = () => Date.now().toString(36)+Math.random().toString(36).slice(2);
 const scClass = n => ['sc0','sc1','sc2','sc3','sc4','sc5'][n]||'sc0';
 
-// ─── FileStore（File System Access API による永続ファイル保存）───────
+// ─── IndexedDB helpers（ファイルハンドル永続化）─────────────────────
+const _idbOpen = () => new Promise((res,rej)=>{
+  const r = indexedDB.open('ls-storage-v1',1);
+  r.onupgradeneeded = e => e.target.result.createObjectStore('kv');
+  r.onsuccess = e => res(e.target.result);
+  r.onerror = ()=>rej(r.error);
+});
+const _idbGet = async key => {
+  try{const db=await _idbOpen();return await new Promise((res,rej)=>{const r=db.transaction('kv').objectStore('kv').get(key);r.onsuccess=()=>res(r.result);r.onerror=()=>rej(r.error);});}catch{return undefined;}
+};
+const _idbSet = async (key,val) => {
+  try{const db=await _idbOpen();await new Promise((res,rej)=>{const tx=db.transaction('kv','readwrite');tx.objectStore('kv').put(val,key);tx.oncomplete=res;tx.onerror=()=>rej(tx.error);});}catch{}
+};
+
+// ─── FileStore（File System Access API + IndexedDB ハンドル永続化）───────
 const FileStore = {
-  _handle: null,   // FileSystemFileHandle
-  _dirty: false,   // 未書き込み変更フラグ
+  _handle: null,         // FileSystemFileHandle
+  _needPermission: false,// 許可待ち状態フラグ
+  _dirty: false,
   _timer: null,
 
   // ファイルステータスラベルを更新
-  _setStatus(msg){
+  _setStatus(msg, perm=false){
     const el = document.getElementById('file-status');
-    if(el) el.textContent = msg;
+    if(!el) return;
+    if(perm){
+      el.innerHTML = `<span style="color:var(--amber);font-size:11px">🔒 ${msg}</span>\u00a0<button class="btn-outline" style="font-size:11px;padding:2px 8px;height:auto" onclick="FileStore.requestPermission()">許可する</button>`;
+    } else {
+      el.textContent = msg;
+    }
   },
 
   // サポート確認
@@ -723,7 +744,7 @@ const FileStore = {
 
   // ファイルに書き込む（内部用）
   async _write(){
-    if(!this._handle) return;
+    if(!this._handle || this._needPermission) return;
     try{
       const writable = await this._handle.createWritable();
       await writable.write(this._serialize());
@@ -732,14 +753,13 @@ const FileStore = {
       this._setStatus(`✅ ${this._handle.name}（${ts}保存）`);
       this._dirty = false;
     }catch(e){
-      // ユーザーが権限を拒否した場合など
       this._setStatus(`⚠️ 保存失敗: ${e.message}`);
     }
   },
 
   // データ変更時に呼び出す（300ms デバウンス）
   schedule(){
-    if(!this._handle) return;
+    if(!this._handle || this._needPermission) return;
     this._dirty = true;
     clearTimeout(this._timer);
     this._timer = setTimeout(()=>this._write(), 300);
@@ -753,26 +773,25 @@ const FileStore = {
     }
     try{
       const [handle] = await window.showOpenFilePicker({
-        types:[{description:'肺エコーデータ',accept:{'application/json':['.json']}}],
+        types:[{description:'DairyNotebookLS データ',accept:{'application/json':['.json']}}],
         multiple: false
       });
       this._handle = handle;
-      // ファイル内容を読み込んでDBに反映
+      this._needPermission = false;
       const file = await handle.getFile();
       const text = await file.text();
       const d = JSON.parse(text);
       if(d.v === 'fs1'){
-        // FileStore 形式（全農場一括）
         if(Array.isArray(d.farms)){
           DB._bulkLoad(d.farms, d.animals||{}, d.scans||{});
           toast(`ファイルを開きました（${d.farms.length}農場）`,'ok');
         }
       } else if(d.farm && Array.isArray(d.scans)){
-        // 従来の単農場エクスポート形式も受け付ける
         App.importFarm(new File([text], handle.name, {type:'application/json'}));
       } else {
         throw new Error('対応していないファイル形式です');
       }
+      await _idbSet('fileHandle', handle);
       this._setStatus(`📂 ${handle.name}`);
       updateTopBar();
       Router.nav('/dashboard');
@@ -784,26 +803,81 @@ const FileStore = {
   // 名前を付けて保存（新規ファイル作成 or 上書き先指定）
   async saveAs(){
     if(!this._supported()){
-      // フォールバック：従来のダウンロード
       const blob = new Blob([this._serialize()],{type:'application/json'});
       const url  = URL.createObjectURL(blob);
       const a    = document.createElement('a');
-      a.href = url; a.download = `肺エコー全農場_${today()}.json`; a.click();
+      a.href = url; a.download = `LS_${todayCompact()}.json`; a.click();
       URL.revokeObjectURL(url);
       toast('ダウンロードしました（ブラウザが File System Access API 非対応）','ok');
       return;
     }
     try{
       const handle = await window.showSaveFilePicker({
-        suggestedName: `肺エコー全農場_${today()}.json`,
-        types:[{description:'肺エコーデータ',accept:{'application/json':['.json']}}]
+        suggestedName: `LS_${todayCompact()}.json`,
+        types:[{description:'DairyNotebookLS データ',accept:{'application/json':['.json']}}]
       });
       this._handle = handle;
+      this._needPermission = false;
       await this._write();
+      await _idbSet('fileHandle', handle);
       toast(`「${handle.name}」に保存しました`,'ok');
     }catch(e){
       if(e.name !== 'AbortError') toast('保存失敗: '+e.message,'err');
     }
+  },
+
+  // 起動時：IndexedDB からハンドルを復元
+  async tryRestore(){
+    if(!this._supported()) return;
+    try{
+      const h = await _idbGet('fileHandle');
+      if(!h) return;
+      const perm = await h.queryPermission({mode:'readwrite'});
+      if(perm === 'granted'){
+        this._handle = h;
+        this._needPermission = false;
+        const file = await h.getFile();
+        const text = await file.text();
+        const d = JSON.parse(text);
+        if(d.v === 'fs1' && Array.isArray(d.farms)){
+          DB._bulkLoad(d.farms, d.animals||{}, d.scans||{});
+        }
+        const ts = new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+        this._setStatus(`✅ ${h.name}（${ts}読込）`);
+        updateTopBar();
+        if(DB.activeId() && DB.getFarm(DB.activeId())) Router.nav('/dashboard');
+        else renderHome();
+      } else {
+        // 許可待ち状態を保持（ユーザーがボタンをクリックして許可）
+        this._handle = h;
+        this._needPermission = true;
+        const tmpFile = await h.getFile();
+        this._setStatus(tmpFile.name, true);
+      }
+    }catch(e){ this._handle = null; }
+  },
+
+  // アクセス再許可（ユーザー操作）
+  async requestPermission(){
+    if(!this._handle) return;
+    try{
+      const perm = await this._handle.requestPermission({mode:'readwrite'});
+      if(perm === 'granted'){
+        this._needPermission = false;
+        const file = await this._handle.getFile();
+        const text = await file.text();
+        const d = JSON.parse(text);
+        if(d.v === 'fs1' && Array.isArray(d.farms)){
+          DB._bulkLoad(d.farms, d.animals||{}, d.scans||{});
+        }
+        const ts = new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+        this._setStatus(`✅ ${this._handle.name}（${ts}読込）`);
+        updateTopBar();
+        toast('ファイルに接続しました','ok');
+        if(DB.activeId() && DB.getFarm(DB.activeId())) Router.nav('/dashboard');
+        else renderHome();
+      }
+    }catch(e){}
   }
 };
 
@@ -990,13 +1064,21 @@ const miniLung=sides=>{
 // ─── VIEWS ────────────────────────────────────────
 
 // HOME
-const renderHome=()=>setView(`
+const renderHome=()=>{
+  const hasFarms = DB.getFarms().length > 0;
+  setView(`
   <div class="home-wrap">
     <div class="home-icon">🫁</div>
     <h1>肺エコー検診データベース</h1>
-    <p>農場を選択、または新しい農場を作成して<br>スキャン記録の入力・管理を始めてください</p>
-    <button class="btn-primary" style="padding:12px 32px;font-size:15px;width:100%;border-radius:10px" onclick="App.openFarmModal()">農場を選択・作成する</button>
+    ${hasFarms
+      ? `<p>農場を選択、または新しい農場を作成して<br>スキャン記録の入力・管理を始めてください</p>
+         <button class="btn-primary" style="padding:12px 32px;font-size:15px;width:100%;border-radius:10px" onclick="App.openFarmModal()">農場を選択・作成する</button>`
+      : `<p>保存済みのJSONファイルを開くか、<br>新しい農場を作成して始めてください</p>
+         <button class="btn-primary" style="padding:12px 32px;font-size:15px;width:100%;border-radius:10px;margin-bottom:12px" onclick="FileStore.openFile()">📂 保存済みファイルを開く</button>
+         <button class="btn-outline" style="padding:12px 32px;font-size:15px;width:100%;border-radius:10px" onclick="App.openFarmModal()">＋ 新しい農場を作成する</button>`
+    }
   </div>`);
+};
 
 // DASHBOARD
 const renderDashboard=()=>{
@@ -2052,7 +2134,11 @@ const renderFarmModal=()=>{
     <div class="modal-hd"><div class="modal-title">農場の管理</div><button class="modal-x" onclick="App.closeModal()">×</button></div>
     <div class="modal-body">
       <div style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:10px">登録農場</div>
-      ${farms.length===0?`<div class="empty" style="padding:20px"><p>農場が登録されていません</p></div>`:''}
+      ${farms.length===0?`<div class="empty" style="padding:20px">
+        <p>農場が登録されていません</p>
+        <p style="font-size:12px;color:var(--text-3);margin:8px 0 12px">以前保存したJSONファイルがある場合は、ファイルを開いてデータを読み込んでください</p>
+        <button class="btn-outline" style="width:100%" onclick="App.closeModal();FileStore.openFile()">📂 保存済みファイルを開く</button>
+      </div>`:''}
       ${farms.map(f=>`<div class="farm-item ${f.id===aid?'active':''}">
         <div class="farm-status-dot ${f.id===aid?'fsd-active':'fsd-inactive'}"></div>
         <div class="farm-item-info" onclick="App.switchFarm('${f.id}')">
@@ -2582,7 +2668,7 @@ const App={
     $('modal-bg').addEventListener('click',e=>{if(e.target===$('modal-bg'))this.closeModal();});
     // ファイル未設定でデータがある場合、閉じる前に警告
     window.addEventListener('beforeunload', e=>{
-      if(!FileStore._handle && DB.getFarms().length > 0){
+      if((!FileStore._handle || FileStore._needPermission) && DB.getFarms().length > 0){
         e.preventDefault();
         e.returnValue = 'ファイルが保存されていません。「💾 名前を付けて保存」でOneDriveに保存してから閉じてください。';
       }
@@ -2598,7 +2684,14 @@ const App={
     Router.on('/guide',()=>renderGuide());
     Router.on('/hatch-map',()=>renderHatchMap());
     updateTopBar();Router.init();
-    if(!DB.activeId()||!DB.getFarm(DB.activeId())){renderHome();setTimeout(()=>this.openFarmModal(),350);}
+    if(!DB.activeId()||!DB.getFarm(DB.activeId())){
+      renderHome();
+      // 農場が登録済みの場合のみ農場選択モーダルを自動表示
+      // 農場が0件の場合はホーム画面でファイルを開く or 新規作成を選ばせる
+      if(DB.getFarms().length > 0) setTimeout(()=>this.openFarmModal(),350);
+    }
+    // IndexedDB からファイルハンドルを復元（非同期）
+    (async()=>{ await FileStore.tryRestore(); })();
   }
 };
 App.init();
