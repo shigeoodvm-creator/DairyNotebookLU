@@ -1425,10 +1425,10 @@ const renderHistory=()=>{
   </div>
   ${sc.length===0?`<div class="card"><div class="card-body"><div class="empty"><div class="empty-icon">🔍</div><h3>該当する記録がありません</h3><p>フィルタ条件を変更してください</p></div></div></div>`:
   `<div class="card" style="overflow:hidden"><div class="tbl-wrap"><table>
-  <thead><tr>${mkTh('scanDate','スキャン日')}${mkTh('tagId','拡大4桁 / 耳標番号')}${mkTh('ageAtScan','日齢')}<th>場所</th>${mkTh('obScore','スコア')}<th>右肺</th><th>左肺</th><th>治療</th><th>薬剤</th><th>備考</th><th>操作</th></tr></thead>
+  <thead><tr>${mkTh('scanDate','スキャン日')}${mkTh('tagId','個体識別番号')}${mkTh('ageAtScan','日齢')}<th>場所</th>${mkTh('obScore','スコア')}<th>右肺</th><th>左肺</th><th>治療</th><th>薬剤</th><th>備考</th><th>操作</th></tr></thead>
   <tbody>${sc.map(s=>`<tr>
     <td>${fmtDate(s.scanDate)}<br><span style="font-size:10px;color:var(--text-4)">R${s.round||1}</span></td>
-    <td><span class="tbl-link" onclick="App.openAnimalModal('${h(s.animalId)}')">${h(s.tagId)}</span></td>
+    <td class="tag-cell"><span class="tbl-link" onclick="App.openAnimalModal('${h(s.animalId)}')">${fmtTagId(s.tagId)}</span></td>
     <td>${s.ageAtScan!=null?s.ageAtScan+'日':'－'}</td>
     <td style="font-size:12px;color:var(--text-3)">${h(hutchLabel(s))}</td>
     <td><span class="score-badge ${scClass(s.obScore)}">${s.obScore}</span></td>
@@ -1563,12 +1563,12 @@ const renderFollowup=()=>{
   ${rows.length===0?`<div class="card"><div class="card-body"><div class="empty"><div class="empty-icon">✅</div><h3>フォローが必要な個体はいません</h3><p>スキャンデータが入ると自動で表示されます</p></div></div></div>`:`
   <div class="card" style="overflow:hidden"><div class="tbl-wrap"><table>
   <thead><tr>
-    <th>拡大4桁 / 耳標番号</th><th>最終スキャン日</th><th>日齢</th>
+    <th>個体識別番号</th><th>最終スキャン日</th><th>日齢</th>
     <th>スコア</th><th>治療</th><th>経過日数</th>
     <th>ステータス</th><th>推奨アクション</th><th class="no-print">操作</th>
   </tr></thead>
   <tbody>${sorted.map(({a,last,daysSince,status,badge,action})=>`<tr class="fu-row-${status}">
-    <td><span class="tbl-link" onclick="App.openAnimalModal('${h(a.id)}')">${h(a.tagId)}</span></td>
+    <td class="tag-cell"><span class="tbl-link" onclick="App.openAnimalModal('${h(a.id)}')">${fmtTagId(a.tagId)}</span></td>
     <td>${fmtDate(last.scanDate)}<br><span style="font-size:10px;color:var(--text-4)">R${last.round||1}</span></td>
     <td>${last.ageAtScan!=null?last.ageAtScan+'日':'－'}</td>
     <td><span class="score-badge ${scClass(last.obScore)}">${last.obScore}</span></td>
