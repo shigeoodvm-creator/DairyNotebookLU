@@ -1582,7 +1582,7 @@ const renderNotes=()=>{
         case 'exp4':   return get拡4(a.tag).localeCompare(get拡4(b.tag))*d;
         case 'tagId':  return a.tag.localeCompare(b.tag)*d;
         case 'age':    return ((a.age??9999)-(b.age??9999))*d;
-        case 'hutch':  return (a.lastHutch||'').localeCompare(b.lastHutch||'')*d;
+        case 'hutch':  return (a.lastHutch||'').localeCompare(b.lastHutch||'',undefined,{numeric:true,sensitivity:'base'})*d;
         case 'round':  return ((a.round||0)-(b.round||0))*d;
         case 'score':  return ((a.prefillScore??-1)-(b.prefillScore??-1))*d;
         default:return 0;
