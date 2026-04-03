@@ -2728,7 +2728,7 @@ const App={
   submitScan(e){
     e.preventDefault();const fid=DB.activeId();if(!fid){toast('農場を選択してください','err');return;}
     const tagId=($('f-tag')?.value||'').trim();const scanDate=$('f-date').value;
-    const ageAtScan=parseInt($('f-age').value)||0;const round=parseInt($('f-round').value)||1;
+    const ageRaw=$('f-age').value.trim();const ageAtScan=ageRaw!==''?parseInt(ageRaw):null;const round=parseInt($('f-round').value)||1;
     const score=parseInt($('f-score').value)||0;
     if(!tagId){toast('個体が選択されていません。拡大4桁を入力してください','err');$('f-exp4')?.focus();return;}
     if(!scanDate){toast('スキャン日は必須です','err');return;}
