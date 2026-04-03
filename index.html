@@ -93,16 +93,40 @@ input,select,textarea{font-family:inherit}
 /* Nav tabs */
 .tb-tabs{display:flex;align-items:stretch;height:54px;gap:0}
 .tb-tab {
-  display:flex;align-items:center;padding:0 18px;font-size:13.5px;font-weight:500;
+  display:flex;align-items:center;padding:0 11px;font-size:12.5px;font-weight:500;
   color:var(--text-3);border:none;background:none;height:100%;position:relative;
   transition:var(--tr);white-space:nowrap;
 }
 .tb-tab:hover{color:var(--text)}
 .tb-tab.active{color:var(--navy);font-weight:700}
 .tb-tab.active::after{
-  content:'';position:absolute;bottom:0;left:16px;right:16px;height:2.5px;
+  content:'';position:absolute;bottom:0;left:8px;right:8px;height:2.5px;
   background:var(--blue);border-radius:2px 2px 0 0;
 }
+/* データドロップダウン */
+.tb-menu{position:relative}
+.tb-menu-drop{
+  display:none;position:absolute;top:calc(100% + 6px);right:0;
+  background:var(--surface);border:1px solid var(--border);
+  border-radius:var(--radius-sm);box-shadow:var(--shadow-md);
+  z-index:400;min-width:210px;padding:5px 0;
+}
+.tb-menu.open .tb-menu-drop{display:block}
+.tb-menu-item{
+  display:flex;align-items:center;gap:8px;width:100%;text-align:left;
+  padding:9px 16px;border:none;background:none;
+  font-size:13px;color:var(--text-2);cursor:pointer;transition:var(--tr);
+}
+.tb-menu-item:hover{background:var(--gray-lt);color:var(--navy)}
+.tb-menu-sep{height:1px;background:var(--border);margin:4px 0}
+/* ファイル同期ドット */
+#file-dot{
+  width:9px;height:9px;border-radius:50%;background:var(--border-2);
+  flex-shrink:0;cursor:default;transition:.3s;
+}
+#file-dot.ok{background:var(--teal)}
+#file-dot.warn{background:var(--amber);animation:pulse-dot 1.5s infinite}
+@keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
 
 .tb-spacer{flex:1}
 
@@ -633,23 +657,33 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
     <button class="tb-tab" data-route="/scan/new"  onclick="App.nav('/scan/new')">スキャン入力</button>
     <button class="tb-tab" data-route="/report"    onclick="App.nav('/report')">📋 レポート</button>
     <button class="tb-tab" data-route="/animals"   onclick="App.nav('/animals')">個体管理</button>
-    <button class="tb-tab" data-route="/history"   onclick="App.nav('/history')">記録履歴</button>
-    <button class="tb-tab" data-route="/followup"  onclick="App.nav('/followup')">要フォロー</button>
+    <button class="tb-tab" data-route="/history"   onclick="App.nav('/history')">履歴</button>
+    <button class="tb-tab" data-route="/followup"  onclick="App.nav('/followup')">フォロー</button>
     <button class="tb-tab" data-route="/notes"     onclick="App.nav('/notes')">野帳</button>
-    <button class="tb-tab" data-route="/hatch-map"  onclick="App.nav('/hatch-map')">🏠 ハッチマップ</button>
+    <button class="tb-tab" data-route="/hatch-map" onclick="App.nav('/hatch-map')">🏠 ハッチ</button>
     <button class="tb-tab" data-route="/analysis"  onclick="App.nav('/analysis')">分析</button>
-    <button class="tb-tab" data-route="/guide"     onclick="App.nav('/guide')">スコアガイド</button>
+    <button class="tb-tab" data-route="/guide"     onclick="App.nav('/guide')">ガイド</button>
   </div>
 
   <div class="tb-spacer"></div>
 
   <div class="tb-actions">
-    <button id="btn-file-open"  class="btn-outline" onclick="FileStore.openFile()" title="OneDriveなどのJSONファイルを開いて常時同期">📂 ファイルを開く</button>
-    <button id="btn-file-save"  class="btn-outline" onclick="FileStore.saveAs()"   title="現在の全データをJSONファイルに保存">💾 名前を付けて保存</button>
-    <div    id="file-status"    style="font-size:11px;color:var(--text-3);white-space:nowrap;max-width:240px;overflow:hidden;text-overflow:ellipsis;display:flex;align-items:center;gap:6px"></div>
-    <button class="btn-outline" onclick="App.exportFarm()">⬇ エクスポート</button>
-    <button class="btn-outline" onclick="document.getElementById('file-in').click()">⬆ インポート</button>
-    <button class="btn-primary" onclick="App.nav('/scan/new')">＋ 新規スキャン</button>
+    <span id="file-dot" title="ファイル未接続"></span>
+    <div class="tb-menu" id="data-menu">
+      <button class="btn-outline" onclick="App.toggleMenu('data-menu')" style="display:flex;align-items:center;gap:5px">
+        💾 データ<span style="font-size:9px;opacity:.6">▾</span>
+      </button>
+      <div class="tb-menu-drop">
+        <button class="tb-menu-item" id="btn-file-open" onclick="FileStore.openFile();App.closeMenus()">📂 ファイルを開く</button>
+        <button class="tb-menu-item" id="btn-file-save" onclick="FileStore.saveAs();App.closeMenus()">💾 名前を付けて保存</button>
+        <div class="tb-menu-sep"></div>
+        <button class="tb-menu-item" onclick="App.exportFarm();App.closeMenus()">⬇ エクスポート（JSON）</button>
+        <button class="tb-menu-item" onclick="document.getElementById('file-in').click();App.closeMenus()">⬆ インポート（JSON）</button>
+        <div class="tb-menu-sep"></div>
+        <div id="file-status" style="font-size:11px;padding:6px 16px;color:var(--text-3);line-height:1.5"></div>
+      </div>
+    </div>
+    <button class="btn-primary" onclick="App.nav('/scan/new')">＋ スキャン</button>
   </div>
 </nav>
 
@@ -724,11 +758,18 @@ const FileStore = {
   // ファイルステータスラベルを更新
   _setStatus(msg, perm=false){
     const el = document.getElementById('file-status');
-    if(!el) return;
-    if(perm){
-      el.innerHTML = `<span style="color:var(--amber);font-size:11px">🔒 ${msg}</span>\u00a0<button class="btn-outline" style="font-size:11px;padding:2px 8px;height:auto" onclick="FileStore.requestPermission()">許可する</button>`;
-    } else {
-      el.textContent = msg;
+    const dot = document.getElementById('file-dot');
+    if(el){
+      el.style.display = msg ? '' : 'none';
+      if(perm){
+        el.innerHTML = `<span style="color:var(--amber)">🔒 ${msg}</span><br><button class="btn-outline" style="font-size:11px;padding:2px 8px;height:auto;margin-top:4px" onclick="FileStore.requestPermission()">許可する</button>`;
+      } else {
+        el.textContent = msg;
+      }
+    }
+    if(dot){
+      dot.className = perm ? 'warn' : (msg && msg.includes('✅') ? 'ok' : (msg ? 'warn' : ''));
+      dot.title = msg || 'ファイル未接続';
     }
   },
 
@@ -2411,7 +2452,9 @@ const renderAnimalModal=(fid,animalId)=>{
 
 // ─── App Controller ───────────────────────────────
 const App={
-  nav(p){Router.nav(p)},
+  nav(p){Router.nav(p);this.closeMenus();},
+  toggleMenu(id){const el=document.getElementById(id);if(!el)return;const o=el.classList.contains('open');this.closeMenus();if(!o)el.classList.add('open');},
+  closeMenus(){document.querySelectorAll('.tb-menu.open').forEach(m=>m.classList.remove('open'));},
   openFarmModal(){renderFarmModal()},
   closeModal(){$('modal-bg').style.display='none'},
   switchFarm(fid){DB.setActive(fid);updateTopBar();this.closeModal();Router.nav('/dashboard');toast('農場を切り替えました','ok')},
@@ -2816,6 +2859,8 @@ const App={
   }
 };
 App.init();
+// ドロップダウン外クリックで閉じる
+document.addEventListener('click',e=>{if(!e.target.closest('.tb-menu'))App.closeMenus();});
 </script>
 </body>
 </html>
