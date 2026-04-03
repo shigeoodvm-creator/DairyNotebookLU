@@ -1428,7 +1428,7 @@ const renderHistory=()=>{
   <thead><tr>${mkTh('scanDate','スキャン日')}${mkTh('tagId','拡大4桁 / 耳標番号')}${mkTh('ageAtScan','日齢')}<th>場所</th>${mkTh('obScore','スコア')}<th>右肺</th><th>左肺</th><th>治療</th><th>薬剤</th><th>備考</th><th>操作</th></tr></thead>
   <tbody>${sc.map(s=>`<tr>
     <td>${fmtDate(s.scanDate)}<br><span style="font-size:10px;color:var(--text-4)">R${s.round||1}</span></td>
-    <td><span class="tbl-link" onclick="App.openAnimalModal('${h(s.animalId)}')"><span class="tag-exp-lg" style="font-size:13px;padding:1px 7px;letter-spacing:2px">${get拡4(s.tagId)||'－'}</span></span></td>
+    <td><span class="tbl-link" onclick="App.openAnimalModal('${h(s.animalId)}')">${h(s.tagId)}</span></td>
     <td>${s.ageAtScan!=null?s.ageAtScan+'日':'－'}</td>
     <td style="font-size:12px;color:var(--text-3)">${h(hutchLabel(s))}</td>
     <td><span class="score-badge ${scClass(s.obScore)}">${s.obScore}</span></td>
@@ -1568,7 +1568,7 @@ const renderFollowup=()=>{
     <th>ステータス</th><th>推奨アクション</th><th class="no-print">操作</th>
   </tr></thead>
   <tbody>${sorted.map(({a,last,daysSince,status,badge,action})=>`<tr class="fu-row-${status}">
-    <td><span class="tbl-link" onclick="App.openAnimalModal('${h(a.id)}')"><span class="tag-exp-lg" style="font-size:13px;padding:1px 7px;letter-spacing:2px">${get拡4(a.tagId)||'－'}</span></span></td>
+    <td><span class="tbl-link" onclick="App.openAnimalModal('${h(a.id)}')">${h(a.tagId)}</span></td>
     <td>${fmtDate(last.scanDate)}<br><span style="font-size:10px;color:var(--text-4)">R${last.round||1}</span></td>
     <td>${last.ageAtScan!=null?last.ageAtScan+'日':'－'}</td>
     <td><span class="score-badge ${scClass(last.obScore)}">${last.obScore}</span></td>
