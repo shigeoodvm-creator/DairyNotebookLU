@@ -1389,7 +1389,7 @@ const renderHistory=()=>{
   if(!fid||!farm){renderHome();return;}
   let sc=DB.getScans(fid);
   const f=HS.f;
-  if(f.tag) sc=sc.filter(s=>s.tagId&&s.tagId.includes(f.tag));
+  if(f.tag) sc=sc.filter(s=>s.tagId&&(s.tagId.includes(f.tag)||get拡4(s.tagId).includes(f.tag)));
   if(f.sm!=null) sc=sc.filter(s=>s.obScore>=f.sm);
   if(f.tr==='y') sc=sc.filter(s=>s.treated);
   if(f.tr==='n') sc=sc.filter(s=>!s.treated);
@@ -1407,7 +1407,7 @@ const renderHistory=()=>{
     <div class="page-sub">${h(farm.name)}　全 ${DB.getScans(fid).length} 件</div>
   </div>
   <div class="filter-bar">
-    <input class="form-input" placeholder="耳標番号で検索" value="${h(f.tag||'')}" oninput="App.setF('tag',this.value)" style="width:155px">
+    <input class="form-input" placeholder="拡大4桁または耳標番号で検索" value="${h(f.tag||'')}" oninput="App.setF('tag',this.value)" style="width:200px">
     <select class="form-select" onchange="App.setF('sm',this.value?Number(this.value):null)">
       <option value="">スコア：全て</option>
       ${[1,2,3,4,5].map(n=>`<option value="${n}" ${f.sm===n?'selected':''}>≥${n}</option>`).join('')}
@@ -1425,10 +1425,15 @@ const renderHistory=()=>{
   </div>
   ${sc.length===0?`<div class="card"><div class="card-body"><div class="empty"><div class="empty-icon">🔍</div><h3>該当する記録がありません</h3><p>フィルタ条件を変更してください</p></div></div></div>`:
   `<div class="card" style="overflow:hidden"><div class="tbl-wrap"><table>
-  <thead><tr>${mkTh('scanDate','スキャン日')}${mkTh('tagId','耳標番号')}${mkTh('ageAtScan','日齢')}<th>場所</th>${mkTh('obScore','スコア')}<th>右肺</th><th>左肺</th><th>治療</th><th>薬剤</th><th>備考</th><th>操作</th></tr></thead>
+  <thead><tr>${mkTh('scanDate','スキャン日')}${mkTh('tagId','拡大4桁 / 耳標番号')}${mkTh('ageAtScan','日齢')}<th>場所</th>${mkTh('obScore','スコア')}<th>右肺</th><th>左肺</th><th>治療</th><th>薬剤</th><th>備考</th><th>操作</th></tr></thead>
   <tbody>${sc.map(s=>`<tr>
     <td>${fmtDate(s.scanDate)}<br><span style="font-size:10px;color:var(--text-4)">R${s.round||1}</span></td>
-    <td><span class="tbl-link" onclick="App.openAnimalModal('${h(s.animalId)}')">${h(s.tagId)}</span></td>
+    <td style="white-space:nowrap">
+      <span class="tbl-link" onclick="App.openAnimalModal('${h(s.animalId)}')">
+        <span class="tag-exp-lg" style="font-size:13px;padding:1px 7px;letter-spacing:2px">${get拡4(s.tagId)||'－'}</span>
+        <div style="font-size:10px;margin-top:2px;color:var(--text-3)">${fmtTagId(s.tagId)}</div>
+      </span>
+    </td>
     <td>${s.ageAtScan!=null?s.ageAtScan+'日':'－'}</td>
     <td style="font-size:12px;color:var(--text-3)">${h(hutchLabel(s))}</td>
     <td><span class="score-badge ${scClass(s.obScore)}">${s.obScore}</span></td>
@@ -1563,12 +1568,17 @@ const renderFollowup=()=>{
   ${rows.length===0?`<div class="card"><div class="card-body"><div class="empty"><div class="empty-icon">✅</div><h3>フォローが必要な個体はいません</h3><p>スキャンデータが入ると自動で表示されます</p></div></div></div>`:`
   <div class="card" style="overflow:hidden"><div class="tbl-wrap"><table>
   <thead><tr>
-    <th>耳標番号</th><th>最終スキャン日</th><th>日齢</th>
+    <th>拡大4桁 / 耳標番号</th><th>最終スキャン日</th><th>日齢</th>
     <th>スコア</th><th>治療</th><th>経過日数</th>
     <th>ステータス</th><th>推奨アクション</th><th class="no-print">操作</th>
   </tr></thead>
   <tbody>${sorted.map(({a,last,daysSince,status,badge,action})=>`<tr class="fu-row-${status}">
-    <td><span class="tbl-link" onclick="App.openAnimalModal('${h(a.id)}')">${fmtTagId(a.tagId)}</span></td>
+    <td style="white-space:nowrap">
+      <span class="tbl-link" onclick="App.openAnimalModal('${h(a.id)}')">
+        <span class="tag-exp-lg" style="font-size:13px;padding:1px 7px;letter-spacing:2px">${get拡4(a.tagId)||'－'}</span>
+        <div style="font-size:10px;margin-top:2px;color:var(--text-3)">${fmtTagId(a.tagId)}</div>
+      </span>
+    </td>
     <td>${fmtDate(last.scanDate)}<br><span style="font-size:10px;color:var(--text-4)">R${last.round||1}</span></td>
     <td>${last.ageAtScan!=null?last.ageAtScan+'日':'－'}</td>
     <td><span class="score-badge ${scClass(last.obScore)}">${last.obScore}</span></td>
