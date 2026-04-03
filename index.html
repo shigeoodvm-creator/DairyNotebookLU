@@ -1383,7 +1383,7 @@ const renderNewScan=(editScan=null)=>{
 };
 
 // HISTORY
-let HS={sort:'scanDate',dir:'desc',f:{}};
+let HS={sort:null,sortDir:0,f:{}};
 const renderHistory=()=>{
   const fid=DB.activeId();const farm=DB.getFarm(fid);
   if(!fid||!farm){renderHome();return;}
@@ -1395,11 +1395,28 @@ const renderHistory=()=>{
   if(f.tr==='n') sc=sc.filter(s=>!s.treated);
   if(f.df) sc=sc.filter(s=>s.scanDate>=f.df);
   if(f.dt) sc=sc.filter(s=>s.scanDate<=f.dt);
-  const k=HS.sort,d=HS.dir==='asc'?1:-1;
-  sc.sort((a,b)=>k==='obScore'?(a.obScore-b.obScore)*d:k==='ageAtScan'?(a.ageAtScan-b.ageAtScan)*d:(a[k]||'').localeCompare(b[k]||'')*d);
   const hutches=HutchUtil.get(fid);
   const hutchLabel=s=>s.hutchId?(hutches.find(h=>h.id===s.hutchId)?.label||s.hutchId):s.hutchFree||'';
-  const mkTh=(col,lbl)=>`<th class="${HS.sort===col?'sort-'+HS.dir:''}" onclick="App.sortH('${col}')">${lbl}</th>`;
+  if(HS.sort&&HS.sortDir>0){
+    const d=HS.sortDir===1?1:-1;
+    sc.sort((a,b)=>{
+      switch(HS.sort){
+        case 'scanDate': return a.scanDate.localeCompare(b.scanDate)*d;
+        case 'tagId':    return get拡4(a.tagId).localeCompare(get拡4(b.tagId))*d;
+        case 'ageAtScan':return ((a.ageAtScan??-1)-(b.ageAtScan??-1))*d;
+        case 'hutch':    return hutchLabel(a).localeCompare(hutchLabel(b),undefined,{numeric:true,sensitivity:'base'})*d;
+        case 'obScore':  return (a.obScore-b.obScore)*d;
+        case 'treated':  return ((a.treated?1:0)-(b.treated?1:0))*d;
+        case 'drug':     return (a.drug||'').localeCompare(b.drug||'')*d;
+        case 'notes':    return (a.notes||'').localeCompare(b.notes||'')*d;
+        default: return 0;
+      }
+    });
+  } else {
+    sc.sort((a,b)=>b.scanDate.localeCompare(a.scanDate));
+  }
+  const hsIc=col=>HS.sort===col?(HS.sortDir===1?'<span class="ns-ic">▲</span>':'<span class="ns-ic">▼</span>'):'<span class="ns-ic">⇅</span>';
+  const mkTh=(col,lbl)=>`<th class="note-th-sort${HS.sort===col?(HS.sortDir===1?' ns-asc':' ns-desc'):''}" onclick="App.sortH('${col}')">${lbl}${hsIc(col)}</th>`;
 
   setView(`
   <div class="page-hd">
@@ -1425,7 +1442,7 @@ const renderHistory=()=>{
   </div>
   ${sc.length===0?`<div class="card"><div class="card-body"><div class="empty"><div class="empty-icon">🔍</div><h3>該当する記録がありません</h3><p>フィルタ条件を変更してください</p></div></div></div>`:
   `<div class="card" style="overflow:hidden"><div class="tbl-wrap"><table>
-  <thead><tr>${mkTh('scanDate','スキャン日')}${mkTh('tagId','個体識別番号')}${mkTh('ageAtScan','日齢')}<th>場所</th>${mkTh('obScore','スコア')}<th>右肺</th><th>左肺</th><th>治療</th><th>薬剤</th><th>備考</th><th>操作</th></tr></thead>
+  <thead><tr>${mkTh('scanDate','スキャン日')}${mkTh('tagId','個体識別番号')}${mkTh('ageAtScan','日齢')}${mkTh('hutch','場所')}${mkTh('obScore','スコア')}<th>右肺</th><th>左肺</th>${mkTh('treated','治療')}${mkTh('drug','薬剤')}${mkTh('notes','備考')}<th>操作</th></tr></thead>
   <tbody>${sc.map(s=>`<tr>
     <td>${fmtDate(s.scanDate)}<br><span style="font-size:10px;color:var(--text-4)">R${s.round||1}</span></td>
     <td class="tag-cell"><span class="tbl-link" onclick="App.openAnimalModal('${h(s.animalId)}')">${fmtTagId(s.tagId)}</span></td>
@@ -2787,7 +2804,7 @@ const App={
   delScan(sid){if(!confirm('削除しますか？'))return;const fid=DB.activeId();DB.delScan(fid,sid);toast('削除しました','warn');renderHistory();},
   setF(k,v){if(v===''||v===null||v===undefined)delete HS.f[k];else HS.f[k]=v;renderHistory();},
   clrF(){HS.f={};renderHistory();},
-  sortH(col){if(HS.sort===col)HS.dir=HS.dir==='asc'?'desc':'asc';else{HS.sort=col;HS.dir='desc';}renderHistory();},
+  sortH(col){if(HS.sort===col){HS.sortDir=(HS.sortDir+1)%3;if(HS.sortDir===0)HS.sort=null;}else{HS.sort=col;HS.sortDir=1;}renderHistory();},
   exportFarm(){
     const fid=DB.activeId();if(!fid){toast('農場を選択してください','err');return;}
     const json=DB.exportData(fid);if(!json)return;
