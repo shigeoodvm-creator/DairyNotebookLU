@@ -1653,11 +1653,11 @@ const renderNotes=()=>{
     </label>
     <div style="display:flex;align-items:center;gap:6px;font-size:13px">
       <span style="color:var(--text-3);font-weight:600">検査日：</span>
-      <input type="date" value="${NS.date}" onchange="NS.date=this.value" style="font-size:13px;padding:5px 8px;border:1.5px solid var(--border-2);border-radius:7px">
+      <input type="date" value="${NS.date}" onchange="NS.date=this.value;renderNotes()" style="font-size:13px;padding:5px 8px;border:1.5px solid var(--border-2);border-radius:7px">
     </div>
     <div style="display:flex;align-items:center;gap:6px;font-size:13px">
       <span style="color:var(--text-3);font-weight:600">検査者：</span>
-      <input type="text" value="${h(NS.examiner)}" oninput="NS.examiner=this.value" placeholder="氏名を入力" style="font-size:13px;padding:5px 8px;border:1.5px solid var(--border-2);border-radius:7px;width:130px">
+      <input type="text" value="${h(NS.examiner)}" oninput="NS.examiner=this.value;const _e=document.getElementById('note-disp-examiner');if(_e)_e.textContent=NS.examiner||'　'" placeholder="氏名を入力" style="font-size:13px;padding:5px 8px;border:1.5px solid var(--border-2);border-radius:7px;width:130px">
     </div>
     <button class="btn-primary" onclick="window.print()" style="margin-left:auto">🖨 印刷・PDF出力</button>
   </div>
@@ -1675,7 +1675,7 @@ const renderNotes=()=>{
     </div>
     <div class="note-meta">
       <div><div class="note-meta-lbl">検査日</div><div class="note-meta-val">${NS.date.replace(/-/g,'/')}</div></div>
-      <div><div class="note-meta-lbl">検査者</div><div class="note-meta-val">${h(NS.examiner)||'　'}</div></div>
+      <div><div class="note-meta-lbl">検査者</div><div class="note-meta-val" id="note-disp-examiner">${h(NS.examiner)||'　'}</div></div>
       <div><div class="note-meta-lbl">農場名</div><div class="note-meta-val">${h(farm.name)}</div></div>
       <div><div class="note-meta-lbl">パターン / 代表者</div><div class="note-meta-val">${farm.protocol}　${h(farm.ownerName||'')}</div></div>
     </div>
