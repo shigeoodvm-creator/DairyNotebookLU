@@ -457,6 +457,11 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 .note-tbl td.td-pre{font-family:'Courier New',monospace;font-size:11px;color:var(--text-2)}
 .note-tbl td.td-score{font-weight:800;font-size:12px}
 .note-tbl td.td-wide{text-align:left;padding-left:4px}
+.note-th-sort{cursor:pointer;user-select:none;transition:.1s}
+.note-th-sort:hover{background:#2a4f7a!important;opacity:.9}
+.note-th-sort.ns-asc,.note-th-sort.ns-desc{background:#1a5c3a!important}
+.ns-ic{font-size:8px;margin-left:2px;opacity:.5}
+.note-th-sort.ns-asc .ns-ic,.note-th-sort.ns-desc .ns-ic{opacity:1;color:#7effc5}
 .note-opts{display:flex;gap:14px;margin-bottom:18px;align-items:center;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:13px 20px;box-shadow:var(--shadow)}
 
 /* ─────────────────────────────────────────
@@ -1049,8 +1054,8 @@ const updateTopBar=()=>{const fid=DB.activeId();const farm=fid?DB.getFarm(fid):n
 const setView=html=>{$('view').innerHTML=html;};
 
 // ─── Scan State ───────────────────────────────────
-let SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null};
-const resetSS=()=>{SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null};};
+let SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null,exp4:''};
+const resetSS=()=>{SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null,exp4:''};};
 const loadSS=s=>{SS.right={rf_a:'',rf_p:'',r_m:'',r_c:'',...(s.right||{})};SS.left={lf_a:'',lf_p:'',l_c:'',...(s.left||{})};SS.score=s.obScore||0;SS.editId=s.id;};
 
 // ─── Mini lung grid (read-only) ───────────────────
@@ -1175,7 +1180,7 @@ const renderNewScan=(editScan=null)=>{
     <div class="page-sub">${h(farm.name)}　Protocol ${farm.protocol}</div>
   </div>
 
-  <form id="scan-form" onsubmit="App.submitScan(event)">
+  <form id="scan-form" onsubmit="App.submitScan(event)" onkeydown="App.scanFormKeydown(event)">
 
   <!-- 基本情報 -->
   <div class="card">
@@ -1186,10 +1191,9 @@ const renderNewScan=(editScan=null)=>{
     <div class="card-body">
       <div class="form-row">
         <div class="form-group">
-          <label class="form-label">耳標番号<span class="req">*</span></label>
-          <input class="form-input" id="f-tag" value="${h(s.tagId||'')}" placeholder="例：1234567890（10桁）" oninput="App.onTag(this.value)" required list="tag-dl" style="font-family:'Courier New',monospace;letter-spacing:1px">
-          <datalist id="tag-dl">${DB.getAnimals(fid).sort((a,b)=>get拡4(a.tagId).localeCompare(get拡4(b.tagId))).map(a=>`<option value="${h(a.tagId)}">${get拡4(a.tagId)} ｜ ${h(a.breed||'品種未設定')}</option>`).join('')}</datalist>
-          <div id="tag-hint" class="form-hint"></div>
+          <label class="form-label">拡大4桁で検索<span class="req">*</span></label>
+          <input class="form-input" id="f-exp4" value="${h(s.tagId?get拡4(s.tagId):SS.exp4||'')}" placeholder="例：1234（4桁）" maxlength="4" oninput="App.onExp4(this.value)" style="font-family:'Courier New',monospace;letter-spacing:4px;font-size:18px;max-width:130px">
+          <div id="exp4-hint" class="form-hint"></div>
         </div>
         <div class="form-group">
           <label class="form-label">スキャン日<span class="req">*</span></label>
@@ -1215,11 +1219,20 @@ const renderNewScan=(editScan=null)=>{
           })()}
         </div>
       </div>
+      <div id="tag-wrap" style="${isEdit?'':'display:none'};margin-top:12px">
+        <div id="tag-wrap-msg">${isEdit?`<div style="margin-bottom:10px"><div class="form-label" style="margin-bottom:4px">耳標番号（10桁）</div><div style="font-size:13px">${fmtTagId(s.tagId)}&emsp;<span style="color:var(--text-3)">拡大4桁：<span class="tag-exp">${get拡4(s.tagId)}</span></span></div></div>`:``}</div>
+        ${!isEdit?`<div class="form-group">
+          <label class="form-label" id="tag-label" style="font-size:13px;font-weight:700;color:var(--text-2)">耳標番号（10桁）</label>
+          <input class="form-input" id="f-tag" value="" placeholder="例：1234567890（10桁）" oninput="App.onTag(this.value)" list="tag-dl" style="font-family:'Courier New',monospace;letter-spacing:1px">
+          <datalist id="tag-dl">${DB.getAnimals(fid).sort((a,b)=>get拡4(a.tagId).localeCompare(get拡4(b.tagId))).map(a=>`<option value="${h(a.tagId)}">${get拡4(a.tagId)} ｜ ${h(a.breed||'品種未設定')}</option>`).join('')}</datalist>
+          <div id="tag-hint" class="form-hint"></div>
+        </div>`:`<input type="hidden" id="f-tag" value="${h(s.tagId||'')}"><datalist id="tag-dl"></datalist><div id="tag-hint"></div>`}
+      </div>
       <div id="new-animal-area" style="display:none;margin-top:10px">
-        <div class="callout cl-blue"><div class="callout-i">ℹ️</div><div>新規個体として登録します。以下は任意入力です。</div></div>
+        <div class="callout cl-blue"><div class="callout-i">ℹ️</div><div>新規個体として登録します。生年月日・品種・性別は任意入力です。</div></div>
         <div class="form-row" style="margin-top:10px">
           <div class="form-group"><label class="form-label">生年月日</label><input class="form-input" id="f-bd" type="date" onchange="App.onBd()"></div>
-          <div class="form-group"><label class="form-label">品種</label><input class="form-input" id="f-breed" placeholder="例：ホルスタイン" list="breed-dl"><datalist id="breed-dl"><option value="ホルスタイン"><option value="和牛（黒毛）"><option value="交雑種（F1）"><option value="ジャージー"></datalist></div>
+          <div class="form-group"><label class="form-label">品種</label><input class="form-input" id="f-breed" placeholder="例：ホルスタイン" list="breed-dl"><datalist id="breed-dl"><option value="ホルスタイン"><option value="黒毛和種"><option value="交雑種（F1）"><option value="ジャージー"></datalist></div>
           <div class="form-group"><label class="form-label">性別</label><select class="form-select" id="f-sex"><option value="">不明</option><option value="F">雌</option><option value="M">雄</option></select></div>
         </div>
       </div>
@@ -1324,6 +1337,8 @@ const renderNewScan=(editScan=null)=>{
 
   App.updateAutoSc();
   if(s.tagId) App.onTag(s.tagId,true);
+  // 新規スキャン時、SS.exp4 が設定されていれば自動検索
+  if(!isEdit&&SS.exp4){const e4=$('f-exp4');if(e4&&!e4.value){e4.value=SS.exp4;App.onExp4(SS.exp4);}}
 };
 
 // HISTORY
@@ -1532,13 +1547,14 @@ const renderFollowup=()=>{
 };
 
 // ─── FIELD NOTES VIEW ────────────────────────────
-let NS={prefill:true,date:today(),examiner:''};
+let NS={prefill:true,date:today(),examiner:'',sort:null,sortDir:0};
 let RS={date:'',examiner:''};
 const renderNotes=()=>{
   const fid=DB.activeId();const farm=DB.getFarm(fid);
   if(!fid||!farm){renderHome();return;}
   const animals=DB.getAnimals(fid).sort((a,b)=>get拡4(a.tagId).localeCompare(get拡4(b.tagId)));
   const allScans=DB.getScans(fid);
+  const notesHutches=HutchUtil.get(fid);
   const ROW_COUNT=40;
 
   // テーブル行データ生成
@@ -1547,12 +1563,38 @@ const renderNotes=()=>{
     animals.slice(0,ROW_COUNT).forEach((a,i)=>{
       const sc=allScans.filter(s=>s.animalId===a.id).sort((x,y)=>y.scanDate.localeCompare(x.scanDate));
       const last=sc[0];
-      rows.push({no:i+1,tag:a.tagId,prefillScore:last?last.obScore:null,prevDate:last?last.scanDate:'',round:last?last.round+1:1});
+      const age=a.birthDate?calcAge(a.birthDate,NS.date):null;
+      const lastHutch=last?(last.hutchId?(notesHutches.find(hh=>hh.id===last.hutchId)?.label||last.hutchId):last.hutchFree||''):'';
+      rows.push({no:i+1,tag:a.tagId,age,lastHutch,prefillScore:last?last.obScore:null,prevDate:last?last.scanDate:'',round:last?last.round+1:1});
     });
     while(rows.length<ROW_COUNT)rows.push({no:rows.length+1});
   } else {
     for(let i=0;i<ROW_COUNT;i++)rows.push({no:i+1});
   }
+
+  // ソート適用
+  if(NS.sort&&NS.sortDir>0){
+    const filled=rows.filter(r=>r.tag);
+    const empty=rows.filter(r=>!r.tag);
+    const d=NS.sortDir===1?1:-1;
+    filled.sort((a,b)=>{
+      switch(NS.sort){
+        case 'exp4':   return get拡4(a.tag).localeCompare(get拡4(b.tag))*d;
+        case 'tagId':  return a.tag.localeCompare(b.tag)*d;
+        case 'age':    return ((a.age??9999)-(b.age??9999))*d;
+        case 'hutch':  return (a.lastHutch||'').localeCompare(b.lastHutch||'')*d;
+        case 'round':  return ((a.round||0)-(b.round||0))*d;
+        case 'score':  return ((a.prefillScore??-1)-(b.prefillScore??-1))*d;
+        default:return 0;
+      }
+    });
+    [...filled,...empty].forEach((r,i)=>{r.no=i+1;});
+    rows.splice(0,rows.length,...filled,...empty);
+  }
+
+  // ソートヘッダーヘルパー
+  const nsIc=col=>NS.sort===col?(NS.sortDir===1?'<span class="ns-ic">▲</span>':'<span class="ns-ic">▼</span>'):'<span class="ns-ic">⇅</span>';
+  const nsTh=(col,label,extra='')=>`<th rowspan="2" class="note-th-sort${NS.sort===col?(NS.sortDir===1?' ns-asc':' ns-desc'):''}" onclick="App.sortNotes('${col}')" ${extra}>${label}${nsIc(col)}</th>`;
 
   const lobeHdR=['葉①<br>右前-前','葉②<br>右前-後','葉③<br>右中','葉④<br>右後'];
   const lobeHdL=['葉⑤<br>左前-前','葉⑥<br>左前-後','葉⑦<br>左後'];
@@ -1613,14 +1655,14 @@ const renderNotes=()=>{
         <thead>
           <tr>
             <th rowspan="2" style="width:24px">No</th>
-            <th rowspan="2" style="width:36px">拡大<br>4桁</th>
-            <th rowspan="2" style="width:80px">個体識別番号</th>
-            <th rowspan="2" style="width:30px">日齢</th>
-            <th rowspan="2" style="min-width:50px">場所</th>
-            <th rowspan="2" style="width:28px">検診<br>回数</th>
+            ${nsTh('exp4','拡大<br>4桁','style="width:36px"')}
+            ${nsTh('tagId','個体識別番号','style="width:80px"')}
+            ${nsTh('age','日齢','style="width:30px"')}
+            ${nsTh('hutch','場所','style="min-width:50px"')}
+            ${nsTh('round','検診<br>回数','style="width:28px"')}
             <th colspan="4" class="th-r">右肺 Right</th>
             <th colspan="3" class="th-l">左肺 Left</th>
-            <th rowspan="2" class="th-sp" style="width:28px">前回<br>スコア</th>
+            ${nsTh('score','前回<br>スコア','class="th-sp" style="width:28px"')}
             <th rowspan="2" style="min-width:60px">主な所見</th>
             <th rowspan="2" style="width:28px">治療<br>○/－</th>
             <th rowspan="2" style="min-width:70px">使用薬・投与量</th>
@@ -1636,8 +1678,8 @@ const renderNotes=()=>{
             <td class="td-no">${r.no}</td>
             <td class="td-pre">${r.tag?get拡4(r.tag):''}</td>
             <td class="td-tag">${r.tag?h(r.tag):''}</td>
-            <td></td>
-            <td></td>
+            <td style="font-size:10px;text-align:center;color:var(--text-2)">${r.age!=null?r.age:''}</td>
+            <td style="font-size:10px;text-align:center;color:var(--text-3)">${h(r.lastHutch||'')}</td>
             <td style="font-size:10px;color:var(--text-3)">${r.round||''}</td>
             <td></td><td></td><td></td><td></td>
             <td></td><td></td><td></td>
@@ -1925,6 +1967,7 @@ const renderAnimals=()=>{
   if(!fid||!farm){renderHome();return;}
   let animals=DB.getAnimals(fid);
   const scans=DB.getScans(fid);
+  const hutches=HutchUtil.get(fid);
   if(AS.q) animals=animals.filter(a=>a.tagId.includes(AS.q)||get拡4(a.tagId).includes(AS.q));
   const d=AS.dir==='asc'?1:-1;
   if(AS.sort==='exp4') animals.sort((a,b)=>get拡4(a.tagId).localeCompare(get拡4(b.tagId))*d);
@@ -1941,7 +1984,8 @@ const renderAnimals=()=>{
     <div class="page-title">個体管理</div>
     <div class="page-sub">${h(farm.name)}　登録 ${DB.getAnimals(fid).length} 頭</div>
   </div>
-  <div style="display:flex;justify-content:flex-end;margin-bottom:12px">
+  <div style="display:flex;justify-content:flex-end;gap:8px;margin-bottom:12px">
+    <button class="btn-outline" onclick="App.openCsvImport()">📥 CSV インポート</button>
     <button class="btn-primary" onclick="App.openAnimalRegModal()">＋ 個体を登録</button>
   </div>
   <div class="filter-bar">
@@ -1962,11 +2006,12 @@ const renderAnimals=()=>{
     <th>品種</th><th>性別</th>
     ${mkTh('birthDate','生年月日')}
     ${mkTh('scanCnt','スキャン数')}
-    <th>最新スコア</th><th>操作</th>
+    <th>最新スコア</th><th>ハッチ</th><th>操作</th>
   </tr></thead>
   <tbody>${animals.map(a=>{
     const anScans=scans.filter(s=>s.animalId===a.id).sort((x,y)=>x.scanDate.localeCompare(y.scanDate));
     const last=anScans[anScans.length-1];
+    const hutchLbl=last?(last.hutchId?(hutches.find(hh=>hh.id===last.hutchId)?.label||last.hutchId):last.hutchFree||''):'';
     return`<tr>
       <td><span class="tag-exp-lg">${get拡4(a.tagId)||'－'}</span></td>
       <td class="tag-cell">${fmtTagId(a.tagId)}</td>
@@ -1975,6 +2020,7 @@ const renderAnimals=()=>{
       <td>${fmtDate(a.birthDate)||'－'}</td>
       <td style="text-align:center;font-weight:700;color:var(--navy)">${anScans.length}</td>
       <td>${last?`<span class="score-badge ${scClass(last.obScore)}">${last.obScore}</span>`:'－'}</td>
+      <td style="font-size:12px;color:var(--text-3);text-align:center">${h(hutchLbl)||'－'}</td>
       <td style="white-space:nowrap">
         <button class="btn-sm btn-ghost" onclick="App.openAnimalModal('${a.id}')" style="margin-right:3px">履歴</button>
         <button class="btn-sm btn-edit" onclick="App.addScanFor('${h(a.tagId)}')" style="margin-right:3px">スキャン</button>
@@ -2297,7 +2343,7 @@ const renderAnimalRegModal=(animalId=null)=>{
             <input class="form-input" id="af-breed" value="${h(animal?.breed||'')}"
               placeholder="例：ホルスタイン" list="af-breed-dl">
             <datalist id="af-breed-dl">
-              <option value="ホルスタイン"><option value="和牛（黒毛）">
+              <option value="ホルスタイン"><option value="黒毛和種">
               <option value="交雑種（F1）"><option value="ジャージー">
             </datalist>
           </div>
@@ -2417,10 +2463,44 @@ const App={
     toast('削除しました','warn');renderAnimals();
   },
   addScanFor(tagId){
+    SS.exp4=get拡4(tagId);
     Router.nav('/scan/new');
-    setTimeout(()=>{const el=$('f-tag');if(el){el.value=tagId;App.onTag(tagId);}},60);
+    setTimeout(()=>{const e4=$('f-exp4');if(e4){e4.value=get拡4(tagId);App.onExp4(get拡4(tagId));}},60);
+  },
+  openCsvImport(){
+    const inp=document.createElement('input');inp.type='file';inp.accept='.csv,text/csv';
+    inp.onchange=e=>{if(e.target.files[0])App.importAnimalCsv(e.target.files[0]);};inp.click();
+  },
+  importAnimalCsv(file){
+    const r=new FileReader();
+    r.onload=e=>{
+      const fid=DB.activeId();if(!fid){toast('農場を選択してください','err');return;}
+      const lines=e.target.result.replace(/\r/g,'').split('\n').map(l=>l.trim()).filter(l=>l);
+      let added=0,skipped=0,errors=0;
+      // ヘッダー行スキップ（1行目が数字で始まらない場合）
+      const startIdx=/^\d{10}/.test(lines[0])?0:1;
+      for(let i=startIdx;i<lines.length;i++){
+        const cols=lines[i].split(',').map(s=>s.trim().replace(/^["']|["']$/g,''));
+        const tagId=cols[0]?.replace(/\D/g,'')||'';
+        if(tagId.length!==10){errors++;continue;}
+        if(DB.findByTag(fid,tagId)){skipped++;continue;}
+        const birthDate=cols[1]||'';const breed=cols[2]||'';const rawSex=(cols[3]||'').toUpperCase();
+        const sex=rawSex==='F'||rawSex==='雌'?'F':rawSex==='M'||rawSex==='雄'?'M':'';
+        DB.upsertAnimal(fid,tagId,{birthDate,breed,sex});added++;
+      }
+      toast(`${added}頭を登録しました（スキップ:${skipped}件、エラー:${errors}件）`,'ok');
+      renderAnimals();
+    };
+    r.readAsText(file,'utf-8');
   },
   sortA(col){if(AS.sort===col)AS.dir=AS.dir==='asc'?'desc':'asc';else{AS.sort=col;AS.dir='asc';}renderAnimals();},
+  sortNotes(col){
+    if(NS.sort===col){
+      NS.sortDir=(NS.sortDir+1)%3;
+      if(NS.sortDir===0)NS.sort=null;
+    }else{NS.sort=col;NS.sortDir=1;}
+    renderNotes();
+  },
   onRepDate(v){RS.date=v;renderReport();},
   onRepExaminer(v){RS.examiner=v;},
   setAq(v){AS.q=v;renderAnimals();},
@@ -2557,8 +2637,38 @@ const App={
   },
 
   // Scan form
+  onExp4(v){
+    const fid=DB.activeId();if(!fid)return;
+    v=v.replace(/\D/g,'').slice(0,4);
+    const el=$('f-exp4');if(el)el.value=v;
+    SS.exp4=v;
+    const hint=$('exp4-hint');const tagWrap=$('tag-wrap');
+    if(v.length<4){if(hint)hint.innerHTML='';return;}
+    const matched=DB.getAnimals(fid).filter(a=>get拡4(a.tagId)===v);
+    const msg=$('tag-wrap-msg');
+    if(matched.length===1){
+      const a=matched[0];
+      const tagEl=$('f-tag');if(tagEl)tagEl.value=a.tagId;
+      if(tagWrap)tagWrap.style.display='none';
+      if(msg)msg.innerHTML='';
+      if(hint)hint.innerHTML=`<span style="color:var(--teal);font-weight:600">✓ ${fmtTagId(a.tagId)}　${a.breed||'品種未設定'}</span>`;
+      this.onTag(a.tagId,true);
+    } else if(matched.length>1){
+      if(msg)msg.innerHTML=`<div style="background:var(--amber-lt);border:1.5px solid var(--amber);border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px"><span style="font-size:18px">⚠️</span><div><div style="font-weight:700;color:var(--amber);font-size:13px">${matched.length}頭がヒットしました</div><div style="font-size:12px;color:var(--text-2);margin-top:2px">個体識別番号（10桁）を入力して絞り込んでください</div></div></div>`;
+      if(tagWrap)tagWrap.style.display='block';
+      if(hint)hint.innerHTML=`<span style="color:var(--amber);font-weight:600">⚠ ${matched.length}頭ヒット → 10桁で絞り込み</span>`;
+      setTimeout(()=>{const tagEl=$('f-tag');if(tagEl){tagEl.focus();tagEl.style.borderColor='var(--amber)';}tagWrap?.scrollIntoView({behavior:'smooth',block:'nearest'});},50);
+    } else {
+      if(msg)msg.innerHTML=`<div style="background:#fff3cd;border:2px solid var(--amber);border-radius:8px;padding:12px 16px;margin-bottom:10px;display:flex;align-items:flex-start;gap:12px"><span style="font-size:22px;line-height:1">🆕</span><div><div style="font-weight:800;color:var(--amber);font-size:14px;margin-bottom:4px">新規個体の登録</div><div style="font-size:13px;color:var(--text-2)">この拡大4桁（<strong>${v}</strong>）は未登録です。<br>個体識別番号（<strong>10桁</strong>）を下に入力してください。</div></div></div>`;
+      if(tagWrap)tagWrap.style.display='block';
+      if(hint)hint.innerHTML=`<span style="color:var(--amber);font-weight:700">🆕 未登録 → 10桁を入力してください</span>`;
+      setTimeout(()=>{const tagEl=$('f-tag');if(tagEl){tagEl.focus();tagEl.style.borderColor='var(--amber)';tagEl.style.boxShadow='0 0 0 3px rgba(180,83,9,.15)';}tagWrap?.scrollIntoView({behavior:'smooth',block:'nearest'});},50);
+    }
+  },
   onTag(tag,silent=false){
     const fid=DB.activeId();if(!fid||!tag.trim())return;
+    // 10桁入力開始時にオレンジ枠をリセット
+    const tagEl=$('f-tag');if(tagEl){tagEl.style.borderColor='';tagEl.style.boxShadow='';}
     const a=DB.findByTag(fid,tag.trim());
     const hint=$('tag-hint');const naa=$('new-animal-area');
     if(a){
@@ -2605,12 +2715,23 @@ const App={
     RPOS.forEach(p=>SS.right[p]='');LPOS.forEach(p=>SS.left[p]='');
     document.querySelectorAll('.lung-btn').forEach(b=>{Object.values(FSTATE).filter(c=>c).forEach(c=>b.classList.remove(c));b.textContent='未入力';});this.updateAutoSc();
   },
+  scanFormKeydown(e){
+    if(e.key!=='Enter')return;
+    const tag=e.target.tagName.toLowerCase();
+    if(tag==='textarea'||e.target.type==='submit'||e.target.type==='button')return;
+    e.preventDefault();
+    const form=$('scan-form');if(!form)return;
+    const focusable=Array.from(form.querySelectorAll('input:not([disabled]):not([type="hidden"]),select:not([disabled]),textarea:not([disabled])'));
+    const idx=focusable.indexOf(e.target);
+    if(idx>=0&&idx<focusable.length-1)focusable[idx+1].focus();
+  },
   submitScan(e){
     e.preventDefault();const fid=DB.activeId();if(!fid){toast('農場を選択してください','err');return;}
-    const tagId=$('f-tag').value.trim();const scanDate=$('f-date').value;
+    const tagId=($('f-tag')?.value||'').trim();const scanDate=$('f-date').value;
     const ageAtScan=parseInt($('f-age').value)||0;const round=parseInt($('f-round').value)||1;
     const score=parseInt($('f-score').value)||0;
-    if(!tagId||!scanDate){toast('耳標番号とスキャン日は必須です','err');return;}
+    if(!tagId){toast('個体が選択されていません。拡大4桁を入力してください','err');$('f-exp4')?.focus();return;}
+    if(!scanDate){toast('スキャン日は必須です','err');return;}
     const animal=DB.upsertAnimal(fid,tagId,{...($('f-bd')?.value?{birthDate:$('f-bd').value}:{}),... ($('f-breed')?.value?{breed:$('f-breed').value}:{}),... ($('f-sex')?.value?{sex:$('f-sex').value}:{})});
     const hutchId=$('f-hutch-sel')?.value||'';
     const hutchFree=$('f-hutch-free')?.value.trim()||'';
