@@ -1132,7 +1132,7 @@ const renderDashboard=()=>{
   if(!fid||!farm){renderHome();return;}
   const scans=DB.getScans(fid);const animals=DB.getAnimals(fid);
   const pv=Calc.prev(scans);const bm=Calc.bm(fid);const tr=Calc.treatRate(fid);
-  const recent=scans.slice().sort((a,b)=>b.createdAt.localeCompare(a.createdAt)).slice(0,12);
+  const recent=scans.slice().sort((a,b)=>(b.createdAt||b.scanDate||'').localeCompare(a.createdAt||a.scanDate||'')).slice(0,12);
 
   setView(`
   <div class="page-hd">
