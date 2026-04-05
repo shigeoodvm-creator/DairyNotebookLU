@@ -625,68 +625,131 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 .hm-tl-dot{width:8px;height:8px;border-radius:50%}
 .hm-no-data{padding:16px;text-align:center;color:var(--text-4);font-size:13px}
 
-/* ─── Hatch Map 印刷ヘッダー（画面では非表示） ─── */
+/* ─── Hatch Map 印刷専用要素（画面では非表示） ─── */
 #hm-print-header{display:none}
+.hm-print-aisle{display:none}
+#hm-print-notes{display:none}
 
 /* ─── @media print ─── */
 @media print{
-  @page{size:A4 landscape;margin:8mm}
-  /* 非表示にする要素 */
-  #topbar,
-  .page-hd,
-  .hm-controls,
-  #hm-detail-wrap,
-  .hm-btn-print{display:none!important}
-  /* 印刷ヘッダーを表示 */
-  #hm-print-header{
-    display:flex!important;align-items:baseline;gap:12px;
-    margin-bottom:8px;padding-bottom:6px;border-bottom:1.5px solid #333;
-  }
-  #hm-print-header .ph-title{font-size:16px;font-weight:800;color:#000}
-  #hm-print-header .ph-sub{font-size:12px;color:#444}
-  #hm-print-header .ph-legend{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;align-items:center}
-  #hm-print-header .ph-legend-item{display:flex;align-items:center;gap:3px;font-size:10px;color:#333}
-  #hm-print-header .ph-legend-dot{width:9px;height:9px;border-radius:50%;-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  /* マップ全体 */
+  @page{size:A4 landscape;margin:8mm 10mm}
+
+  /* UI要素を非表示 */
+  #topbar,.page-hd,.hm-controls,#hm-detail-wrap,.hm-btn-print,
+  body > *:not(#main),#modal-bg,#toast-box{display:none!important}
+
   #main{margin-top:0!important}
   #view{max-width:none!important;padding:0!important}
-  .hm-outer{
-    display:flex!important;gap:6px!important;overflow:visible!important;
-    flex-wrap:nowrap;align-items:flex-start;
+
+  /* ── 印刷ヘッダー ── */
+  #hm-print-header{
+    display:flex!important;align-items:center;gap:10px;
+    padding-bottom:5px;margin-bottom:6px;
+    border-bottom:2px solid #222;
   }
-  /* 列 */
+  #hm-print-header .ph-title{
+    font-size:15px;font-weight:800;color:#000;white-space:nowrap;
+  }
+  #hm-print-header .ph-sub{font-size:10px;color:#444;white-space:nowrap}
+  #hm-print-header .ph-legend{
+    display:flex!important;gap:7px;margin-left:auto;align-items:center;flex-wrap:wrap;
+  }
+  #hm-print-header .ph-legend-item{
+    display:flex;align-items:center;gap:3px;font-size:9px;color:#333;
+  }
+  #hm-print-header .ph-legend-dot{
+    width:9px;height:9px;border-radius:50%;flex-shrink:0;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+
+  /* ── マップ本体ラッパー（マップ + メモ欄を横並び） ── */
+  .hm-print-body{
+    display:flex!important;gap:8mm;align-items:flex-start;
+  }
+
+  /* ── マップエリア（左右列 + 通路） ── */
+  .hm-outer{
+    display:flex!important;gap:0!important;overflow:visible!important;
+    flex:0 0 auto;align-items:stretch;
+  }
+
+  /* ── 通路（列と列の間） ── */
+  .hm-print-aisle{
+    display:flex!important;
+    flex:0 0 18mm;align-items:center;justify-content:center;
+    background:#f0f0f0;border-left:1.5px dashed #bbb;border-right:1.5px dashed #bbb;
+    margin-top:22px; /* col-header分 下げる */
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  .hm-print-aisle span{
+    writing-mode:vertical-rl;text-orientation:mixed;
+    font-size:9px;font-weight:700;letter-spacing:3px;color:#888;
+  }
+
+  /* ── 列 ── */
   .hm-column{
-    flex:1 1 0!important;min-width:0!important;
-    page-break-inside:avoid;break-inside:avoid;
+    flex:0 0 auto;width:auto;min-width:0!important;
   }
   .hm-col-header{
-    font-size:10px!important;padding:3px 0!important;
-    margin-bottom:4px!important;border-bottom-width:1.5px!important;
+    font-size:11px!important;font-weight:800!important;
+    text-align:center;padding:4px 6px!important;margin-bottom:5px!important;
+    border-bottom-width:2px!important;letter-spacing:.5px;
     -webkit-print-color-adjust:exact;print-color-adjust:exact;
   }
-  /* セル */
+  .hm-col-left .hm-col-header{color:#1a5fb4!important;border-color:#1a5fb4!important}
+  .hm-col-right .hm-col-header{color:#0a6b55!important;border-color:#0a6b55!important}
+
+  /* ── ハッチセル ── */
   .hm-cell{
-    min-height:0!important;padding:4px 6px!important;
-    margin-bottom:4px!important;border-radius:5px!important;
-    border-width:1.5px!important;
+    display:flex!important;align-items:center;
+    min-height:0!important;
+    padding:4px 30px 4px 8px!important;  /* 右側にスコアバッジ分の余白 */
+    margin-bottom:4px!important;
+    border-radius:5px!important;border-width:2px!important;
+    width:88px;
     page-break-inside:avoid;break-inside:avoid;
     -webkit-print-color-adjust:exact;print-color-adjust:exact;
   }
-  .hm-cell-no{font-size:8px!important;margin-bottom:1px!important}
-  .hm-cell-tag{font-size:11px!important;letter-spacing:.5px!important}
+  .hm-cell:hover{transform:none!important;box-shadow:none!important}
+
+  /* セル内テキストを縦1行に */
+  .hm-cell-no{
+    font-size:8px!important;margin-bottom:0!important;
+    color:#666;white-space:nowrap;flex-shrink:0;margin-right:5px;
+  }
+  .hm-cell-tag{
+    font-size:13px!important;font-weight:800!important;
+    letter-spacing:1px!important;flex:1;
+  }
   .hm-cell-score{
-    width:16px!important;height:16px!important;font-size:9px!important;
-    top:4px!important;right:4px!important;
+    width:20px!important;height:20px!important;font-size:10px!important;
+    top:50%!important;right:5px!important;
+    transform:translateY(-50%)!important;
     -webkit-print-color-adjust:exact;print-color-adjust:exact;
   }
-  .hm-cell-info{font-size:8px!important;margin-top:1px!important}
-  .hm-cell-empty .hm-cell-tag{font-size:9px!important}
-  /* スコア背景色を印刷で保持 */
-  .hm-s0,.hm-s1,.hm-s2,.hm-s3,.hm-s4,.hm-s5{-webkit-print-color-adjust:exact;print-color-adjust:exact}
-  .hm-cell-empty{opacity:.5!important}
-  /* その他の要素を非表示 */
-  body > *:not(#main){display:none!important}
-  #modal-bg,#toast-box{display:none!important}
+  .hm-cell-info{font-size:8px!important;margin-top:0!important;white-space:nowrap;color:#666}
+  .hm-cell-empty{opacity:.55!important}
+  .hm-cell-empty .hm-cell-tag{font-size:10px!important;font-weight:400!important;font-family:inherit!important;color:#aaa}
+
+  /* スコア色を印刷保持 */
+  .hm-s0,.hm-s1,.hm-s2,.hm-s3,.hm-s4,.hm-s5,
+  .hm-s0 .hm-cell-score,.hm-s1 .hm-cell-score,
+  .hm-s2 .hm-cell-score,.hm-s3 .hm-cell-score,
+  .hm-s4 .hm-cell-score,.hm-s5 .hm-cell-score{
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+
+  /* ── メモ欄 ── */
+  #hm-print-notes{
+    display:block!important;flex:1;
+  }
+  .hm-pn-title{
+    font-size:11px;font-weight:800;color:#333;
+    border-bottom:1.5px solid #333;padding-bottom:3px;margin-bottom:0;
+  }
+  .hm-pn-line{
+    height:9.5mm;border-bottom:.5px solid #ccc;
+  }
 }
 
 /* Hutch setup modal */
@@ -2282,15 +2345,26 @@ const renderHatchMap=()=>{
   };
 
   const scColors=['#10b981','#3b82f6','#f59e0b','#f97316','#ef4444','#7f1d1d'];
+  // メモ欄の罫線（印刷時のみ表示）
+  const noteLines = Array(17).fill('<div class="hm-pn-line"></div>').join('');
+  // 列間に通路を挿入
+  const mapCols = byCols.reduce((acc,col,ci)=>{
+    if(ci>0) acc+=`<div class="hm-print-aisle"><span>通　路</span></div>`;
+    acc+=`<div class="hm-column hm-col-${ci===0?'left':'right'}">
+      <div class="hm-col-header">${h(HutchUtil.colLabel(farm,ci))}</div>
+      ${col.map(ht=>cellHtml(ht)).join('')}
+    </div>`;
+    return acc;
+  },'');
 
   setView(`
-  <!-- 印刷時のみ表示されるヘッダー -->
+  <!-- 印刷ヘッダー（画面では非表示） -->
   <div id="hm-print-header">
-    <div class="ph-title">🏠 ハッチマップ　${h(farm.name)}</div>
-    <div class="ph-sub">検診日：${viewDate}　　印刷日：${today()}${HM.flipH||HM.flipV?`　（${HM.flipH?'左右反転':''}${HM.flipH&&HM.flipV?' / ':''}${HM.flipV?'前後反転':''}）`:''}</div>
+    <div class="ph-title">ハッチマップ　${h(farm.name)}</div>
+    <div class="ph-sub">検診日：${viewDate}　印刷：${today()}${HM.flipH||HM.flipV?`　[${HM.flipH?'左右反転':''}${HM.flipH&&HM.flipV?'・':''}${HM.flipV?'前後反転':''}]`:''}</div>
     <div class="ph-legend">
       ${[0,1,2,3,4,5].map(n=>`<div class="ph-legend-item"><div class="ph-legend-dot" style="background:${scColors[n]}"></div>スコア${n}</div>`).join('')}
-      <div class="ph-legend-item"><div class="ph-legend-dot" style="background:#ccc"></div>空</div>
+      <div class="ph-legend-item"><div class="ph-legend-dot" style="background:#ccc"></div>空ハッチ</div>
     </div>
   </div>
 
@@ -2324,13 +2398,15 @@ const renderHatchMap=()=>{
     </div>
   </div>
 
-  <!-- マップグリッド -->
-  <div class="hm-outer">
-    ${byCols.map((col,ci)=>`
-    <div class="hm-column hm-col-${ci===0?'left':'right'}">
-      <div class="hm-col-header">${h(HutchUtil.colLabel(farm,ci))}</div>
-      ${col.map(ht=>cellHtml(ht)).join('')}
-    </div>`).join('')}
+  <!-- マップ本体（印刷時：マップ + メモ欄を横並び） -->
+  <div class="hm-print-body">
+    <div class="hm-outer">${mapCols}</div>
+
+    <!-- メモ欄（印刷時のみ表示） -->
+    <div id="hm-print-notes">
+      <div class="hm-pn-title">メ　モ</div>
+      ${noteLines}
+    </div>
   </div>
 
   <!-- 詳細パネル -->
