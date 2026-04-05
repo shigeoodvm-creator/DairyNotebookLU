@@ -316,6 +316,8 @@ input,select,textarea{font-family:inherit}
    Table
 ───────────────────────────────────────── */
 .tbl-wrap{overflow-x:auto}
+/* width:100% だけだと列が潰れて操作ボタンが切れる。内容幅まで広げて横スクロールに任せる */
+.tbl-wrap table{min-width:max-content}
 table{width:100%;border-collapse:collapse;font-size:13px}
 thead th{
   background:var(--navy-2);color:#fff;padding:10px 13px;
@@ -629,9 +631,11 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 #hm-print-header{display:none}
 .hm-print-blank{display:none}
 
-/* ─── @media print ─── */
+/* ─── ハッチマップ印刷（縦・画面レイアウトに合わせる） ─── */
 @media print{
-  @page{size:A4 landscape;margin:8mm 10mm}
+  /* 野帳などは直前の @page（横）を継承。ハッチだけ名前付きページで縦 */
+  @page hm-map{size:A4 portrait;margin:10mm 12mm}
+  .hm-print-scope{page:hm-map}
 
   /* UI要素を非表示 */
   #topbar,.page-hd,.hm-controls,#hm-detail-wrap,.hm-btn-print,
@@ -642,12 +646,12 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 
   /* ── 印刷ヘッダー ── */
   #hm-print-header{
-    display:flex!important;align-items:center;gap:10px;
-    padding-bottom:5px;margin-bottom:8px;
+    display:flex!important;align-items:center;gap:10px;flex-wrap:wrap;
+    padding-bottom:6px;margin-bottom:10px;
     border-bottom:2px solid #222;
   }
-  #hm-print-header .ph-title{font-size:15px;font-weight:800;color:#000;white-space:nowrap}
-  #hm-print-header .ph-sub{font-size:10px;color:#444;white-space:nowrap}
+  #hm-print-header .ph-title{font-size:15px;font-weight:800;color:#000}
+  #hm-print-header .ph-sub{font-size:10px;color:#444}
   #hm-print-header .ph-legend{
     display:flex!important;gap:7px;margin-left:auto;align-items:center;flex-wrap:wrap;
   }
@@ -657,65 +661,59 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
     -webkit-print-color-adjust:exact;print-color-adjust:exact;
   }
 
-  /* ── マップ全体：左列・空白・右列・空白 を横並び ── */
-  .hm-print-body{display:contents}  /* 余分なラッパーを消す */
+  /* 画面と同じ2列（メモ用の印刷専用空白列は出さない） */
+  .hm-print-body{display:contents}
+  .hm-print-blank{display:none!important}
   .hm-outer{
-    display:flex!important;gap:0!important;overflow:visible!important;
-    width:100%;align-items:flex-start;
+    display:flex!important;gap:16px!important;overflow:visible!important;
+    width:100%;align-items:flex-start;justify-content:center;
   }
 
-  /* ── ハッチ列 ── */
   .hm-column{
-    flex:0 0 auto;min-width:0!important;
+    flex:1 1 0;min-width:0;max-width:calc(50% - 8px);
   }
   .hm-col-header{
-    font-size:11px!important;font-weight:800!important;
-    text-align:center;padding:4px 6px!important;margin-bottom:5px!important;
-    border-bottom-width:2px!important;letter-spacing:.5px;
+    font-size:12px!important;font-weight:800!important;
+    text-align:center;padding:6px 0!important;margin-bottom:8px!important;
+    border-bottom-width:2px!important;letter-spacing:.4px;
     -webkit-print-color-adjust:exact;print-color-adjust:exact;
   }
   .hm-col-left .hm-col-header{color:#1a5fb4!important;border-color:#1a5fb4!important}
   .hm-col-right .hm-col-header{color:#0a6b55!important;border-color:#0a6b55!important}
 
-  /* ── 空白エリア（各列の右隣、ハッチごとのメモ書き用） ── */
-  .hm-print-blank{
-    display:block!important;
-    flex:1 1 0;min-width:0;
-    /* セルと同じ高さで区切り線 */
-    background:repeating-linear-gradient(
-      to bottom,
-      transparent 0,
-      transparent calc(100% - 0.5px),
-      #e0e0e0 calc(100% - 0.5px),
-      #e0e0e0 100%
-    );
-    -webkit-print-color-adjust:exact;print-color-adjust:exact;
-  }
-
-  /* ── ハッチセル ── */
+  /* 画面と同じ積み上げ＋右上スコア（幅固定をやめ、文字切れを防ぐ） */
   .hm-cell{
-    display:flex!important;align-items:center;
-    min-height:0!important;
-    padding:5px 28px 5px 9px!important;
-    margin-bottom:5px!important;
-    border-radius:5px!important;border-width:2px!important;
-    width:90px;
+    position:relative!important;
+    display:block!important;
+    width:auto!important;max-width:100%!important;
+    box-sizing:border-box!important;
+    min-height:68px!important;
+    padding:8px 36px 8px 10px!important;
+    margin-bottom:7px!important;
+    border-radius:10px!important;border-width:2px!important;
     page-break-inside:avoid;break-inside:avoid;
     -webkit-print-color-adjust:exact;print-color-adjust:exact;
   }
   .hm-cell:hover{transform:none!important;box-shadow:none!important}
-  .hm-cell-no{font-size:8px!important;margin-bottom:0!important;color:#666;white-space:nowrap;flex-shrink:0;margin-right:5px}
-  .hm-cell-tag{font-size:13px!important;font-weight:800!important;letter-spacing:1px!important;flex:1}
+  .hm-cell-no{font-size:10px!important;font-weight:700!important;margin-bottom:3px!important;color:var(--text-4)!important;letter-spacing:.5px}
+  .hm-cell-tag{
+    font-size:17px!important;font-weight:800!important;
+    letter-spacing:1px!important;font-family:'Courier New',monospace!important;
+    padding-right:2px;word-break:keep-all;overflow:visible!important;
+  }
   .hm-cell-score{
-    width:20px!important;height:20px!important;font-size:10px!important;
-    top:50%!important;right:5px!important;transform:translateY(-50%)!important;
+    position:absolute!important;top:7px!important;right:8px!important;
+    transform:none!important;
+    width:22px!important;height:22px!important;font-size:11px!important;
     -webkit-print-color-adjust:exact;print-color-adjust:exact;
   }
-  .hm-cell-info{font-size:8px!important;margin-top:0!important;white-space:nowrap;color:#666}
-  .hm-cell-empty{opacity:.55!important}
-  .hm-cell-empty .hm-cell-tag{font-size:10px!important;font-weight:400!important;font-family:inherit!important;color:#aaa}
+  .hm-cell-info{
+    font-size:10px!important;margin-top:3px!important;color:var(--text-3)!important;
+    line-height:1.35!important;white-space:normal!important;
+  }
+  .hm-cell-empty{opacity:.45!important}
+  .hm-cell-empty .hm-cell-tag{font-size:11px!important;font-weight:400!important;font-family:inherit!important}
 
-  /* スコア色を印刷保持 */
   .hm-s0,.hm-s1,.hm-s2,.hm-s3,.hm-s4,.hm-s5,
   .hm-s0 .hm-cell-score,.hm-s1 .hm-cell-score,
   .hm-s2 .hm-cell-score,.hm-s3 .hm-cell-score,
@@ -2263,11 +2261,13 @@ const renderHatchMap=()=>{
       <div class="hm-cell-tag" style="font-size:11px;font-family:inherit;color:var(--text-4)">空ハッチ</div>
     </div>`;
     const sc=o.scan;const tag拡4=get拡4(sc.tagId)||sc.tagId.slice(-4);
+    const bd=o.animal?.birthDate;
+    const infoLine=bd?`${fmtDate(bd)}・${calcAge(bd,viewDate)}日齢`:'生年月日 未登録';
     return `<div class="hm-cell hm-s${sc.obScore}${HM.focusHutch===ht.id?' hm-active':''}" onclick="App.focusHutch('${ht.id}',this)" data-hid="${ht.id}">
       <div class="hm-cell-no">${h(ht.label)}</div>
       <div class="hm-cell-score">${sc.obScore}</div>
       <div class="hm-cell-tag">${tag拡4}</div>
-      <div class="hm-cell-info">${fmtDate(sc.scanDate)}・${sc.ageAtScan!=null?sc.ageAtScan+'日齢':'－'}</div>
+      <div class="hm-cell-info">${infoLine}</div>
     </div>`;
   };
 
@@ -2327,6 +2327,7 @@ const renderHatchMap=()=>{
   },'');
 
   setView(`
+  <div class="hm-print-scope">
   <!-- 印刷ヘッダー（画面では非表示） -->
   <div id="hm-print-header">
     <div class="ph-title">ハッチマップ　${h(farm.name)}</div>
@@ -2341,7 +2342,7 @@ const renderHatchMap=()=>{
     <div class="page-title">🏠 ハッチマップ</div>
     <div class="page-sub">${h(farm.name)}　ハッチ ${hutches.length}個</div>
     <div style="margin-left:auto;display:flex;gap:8px">
-      <button class="btn-sm btn-ghost hm-btn-print" onclick="window.print()" title="マップを印刷（A4横）">🖨 印刷</button>
+      <button class="btn-sm btn-ghost hm-btn-print" onclick="window.print()" title="マップを印刷（A4縦・画面と同じレイアウト）">🖨 印刷</button>
       <button class="btn-sm btn-ghost" onclick="App.openHutchSetup()">⚙ ハッチを編集</button>
     </div>
   </div>
@@ -2370,6 +2371,7 @@ const renderHatchMap=()=>{
   <!-- マップ本体 -->
   <div class="hm-print-body">
     <div class="hm-outer">${mapCols}</div>
+  </div>
   </div>
 
   <!-- 詳細パネル -->
