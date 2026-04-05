@@ -625,6 +625,70 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 .hm-tl-dot{width:8px;height:8px;border-radius:50%}
 .hm-no-data{padding:16px;text-align:center;color:var(--text-4);font-size:13px}
 
+/* ─── Hatch Map 印刷ヘッダー（画面では非表示） ─── */
+#hm-print-header{display:none}
+
+/* ─── @media print ─── */
+@media print{
+  @page{size:A4 landscape;margin:8mm}
+  /* 非表示にする要素 */
+  #topbar,
+  .page-hd,
+  .hm-controls,
+  #hm-detail-wrap,
+  .hm-btn-print{display:none!important}
+  /* 印刷ヘッダーを表示 */
+  #hm-print-header{
+    display:flex!important;align-items:baseline;gap:12px;
+    margin-bottom:8px;padding-bottom:6px;border-bottom:1.5px solid #333;
+  }
+  #hm-print-header .ph-title{font-size:16px;font-weight:800;color:#000}
+  #hm-print-header .ph-sub{font-size:12px;color:#444}
+  #hm-print-header .ph-legend{display:flex;gap:8px;margin-left:auto;flex-wrap:wrap;align-items:center}
+  #hm-print-header .ph-legend-item{display:flex;align-items:center;gap:3px;font-size:10px;color:#333}
+  #hm-print-header .ph-legend-dot{width:9px;height:9px;border-radius:50%;-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  /* マップ全体 */
+  #main{margin-top:0!important}
+  #view{max-width:none!important;padding:0!important}
+  .hm-outer{
+    display:flex!important;gap:6px!important;overflow:visible!important;
+    flex-wrap:nowrap;align-items:flex-start;
+  }
+  /* 列 */
+  .hm-column{
+    flex:1 1 0!important;min-width:0!important;
+    page-break-inside:avoid;break-inside:avoid;
+  }
+  .hm-col-header{
+    font-size:10px!important;padding:3px 0!important;
+    margin-bottom:4px!important;border-bottom-width:1.5px!important;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  /* セル */
+  .hm-cell{
+    min-height:0!important;padding:4px 6px!important;
+    margin-bottom:4px!important;border-radius:5px!important;
+    border-width:1.5px!important;
+    page-break-inside:avoid;break-inside:avoid;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  .hm-cell-no{font-size:8px!important;margin-bottom:1px!important}
+  .hm-cell-tag{font-size:11px!important;letter-spacing:.5px!important}
+  .hm-cell-score{
+    width:16px!important;height:16px!important;font-size:9px!important;
+    top:4px!important;right:4px!important;
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  .hm-cell-info{font-size:8px!important;margin-top:1px!important}
+  .hm-cell-empty .hm-cell-tag{font-size:9px!important}
+  /* スコア背景色を印刷で保持 */
+  .hm-s0,.hm-s1,.hm-s2,.hm-s3,.hm-s4,.hm-s5{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .hm-cell-empty{opacity:.5!important}
+  /* その他の要素を非表示 */
+  body > *:not(#main){display:none!important}
+  #modal-bg,#toast-box{display:none!important}
+}
+
 /* Hutch setup modal */
 .hutch-setup-grid{display:grid;grid-template-columns:1fr 1fr;gap:12px;margin-bottom:16px}
 .hutch-preview{display:flex;gap:10px;margin-top:12px;overflow-x:auto}
@@ -2217,11 +2281,24 @@ const renderHatchMap=()=>{
     </div>`;
   };
 
+  const scColors=['#10b981','#3b82f6','#f59e0b','#f97316','#ef4444','#7f1d1d'];
+
   setView(`
+  <!-- 印刷時のみ表示されるヘッダー -->
+  <div id="hm-print-header">
+    <div class="ph-title">🏠 ハッチマップ　${h(farm.name)}</div>
+    <div class="ph-sub">検診日：${viewDate}　　印刷日：${today()}${HM.flipH||HM.flipV?`　（${HM.flipH?'左右反転':''}${HM.flipH&&HM.flipV?' / ':''}${HM.flipV?'前後反転':''}）`:''}</div>
+    <div class="ph-legend">
+      ${[0,1,2,3,4,5].map(n=>`<div class="ph-legend-item"><div class="ph-legend-dot" style="background:${scColors[n]}"></div>スコア${n}</div>`).join('')}
+      <div class="ph-legend-item"><div class="ph-legend-dot" style="background:#ccc"></div>空</div>
+    </div>
+  </div>
+
   <div class="page-hd">
     <div class="page-title">🏠 ハッチマップ</div>
     <div class="page-sub">${h(farm.name)}　ハッチ ${hutches.length}個</div>
     <div style="margin-left:auto;display:flex;gap:8px">
+      <button class="btn-sm btn-ghost hm-btn-print" onclick="window.print()" title="マップを印刷（A4横）">🖨 印刷</button>
       <button class="btn-sm btn-ghost" onclick="App.openHutchSetup()">⚙ ハッチを編集</button>
     </div>
   </div>
@@ -2242,7 +2319,7 @@ const renderHatchMap=()=>{
       <button class="btn-sm ${HM.flipV?'btn-primary':'btn-ghost'}" onclick="App.hmFlip('V')" title="前後反転（入り口が奥側の場合）" style="padding:3px 9px;font-size:11px">⇅ 前後</button>
     </div>
     <div class="hm-legend">
-      ${[0,1,2,3,4,5].map(n=>`<div class="hm-legend-item"><div class="hm-legend-dot" style="background:${['#10b981','#3b82f6','#f59e0b','#f97316','#ef4444','#7f1d1d'][n]}"></div>スコア${n}</div>`).join('')}
+      ${[0,1,2,3,4,5].map(n=>`<div class="hm-legend-item"><div class="hm-legend-dot" style="background:${scColors[n]}"></div>スコア${n}</div>`).join('')}
       <div class="hm-legend-item"><div class="hm-legend-dot" style="background:var(--border-2)"></div>空</div>
     </div>
   </div>
