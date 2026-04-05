@@ -678,6 +678,8 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
         <button class="tb-menu-item" id="btn-file-save" onclick="FileStore.saveAs();App.closeMenus()">💾 名前を付けて保存</button>
         <div class="tb-menu-sep"></div>
         <button class="tb-menu-item" onclick="App.exportFarm();App.closeMenus()">⬇ エクスポート（JSON）</button>
+        <button class="tb-menu-item" onclick="App.exportCSV('farm');App.closeMenus()">📊 CSVエクスポート（この農場）</button>
+        <button class="tb-menu-item" onclick="App.exportCSV('all');App.closeMenus()">📊 CSVエクスポート（全農場）</button>
         <button class="tb-menu-item" onclick="document.getElementById('file-in').click();App.closeMenus()">⬆ インポート（JSON）</button>
         <div class="tb-menu-sep"></div>
         <div id="file-status" style="font-size:11px;padding:6px 16px;color:var(--text-3);line-height:1.5"></div>
@@ -1068,7 +1070,7 @@ const HutchUtil = {
 };
 
 // ─── Hatch Map State ──────────────────────────────
-let HM = { date: null, focusHutch: null };
+let HM = { date: null, focusHutch: null, flipH: false, flipV: false };
 
 // ─── Charts ───────────────────────────────────────
 const CHS={};
@@ -1615,16 +1617,31 @@ const renderNotes=()=>{
   const notesHutches=HutchUtil.get(fid);
   const ROW_COUNT=40;
 
-  // テーブル行データ生成
+  // 自動入力ON：検査日（野帳の検査日）より前のスキャン日のうち最新日＝「前回検査日」。その日に検査された個体（各個体の最新スキャンがその日）のみ。最大40頭・拡大4桁順
+  const refDate=NS.date;
+  let prevRoundDate=null;
   const rows=[];
-  if(NS.prefill&&animals.length){
-    animals.slice(0,ROW_COUNT).forEach((a,i)=>{
-      const sc=allScans.filter(s=>s.animalId===a.id).sort((x,y)=>y.scanDate.localeCompare(x.scanDate));
-      const last=sc[0];
-      const age=a.birthDate?calcAge(a.birthDate,NS.date):null;
-      const lastHutch=last?(last.hutchId?(notesHutches.find(hh=>hh.id===last.hutchId)?.label||last.hutchId):last.hutchFree||''):'';
-      rows.push({no:i+1,tag:a.tagId,age,lastHutch,prefillScore:last?last.obScore:null,prevDate:last?last.scanDate:'',round:last?last.round+1:1});
+  if(NS.prefill){
+    const byId=new Map(animals.map(a=>[a.id,a]));
+    const lastScanByAnimal=new Map();
+    allScans.forEach(s=>{
+      const cur=lastScanByAnimal.get(s.animalId);
+      if(!cur||s.scanDate.localeCompare(cur.scanDate)>0) lastScanByAnimal.set(s.animalId,s);
     });
+    const datesBefore=[...new Set(allScans.map(s=>s.scanDate).filter(d=>d<refDate))];
+    if(datesBefore.length) prevRoundDate=datesBefore.sort().reverse()[0];
+    if(prevRoundDate){
+      const recent=[...lastScanByAnimal.entries()]
+        .filter(([id,last])=>byId.has(id)&&last.scanDate===prevRoundDate)
+        .sort((a,b)=>get拡4(byId.get(a[0]).tagId).localeCompare(get拡4(byId.get(b[0]).tagId)))
+        .slice(0,ROW_COUNT)
+        .map(([id,last])=>({a:byId.get(id),last}));
+      recent.forEach(({a,last},i)=>{
+        const age=a.birthDate?calcAge(a.birthDate,NS.date):null;
+        const lastHutch=last?(last.hutchId?(notesHutches.find(hh=>hh.id===last.hutchId)?.label||last.hutchId):last.hutchFree||''):'';
+        rows.push({no:i+1,tag:a.tagId,age,lastHutch,prefillScore:last?last.obScore:null,prevDate:last?last.scanDate:'',round:last?last.round+1:1});
+      });
+    }
     while(rows.length<ROW_COUNT)rows.push({no:rows.length+1});
   } else {
     for(let i=0;i<ROW_COUNT;i++)rows.push({no:i+1});
@@ -1666,7 +1683,7 @@ const renderNotes=()=>{
   <div class="note-opts no-print">
     <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
       <input type="checkbox" ${NS.prefill?'checked':''} onchange="NS.prefill=this.checked;renderNotes()" style="width:15px;height:15px">
-      登録個体を自動入力
+      前回検査日の個体を自動入力
     </label>
     <div style="display:flex;align-items:center;gap:6px;font-size:13px">
       <span style="color:var(--text-3);font-weight:600">検査日：</span>
@@ -1678,6 +1695,11 @@ const renderNotes=()=>{
     </div>
     <button class="btn-primary" onclick="window.print()" style="margin-left:auto">🖨 印刷・PDF出力</button>
   </div>
+  ${NS.prefill?`<div class="no-print" style="font-size:12px;color:var(--text-3);margin:0 0 12px;line-height:1.5">
+    ${prevRoundDate
+      ? `前回検査日（自動判定）：${prevRoundDate.replace(/-/g,'/')}（検査日 ${refDate.replace(/-/g,'/')} より前のスキャン日のうち最新）。この日が各個体の最新スキャン日である個体のみを入力します。`
+      : `※ 検査日より前のスキャンがデータにないため、個体は自動入力されません。`}
+  </div>`:''}
 
   <div class="note-wrap">
     <div class="note-hd">
@@ -2121,10 +2143,14 @@ const renderHatchMap=()=>{
   const viewDate=HM.date;
   const dateIdx=dates.indexOf(viewDate);
 
-  // 列ごとにハッチをグループ化
+  // 列ごとにハッチをグループ化（フリップ対応）
   const {cols}=HutchUtil.gridSize(hutches);
-  const byCols=[];
-  for(let c=0;c<cols;c++) byCols.push(hutches.filter(h=>h.col===c).sort((a,b)=>a.row-b.row));
+  let byCols=[];
+  for(let c=0;c<cols;c++){
+    const col=hutches.filter(h=>h.col===c).sort((a,b)=>a.row-b.row);
+    byCols.push(HM.flipV ? col.slice().reverse() : col);
+  }
+  if(HM.flipH) byCols=byCols.slice().reverse();
 
   // 各ハッチの占有状態を取得
   const occ={};
@@ -2210,6 +2236,11 @@ const renderHatchMap=()=>{
       <button onclick="App.hmNextDate()" title="次の検診日" ${dateIdx>=dates.length-1||!dates.length?'disabled':''}>▶</button>
     </div>
     ${dates.length?`<div style="font-size:11px;color:var(--text-4)">${dateIdx>=0?`${dateIdx+1}/${dates.length}回目の検診日`:'最近の検診日前'}</div>`:''}
+    <div style="display:flex;align-items:center;gap:6px;margin-left:4px">
+      <span style="font-size:11px;color:var(--text-3)">表示向き</span>
+      <button class="btn-sm ${HM.flipH?'btn-primary':'btn-ghost'}" onclick="App.hmFlip('H')" title="左右反転（入り口が右側の場合）" style="padding:3px 9px;font-size:11px">⇄ 左右</button>
+      <button class="btn-sm ${HM.flipV?'btn-primary':'btn-ghost'}" onclick="App.hmFlip('V')" title="前後反転（入り口が奥側の場合）" style="padding:3px 9px;font-size:11px">⇅ 前後</button>
+    </div>
     <div class="hm-legend">
       ${[0,1,2,3,4,5].map(n=>`<div class="hm-legend-item"><div class="hm-legend-dot" style="background:${['#10b981','#3b82f6','#f59e0b','#f97316','#ef4444','#7f1d1d'][n]}"></div>スコア${n}</div>`).join('')}
       <div class="hm-legend-item"><div class="hm-legend-dot" style="background:var(--border-2)"></div>空</div>
@@ -2629,6 +2660,11 @@ const App={
     const fid=DB.activeId();const dates=HutchUtil.scanDates(fid);
     const i=dates.indexOf(HM.date);if(i<dates.length-1){HM.date=dates[i+1];renderHatchMap();}
   },
+  hmFlip(axis){
+    if(axis==='H') HM.flipH=!HM.flipH;
+    else HM.flipV=!HM.flipV;
+    renderHatchMap();
+  },
 
   // ─── Hutch Setup helpers ────────────────────────
   _tmpHutches: null,
@@ -2809,6 +2845,93 @@ const App={
     const fid=DB.activeId();if(!fid){toast('農場を選択してください','err');return;}
     const json=DB.exportData(fid);if(!json)return;
     const farm=DB.getFarm(fid);const blob=new Blob([json],{type:'application/json'});const url=URL.createObjectURL(blob);const a=document.createElement('a');a.href=url;a.download=`${farm.name}_${today()}.json`;a.click();URL.revokeObjectURL(url);toast('エクスポートしました','ok');
+  },
+
+  exportCSV(mode){
+    // 対象農場を決定
+    let targets=[];
+    if(mode==='all'){
+      targets=DB.getFarms();
+      if(!targets.length){toast('データがありません','err');return;}
+    } else {
+      const fid=DB.activeId();if(!fid){toast('農場を選択してください','err');return;}
+      const f=DB.getFarm(fid);if(!f)return;
+      targets=[f];
+    }
+
+    // CSV ヘッダー
+    const HDR=[
+      '農場名','耳標番号（10桁）','拡大4桁','品種','性別','生年月日',
+      '検査日','検査時日齢(日)','ハッチ',
+      '右_前葉前部','右_前葉後部','右_中葉','右_後葉',
+      '左_前葉前部','左_前葉後部','左_後葉',
+      'OBスコア','主な所見','治療介入','薬剤','備考','ラウンド','記録作成日時'
+    ];
+
+    // 所見コードを日本語ラベルに変換（研究データ用）
+    const fLbl={'':'','A':'正常','B':'Bライン増多','C':'コンソリデーション','H':'肝変化','E':'胸水','P':'膿瘍'};
+    const sexLbl={'F':'雌','M':'雄','':'不明'};
+
+    // CSV 値のエスケープ（カンマ・改行・ダブルクォート対応）
+    const esc=v=>{
+      if(v==null)return '';
+      const s=String(v);
+      if(s.includes(',')||s.includes('"')||s.includes('\n'))return '"'+s.replace(/"/g,'""')+'"';
+      return s;
+    };
+
+    const rows=[HDR.map(esc).join(',')];
+
+    for(const farm of targets){
+      const animalsMap=new Map(DB.getAnimals(farm.id).map(a=>[a.id,a]));
+      const hutches=HutchUtil.get(farm.id);
+      const hutchLabel=s=>s.hutchId?(hutches.find(h=>h.id===s.hutchId)?.label||s.hutchId):s.hutchFree||'';
+
+      const scans=DB.getScans(farm.id).slice().sort((a,b)=>a.scanDate.localeCompare(b.scanDate));
+      for(const s of scans){
+        const an=animalsMap.get(s.animalId)||{};
+        const row=[
+          farm.name,
+          s.tagId||'',
+          get拡4(s.tagId||''),
+          an.breed||'',
+          sexLbl[an.sex||'']||'',
+          an.birthDate||'',
+          s.scanDate||'',
+          s.ageAtScan!=null?s.ageAtScan:'',
+          hutchLabel(s),
+          fLbl[s.right?.rf_a||''],
+          fLbl[s.right?.rf_p||''],
+          fLbl[s.right?.r_m ||''],
+          fLbl[s.right?.r_c ||''],
+          fLbl[s.left?.lf_a ||''],
+          fLbl[s.left?.lf_p ||''],
+          fLbl[s.left?.l_c  ||''],
+          s.obScore!=null?s.obScore:'',
+          s.mainFindings||'',
+          s.treated?'あり':'なし',
+          s.drug||'',
+          s.notes||'',
+          s.round||1,
+          s.createdAt||''
+        ];
+        rows.push(row.map(esc).join(','));
+      }
+    }
+
+    // BOM付きUTF-8でExcelでも文字化けしないように出力
+    const bom='\uFEFF';
+    const csv=bom+rows.join('\r\n');
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;
+    const fname=mode==='all'?`DairyNotebook_全農場_${today()}.csv`:`${targets[0].name}_${today()}.csv`;
+    a.download=fname;
+    a.click();
+    URL.revokeObjectURL(url);
+    const total=rows.length-1;
+    toast(`CSVエクスポート完了（${total}件）`,'ok');
   },
   importFarm(file){
     const r=new FileReader();
