@@ -42,8 +42,8 @@
   /* Score colors */
   --s0:#10b981; --s1:#3b82f6; --s2:#f59e0b; --s3:#f97316; --s4:#ef4444; --s5:#7f1d1d;
   --sb0:#d1fae5;--sb1:#dbeafe;--sb2:#fef3c7;--sb3:#ffedd5;--sb4:#fee2e2;--sb5:#fecaca;
-  /* Finding colors: 正常→Bライン→コンソリ→肝変化→胸水→膿瘍 */
-  --fn:#10b981; --fb:#3b82f6; --fc:#f97316; --fh:#b91c1c; --fe:#8b5cf6; --fa:#ef4444;
+  /* Finding colors: 正常→線状B→帯状B→局所C→びまんC→肝変化→胸水→膿瘍 */
+  --fn:#10b981; --fl:#60a5fa; --fb:#3b82f6; --fc:#f59e0b; --fd:#c2410c; --fh:#b91c1c; --fe:#8b5cf6; --fa:#ef4444;
 }
 
 /* ─────────────────────────────────────────
@@ -254,8 +254,10 @@ input,select,textarea{font-family:inherit}
 }
 .lung-btn:hover{border-color:var(--blue);color:var(--blue)}
 .lung-btn.st-n{border-color:var(--fn);background:var(--sb0);color:var(--fn)}
+.lung-btn.st-l{border-color:var(--fl);background:#eff6ff;color:var(--fl)}
 .lung-btn.st-b{border-color:var(--fb);background:var(--sb1);color:var(--fb)}
-.lung-btn.st-c{border-color:var(--fc);background:var(--sb3);color:var(--fc)}
+.lung-btn.st-c{border-color:var(--fc);background:#fffbeb;color:var(--fc)}
+.lung-btn.st-d{border-color:var(--fd);background:#fff7ed;color:var(--fd)}
 .lung-btn.st-h{border-color:var(--fh);background:#fef2f2;color:var(--fh)}
 .lung-btn.st-e{border-color:var(--fe);background:#ede9fe;color:var(--fe)}
 .lung-btn.st-a{border-color:var(--fa);background:var(--sb4);color:var(--fa)}
@@ -305,8 +307,10 @@ input,select,textarea{font-family:inherit}
   width:24px;height:24px;border-radius:6px;font-size:11px;font-weight:700;border:1.5px solid transparent}
 .fch-empty{border-color:var(--border-2);color:var(--text-4);background:#fafafa}
 .fch-n{background:var(--sb0);border-color:var(--fn);color:var(--fn)}
+.fch-l{background:#eff6ff;border-color:var(--fl);color:var(--fl)}
 .fch-b{background:var(--sb1);border-color:var(--fb);color:var(--fb)}
-.fch-c{background:var(--sb3);border-color:var(--fc);color:var(--fc)}
+.fch-c{background:#fffbeb;border-color:var(--fc);color:var(--fc)}
+.fch-d{background:#fff7ed;border-color:var(--fd);color:var(--fd)}
 .fch-h{background:#fef2f2;border-color:var(--fh);color:var(--fh)}
 .fch-e{background:#ede9fe;border-color:var(--fe);color:var(--fe)}
 .fch-a{background:var(--sb4);border-color:var(--fa);color:var(--fa)}
@@ -807,17 +811,17 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 'use strict';
 // ─── Constants ────────────────────────────────────
 const PFX = 'lu';
-const FC   = ['','A','B','C','H','E','P'];
-const FSTATE = {'':'','A':'st-n','B':'st-b','C':'st-c','H':'st-h','E':'st-e','P':'st-a'};
-const FCHIP  = {'':'fch-empty','A':'fch-n','B':'fch-b','C':'fch-c','H':'fch-h','E':'fch-e','P':'fch-a'};
-const FLBL   = {'':'－','A':'正常（Aライン）','B':'Bライン増多','C':'コンソリデーション（≥1cm）','H':'肝変化（hepatization）','E':'胸水','P':'膿瘍（Purulent）'};
+const FC   = ['','A','L','B','C','D','H','E','P'];
+const FSTATE = {'':'','A':'st-n','L':'st-l','B':'st-b','C':'st-c','D':'st-d','H':'st-h','E':'st-e','P':'st-a'};
+const FCHIP  = {'':'fch-empty','A':'fch-n','L':'fch-l','B':'fch-b','C':'fch-c','D':'fch-d','H':'fch-h','E':'fch-e','P':'fch-a'};
+const FLBL   = {'':'－','A':'正常（Aライン）','L':'線状Bライン（スコア影響なし・記録のみ）','B':'帯状Bライン（コメットライン）','C':'局所コンソリデーション（≥1cm²）','D':'びまん性コンソリデーション（葉全体）','H':'肝変化（hepatization）','E':'胸水（pleural effusion）','P':'膿瘍（Purulent）'};
 // ボタン表示用（短い日本語）
-const FBTN   = {'':'未入力','A':'正常','B':'B線↑','C':'コンソリ','H':'肝変化','E':'胸水','P':'膿瘍'};
+const FBTN   = {'':'未入力','A':'正常','L':'線状B','B':'帯状B','C':'局所C','D':'びまんC','H':'肝変化','E':'胸水','P':'膿瘍'};
 // 小チップ用（1〜2文字）
-const FCHP_CHR = {'':'－','A':'正','B':'B↑','C':'Con','H':'肝','E':'胸','P':'膿'};
+const FCHP_CHR = {'':'－','A':'正','L':'Bl','B':'Bb','C':'局C','D':'広C','H':'肝','E':'胸','P':'膿'};
 const SC     = ['#10b981','#3b82f6','#f59e0b','#f97316','#ef4444','#7f1d1d'];
 const SCB    = ['#d1fae5','#dbeafe','#fef3c7','#ffedd5','#fee2e2','#fecaca'];
-const SLBL   = ['正常（Aライン主体）','Bライン増多（間質性変化）','小葉性実質化（≥1cm）','1葉全体の実質化','2葉全体の実質化','3葉以上の実質化'];
+const SLBL   = ['正常（Aライン・線状Bライン）','帯状Bライン（コメットライン）','局所コンソリデーション（≥1cm²）','びまん性コンソリデーション 1葉','びまん性コンソリデーション 2葉','びまん性コンソリデーション≥3葉・肝変化・胸水'];
 const SACT   = ['次回定期スキャンまで観察','5〜10日後に再スキャン','治療介入（7〜10日後再スキャン）','治療介入・薬剤選択再評価','積極的治療・廃用リスクを共有','緊急対応・予後不良を説明'];
 const PROT   = {A:'集中型（7日間隔）',B:'標準型（14日間隔）',C:'簡易型（3点固定）'};
 const BM     = {A:15,B:20,C:25};
@@ -1129,17 +1133,19 @@ const Calc = {
   },
   suggest(r,l){
     const all=[...Object.values(r||{}),...Object.values(l||{})];
-    if(all.includes('P'))return 5;
-    const c=all.filter(x=>x==='C'||x==='H').length; // コンソリ＋肝変化を合算
-    const h=all.filter(x=>x==='H').length;           // 肝変化のみ
-    const e=all.filter(x=>x==='E').length;
-    // 7ポジション（右4＋左3）基準でスコア提案
-    if(e>0&&c>=3)return 5;
-    if(h>=3||c>=6)return 5;
-    if(h>=2||c>=4)return 4;
-    if(h>=1||c>=3)return 3;
-    if(c>=1)return 2;
-    if(all.includes('B'))return 1;return 0;
+    // 肝変化・胸水・膿瘍 → スコア5
+    if(all.includes('H')||all.includes('E')||all.includes('P'))return 5;
+    // びまん性コンソリデーション（D）の葉数でスコア決定
+    const diffuse=all.filter(x=>x==='D').length;
+    if(diffuse>=3)return 5;
+    if(diffuse===2)return 4;
+    if(diffuse===1)return 3;
+    // 局所コンソリデーション（C）が1ヶ所以上 → スコア2
+    if(all.includes('C'))return 2;
+    // 帯状Bライン（コメットライン）→ スコア1
+    if(all.includes('B'))return 1;
+    // 線状Bライン（L）はスコアに影響しない → 0
+    return 0;
   }
 };
 
@@ -1347,7 +1353,7 @@ const renderDashboard=()=>{
   :($('ch-prev')&&($('ch-prev').parentElement.innerHTML='<div class="empty" style="padding:24px"><p>データが蓄積されるとグラフが表示されます</p></div>'));
 
   const dist=Calc.dist(fid);
-  dist.some(n=>n>0)?mkChart('ch-dist',{type:'doughnut',data:{labels:['0:正常','1:間質','2:小葉性','3:葉性','4:重症','5:最重症'],datasets:[{data:dist,backgroundColor:SC,borderWidth:2,borderColor:'#fff',hoverOffset:5}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right',labels:{font:{size:11},padding:8}},tooltip:{callbacks:{label:ctx=>{const t=dist.reduce((a,b)=>a+b,0);return`${ctx.label}: ${ctx.parsed}頭 (${t?+(ctx.parsed/t*100).toFixed(1):0}%)`;}}}}}}):
+  dist.some(n=>n>0)?mkChart('ch-dist',{type:'doughnut',data:{labels:['0:正常','1:帯状B','2:局所C','3:びまんC1葉','4:びまんC2葉','5:重症以上'],datasets:[{data:dist,backgroundColor:SC,borderWidth:2,borderColor:'#fff',hoverOffset:5}]},options:{responsive:true,maintainAspectRatio:false,cutout:'62%',plugins:{legend:{position:'right',labels:{font:{size:11},padding:8}},tooltip:{callbacks:{label:ctx=>{const t=dist.reduce((a,b)=>a+b,0);return`${ctx.label}: ${ctx.parsed}頭 (${t?+(ctx.parsed/t*100).toFixed(1):0}%)`;}}}}}}):
   ($('ch-dist')&&($('ch-dist').parentElement.innerHTML='<div class="empty" style="padding:24px"><p>スキャンデータが入ると表示されます</p></div>'));
 };
 
@@ -1440,14 +1446,16 @@ const renderNewScan=(editScan=null)=>{
         <div class="callout-i">💡</div>
         <div style="width:100%">
           <div style="margin-bottom:8px;font-size:13px">各ボタンをタップするたびに所見が切り替わります。</div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(80px,1fr));gap:5px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(88px,1fr));gap:5px">
             <div style="background:#f9fafb;border:1.5px solid var(--border-2);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--text-3)"><strong>未入力</strong><br><span style="font-size:10px">記録なし</span></div>
             <div style="background:var(--sb0);border:1.5px solid var(--fn);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fn)"><strong>正常</strong><br><span style="font-size:10px">Aライン正常</span></div>
-            <div style="background:var(--sb1);border:1.5px solid var(--fb);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fb)"><strong>B線↑</strong><br><span style="font-size:10px">Bライン増多</span></div>
-            <div style="background:var(--sb3);border:1.5px solid var(--fc);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fc)"><strong>コンソリ</strong><br><span style="font-size:10px">consolidation ≥1cm</span></div>
-            <div style="background:#fef2f2;border:1.5px solid var(--fh);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fh)"><strong>肝変化</strong><br><span style="font-size:10px">hepatization 完全型</span></div>
-            <div style="background:#ede9fe;border:1.5px solid var(--fe);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fe)"><strong>胸水</strong><br><span style="font-size:10px">無エコー液貯留</span></div>
-            <div style="background:var(--sb4);border:1.5px solid var(--fa);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fa)"><strong>膿瘍</strong><br><span style="font-size:10px">被包化膿瘍</span></div>
+            <div style="background:#eff6ff;border:1.5px solid var(--fl);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fl)"><strong>線状B</strong><br><span style="font-size:10px">スコア影響なし</span></div>
+            <div style="background:var(--sb1);border:1.5px solid var(--fb);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fb)"><strong>帯状B</strong><br><span style="font-size:10px">コメットライン→1</span></div>
+            <div style="background:#fffbeb;border:1.5px solid var(--fc);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fc)"><strong>局所C</strong><br><span style="font-size:10px">局所コンソリ→2</span></div>
+            <div style="background:#fff7ed;border:1.5px solid var(--fd);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fd)"><strong>びまんC</strong><br><span style="font-size:10px">葉全体→3〜5</span></div>
+            <div style="background:#fef2f2;border:1.5px solid var(--fh);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fh)"><strong>肝変化</strong><br><span style="font-size:10px">hepatization→≥5</span></div>
+            <div style="background:#ede9fe;border:1.5px solid var(--fe);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fe)"><strong>胸水</strong><br><span style="font-size:10px">無エコー液貯留→≥5</span></div>
+            <div style="background:var(--sb4);border:1.5px solid var(--fa);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fa)"><strong>膿瘍</strong><br><span style="font-size:10px">被包化膿瘍→≥5</span></div>
           </div>
         </div>
       </div>
@@ -1863,13 +1871,15 @@ const renderNotes=()=>{
       <div class="note-legend-row">
         <strong>所見コード：</strong>
         <span><strong>A</strong>=正常Aライン</span>
-        <span><strong>B</strong>=Bライン増多</span>
-        <span><strong>C</strong>=実質化（≥1cm）</span>
+        <span><strong>L</strong>=線状Bライン（スコア影響なし）</span>
+        <span><strong>B</strong>=帯状Bライン/コメット</span>
+        <span><strong>C</strong>=局所コンソリ（≥1cm²）</span>
+        <span><strong>D</strong>=びまん性コンソリ（葉全体）</span>
         <span><strong>H</strong>=肝変化</span>
         <span><strong>E</strong>=胸水</span>
         <span><strong>P</strong>=膿瘍</span>
       </div>
-      <div class="note-legend-score">スコア：0=正常　1=B線↑　2=小葉性C　3=1葉H　4=2葉　5=3葉以上（P=自動スコア5）</div>
+      <div class="note-legend-score">スコア：0=正常・線状B　1=帯状B(コメット)　2=局所C(≥1cm²)　3=びまんC1葉　4=2葉　5=3葉以上・肝変化・胸水・膿瘍</div>
     </div>
     <div class="note-tbl-wrap">
       <table class="note-tbl">
@@ -1932,7 +1942,7 @@ const renderReport=()=>{
   const treated=scans.filter(s=>s.treated).length;
   const score2=scans.filter(s=>s.obScore>=2).length;
   const prev=total?Math.round(score2/total*100):0;
-  const JLBL=['正常','経過観察','要治療','要治療','重症','重症'];
+  const JLBL=['正常','経過観察（帯状B）','要治療（局所C）','要治療（びまんC1葉）','重症（びまんC2葉）','最重症'];
   const JBG=['#d1fae5','#dbeafe','#fef3c7','#ffedd5','#fee2e2','#fecaca'];
 
   const mkBadge=(s)=>`<span class="rpt-score-badge" style="background:${JBG[s.obScore]};color:${SC[s.obScore]}">${JLBL[s.obScore]}</span>`;
@@ -2084,12 +2094,12 @@ const renderGuide=()=>{
     {no:'葉⑦',jp:'左後葉',en:'Left caudal lobe',ics:'左 ICS 6-10',col:'#00897B'},
   ];
   const scores=[
-    {n:0,jp:'正常',en:'Normal A-lines',tx:'コンソリなし・Bライン少量',act:'次回定期スキャンまで観察',trt:'不要'},
-    {n:1,jp:'Bライン増多',en:'Interstitial pattern',tx:'びまん性Bライン増多（3本以上/肋間）',act:'5〜10日後に再スキャン',trt:'不要'},
-    {n:2,jp:'小葉性実質化',en:'Lobular consolidation',tx:'≥1cmの局所実質化（C所見）1ヶ所以上',act:'抗菌薬治療開始・7〜10日後再スキャン',trt:'要'},
-    {n:3,jp:'1葉全体の実質化',en:'Lobar consolidation',tx:'葉①〜⑦いずれか1葉全体（H所見）',act:'治療介入・薬剤選択再評価',trt:'要'},
-    {n:4,jp:'2葉全体の実質化',en:'2-lobe consolidation',tx:'いずれか2葉全体（H所見2葉）',act:'積極的治療・廃用リスクを説明',trt:'要'},
-    {n:5,jp:'3葉以上の実質化',en:'≥3-lobe / abscess',tx:'3葉以上・胸水合併・膿瘍（P）',act:'緊急対応・予後不良を説明',trt:'緊急'},
+    {n:0,jp:'正常',en:'Normal / Linear B-lines',tx:'Aライン正常 または 線状Bライン（数に関係なく）/ <1cm²コンソリデーション',act:'次回定期スキャンまで観察',trt:'不要'},
+    {n:1,jp:'帯状Bライン（コメットライン）',en:'Band-like B-lines / Comet-tail artifacts',tx:'帯状Bライン（コメットライン）が認められる（線状Bラインはスコア0）',act:'5〜10日後に再スキャン',trt:'不要'},
+    {n:2,jp:'局所コンソリデーション',en:'Focal consolidation',tx:'≥1cm²のコンソリデーションが局所的（葉の一部）に認められる（複数部位・複数葉でも局所性ならスコア2）',act:'抗菌薬治療開始・7〜10日後再スキャン',trt:'要'},
+    {n:3,jp:'びまん性コンソリデーション 1葉',en:'Diffuse consolidation – 1 lobe',tx:'びまん性コンソリデーション（葉全体に波及）が1葉に認められる（Dコード）',act:'治療介入・薬剤選択再評価',trt:'要'},
+    {n:4,jp:'びまん性コンソリデーション 2葉',en:'Diffuse consolidation – 2 lobes',tx:'びまん性コンソリデーションが2葉に認められる',act:'積極的治療・廃用リスクを説明',trt:'要'},
+    {n:5,jp:'びまん性コンソリデーション≥3葉・肝変化・胸水',en:'≥3-lobe diffuse / Hepatization / Effusion',tx:'びまん性コンソリデーション3葉以上、または肝変化（H）・胸水（E）・膿瘍（P）',act:'緊急対応・予後不良を説明',trt:'緊急'},
   ];
 
   setView(`
@@ -2159,10 +2169,15 @@ const renderGuide=()=>{
   <div class="card" style="margin-bottom:14px">
     <div class="card-hd"><div class="card-hd-icon teal">🔬</div><div class="card-hd-title">所見コード一覧</div></div>
     <div class="card-body">
-      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(140px,1fr));gap:8px">
-        ${Object.entries(FLBL).filter(([k])=>k).map(([k,v])=>`<div class="finding-chip ${FCHIP[k]}" style="padding:8px 12px;font-size:13px;border-radius:8px;display:flex;align-items:center;gap:8px;width:auto;height:auto">
+      <div style="display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:8px">
+        ${Object.entries(FLBL).filter(([k])=>k).map(([k,v])=>`<div class="finding-chip ${FCHIP[k]}" style="padding:8px 12px;font-size:12px;border-radius:8px;display:flex;align-items:center;gap:8px;width:auto;height:auto">
           <strong style="font-size:16px">${k}</strong><span>${v}</span>
         </div>`).join('')}
+      </div>
+      <div style="margin-top:12px;padding:10px;background:#f8fafc;border-radius:8px;font-size:12px;color:var(--text-2);line-height:1.8">
+        <strong>Bラインの分類：</strong>「線状Bライン（L）」はスコアに影響しませんが記録します。「帯状Bライン（B）」＝コメットライン（带状・tail状に伸びるアーチファクト）がスコア1の基準です。<br>
+        <strong>コンソリデーションの分類：</strong>「局所C（C）」は≥1cm²のコンソリデーションが葉の一部に限局している場合（スコア2）。「びまんC（D）」は葉全体に波及している場合で、その葉数でスコア3〜5が決まります。<br>
+        <strong>肝変化（H）・胸水（E）：</strong>スコア≥5として扱います（自動提案では5を表示）。
       </div>
     </div>
   </div>
@@ -3137,7 +3152,7 @@ const App={
     ];
 
     // 所見コードを日本語ラベルに変換（研究データ用）
-    const fLbl={'':'','A':'正常','B':'Bライン増多','C':'コンソリデーション','H':'肝変化','E':'胸水','P':'膿瘍'};
+    const fLbl={'':'','A':'正常','L':'線状Bライン','B':'帯状Bライン(コメット)','C':'局所コンソリデーション','D':'びまん性コンソリデーション','H':'肝変化','E':'胸水','P':'膿瘍'};
     const sexLbl={'F':'雌','M':'雄','':'不明'};
 
     // CSV 値のエスケープ（カンマ・改行・ダブルクォート対応）
