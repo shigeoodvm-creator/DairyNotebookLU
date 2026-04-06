@@ -1179,6 +1179,13 @@ const HutchUtil = {
       .map(s=>({...s, hutchLabel: hutches.find(h=>h.id===s.hutchId)?.label||s.hutchId}));
   },
 
+  /** 個体のスキャン履歴で、ハッチが記録されている直近1件（スキャン日・作成日の新しい順） */
+  lastHutchFromScans(fid, animalId){
+    const scans=DB.getScans(fid).filter(s=>s.animalId===animalId&&(s.hutchId||s.hutchFree))
+      .sort((a,b)=>b.scanDate.localeCompare(a.scanDate)||String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+    return scans[0]||null;
+  },
+
   // ファームのスキャン日一覧（昇順）
   scanDates(fid){ return [...new Set(DB.getScans(fid).map(s=>s.scanDate))].sort(); },
 
@@ -2999,7 +3006,7 @@ const App={
       if(tagWrap)tagWrap.style.display='none';
       if(msg)msg.innerHTML='';
       if(hint)hint.innerHTML=`<span style="color:var(--teal);font-weight:600">✓ ${fmtTagId(a.tagId)}　${a.breed||'品種未設定'}</span>`;
-      this.onTag(a.tagId,true);
+      this.onTag(a.tagId,false);
     } else if(matched.length>1){
       if(msg)msg.innerHTML=`<div style="background:var(--amber-lt);border:1.5px solid var(--amber);border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;align-items:center;gap:10px"><span style="font-size:18px">⚠️</span><div><div style="font-weight:700;color:var(--amber);font-size:13px">${matched.length}頭がヒットしました</div><div style="font-size:12px;color:var(--text-2);margin-top:2px">個体識別番号（10桁）を入力して絞り込んでください</div></div></div>`;
       if(tagWrap)tagWrap.style.display='block';
@@ -3023,6 +3030,15 @@ const App={
       if(naa)naa.style.display='none';
       if(a.birthDate){const ageEl=$('f-age');const dateEl=$('f-date');if(ageEl&&dateEl&&!ageEl.value)ageEl.value=calcAge(a.birthDate,dateEl.value);}
       const prev=DB.byAnimal(fid,a.id);const re=$('f-round');if(re&&!SS.editId)re.value=prev.length+1;
+      if(!SS.editId&&!silent){
+        const lh=HutchUtil.lastHutchFromScans(fid,a.id);
+        const sel=$('f-hutch-sel');const free=$('f-hutch-free');
+        if(sel){
+          if(lh&&lh.hutchId&&[...sel.options].some(o=>o.value===lh.hutchId)) sel.value=lh.hutchId;
+          else sel.value='';
+        }
+        if(free) free.value=(lh&&lh.hutchFree)?lh.hutchFree:'';
+      }
     }else{
       if(hint)hint.innerHTML=`<span style="color:var(--text-3)">新規個体として登録されます</span>`;
       if(naa)naa.style.display='block';
