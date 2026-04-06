@@ -1088,6 +1088,31 @@ const DB = {
   }
 };
 
+// ─── Drug Frequency ───────────────────────────────
+const DRUG_BASE=[
+  'エンロフロキサシン','フロルフェニコール','ツラスロマイシン','ガミスロマイシン',
+  'チルミコシン','オキシテトラサイクリン','セフチオフル','タルチスロマイシン',
+  'マルボフロキサシン','ダノフロキサシン','アンピシリン','セフキノム',
+  'アモキシシリン','タイロシン','ペニシリンG','ゲンタマイシン',
+  'TMP/SMX','カナマイシン','ネオマイシン','コリスチン','スペクチノマイシン','ドキシサイクリン'
+];
+const DrugFreq={
+  _k:`${PFX}:drug_freq`,
+  get(){try{return JSON.parse(localStorage.getItem(this._k))||{}}catch{return{}}},
+  inc(drug){
+    if(!drug)return;
+    const m=this.get();m[drug]=(m[drug]||0)+1;
+    localStorage.setItem(this._k,JSON.stringify(m));
+  },
+  sorted(){
+    const m=this.get();
+    const known=DRUG_BASE.slice().sort((a,b)=>(m[b]||0)-(m[a]||0)||(DRUG_BASE.indexOf(a)-DRUG_BASE.indexOf(b)));
+    const unknown=Object.keys(m).filter(d=>!DRUG_BASE.includes(d)).sort((a,b)=>m[b]-m[a]);
+    return [...unknown,...known];
+  },
+  datalistHtml(){return this.sorted().map(d=>`<option value="${d}">`).join('');}
+};
+
 // ─── Analysis ─────────────────────────────────────
 const Calc = {
   prev(scans){const t=scans.length,p=scans.filter(s=>s.obScore>=2).length;return{t,p,r:t?+(p/t*100).toFixed(1):0}},
@@ -1469,8 +1494,8 @@ const renderNewScan=(editScan=null)=>{
       <div class="form-row" id="drug-area" style="${s.treated?'':'display:none'}">
         <div class="form-group">
           <label class="form-label">使用薬剤・投与量</label>
-          <input class="form-input" id="f-drug" value="${h(s.drug||'')}" placeholder="例：エンロフロキサシン 2.5mg/kg 3日" list="drug-dl">
-          <datalist id="drug-dl"><option value="エンロフロキサシン 2.5mg/kg"><option value="フロルフェニコール 20mg/kg"><option value="チルミコシン 10mg/kg"><option value="ツラスロマイシン 2.5mg/kg"><option value="ガンママイシン 6mg/kg"></datalist>
+          <input class="form-input" id="f-drug" value="${h(s.drug||'')}" placeholder="例：エンロフロキサシン" list="drug-dl">
+          <datalist id="drug-dl">${DrugFreq.datalistHtml()}</datalist>
         </div>
       </div>
       <div class="form-group full" style="margin-top:6px">
@@ -2690,16 +2715,94 @@ const App={
     setTimeout(()=>{const e4=$('f-exp4');if(e4){e4.value=get拡4(tagId);App.onExp4(get拡4(tagId));}},60);
   },
   openCsvImport(){
+    const bg=$('modal-bg');bg.style.display='flex';
+    bg.innerHTML=`<div class="modal" style="max-width:560px">
+      <div class="modal-hd">
+        <div class="modal-title">CSV インポート — 個体一括登録</div>
+        <button class="modal-x" onclick="App.closeModal()">×</button>
+      </div>
+      <div class="modal-body" style="padding:20px 24px 24px">
+
+        <div style="font-size:13px;font-weight:700;margin-bottom:8px;color:var(--text-2)">CSV ファイルの形式</div>
+        <p style="font-size:12px;color:var(--text-3);margin:0 0 12px">
+          1行1頭。ヘッダー行は自動スキップします（あってもなくても可）。
+        </p>
+
+        <table style="width:100%;border-collapse:collapse;font-size:12px;margin-bottom:16px">
+          <thead>
+            <tr style="background:var(--surface)">
+              <th style="padding:6px 10px;border:1px solid var(--border);text-align:left;width:30px">列</th>
+              <th style="padding:6px 10px;border:1px solid var(--border);text-align:left">項目</th>
+              <th style="padding:6px 10px;border:1px solid var(--border);text-align:left">形式・例</th>
+              <th style="padding:6px 10px;border:1px solid var(--border);text-align:center;width:50px">必須</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td style="padding:6px 10px;border:1px solid var(--border);text-align:center;color:var(--text-4)">A</td>
+              <td style="padding:6px 10px;border:1px solid var(--border);font-weight:700">個体識別番号</td>
+              <td style="padding:6px 10px;border:1px solid var(--border);color:var(--text-3)">10桁の数字　例: <code>1234567890</code></td>
+              <td style="padding:6px 10px;border:1px solid var(--border);text-align:center;color:#b91c1c;font-weight:700">●</td>
+            </tr>
+            <tr style="background:var(--surface)">
+              <td style="padding:6px 10px;border:1px solid var(--border);text-align:center;color:var(--text-4)">B</td>
+              <td style="padding:6px 10px;border:1px solid var(--border)">生年月日</td>
+              <td style="padding:6px 10px;border:1px solid var(--border);color:var(--text-3)">YYYY-MM-DD　例: <code>2024-03-15</code></td>
+              <td style="padding:6px 10px;border:1px solid var(--border);text-align:center;color:var(--text-4)">—</td>
+            </tr>
+            <tr>
+              <td style="padding:6px 10px;border:1px solid var(--border);text-align:center;color:var(--text-4)">C</td>
+              <td style="padding:6px 10px;border:1px solid var(--border)">品種</td>
+              <td style="padding:6px 10px;border:1px solid var(--border);color:var(--text-3)">任意テキスト　例: <code>ホルスタイン</code></td>
+              <td style="padding:6px 10px;border:1px solid var(--border);text-align:center;color:var(--text-4)">—</td>
+            </tr>
+            <tr style="background:var(--surface)">
+              <td style="padding:6px 10px;border:1px solid var(--border);text-align:center;color:var(--text-4)">D</td>
+              <td style="padding:6px 10px;border:1px solid var(--border)">性別</td>
+              <td style="padding:6px 10px;border:1px solid var(--border);color:var(--text-3)"><code>F</code> または <code>雌</code>　／　<code>M</code> または <code>雄</code></td>
+              <td style="padding:6px 10px;border:1px solid var(--border);text-align:center;color:var(--text-4)">—</td>
+            </tr>
+          </tbody>
+        </table>
+
+        <div style="font-size:12px;font-weight:700;margin-bottom:6px;color:var(--text-3)">記載例（A列〜D列）</div>
+        <pre style="font-size:11px;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 14px;margin:0 0 18px;overflow-x:auto;line-height:1.8;color:var(--text-2)">耳標番号,生年月日,品種,性別
+1234567890,2024-03-15,ホルスタイン,F
+0987654321,2024-04-02,ホルスタイン,F
+1111122222,2024-05-10,,</pre>
+
+        <div style="font-size:11px;color:var(--text-4);background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 12px;margin-bottom:20px;line-height:1.6">
+          すでに登録済みの個体識別番号はスキップされます。<br>
+          文字コードは UTF-8（BOM付き可）または Shift-JIS に対応しています。<br>
+          Excel の「名前を付けて保存」→「CSV UTF-8（コンマ区切り）」で作成できます。
+        </div>
+
+        <div style="display:flex;gap:10px;justify-content:flex-end;flex-wrap:wrap">
+          <button class="btn-outline" onclick="App.downloadCsvTemplate()">テンプレートをダウンロード</button>
+          <button class="btn-outline" onclick="App.closeModal()">キャンセル</button>
+          <button class="btn-primary" onclick="App._pickCsvFile()">ファイルを選択してインポート</button>
+        </div>
+      </div>
+    </div>`;
+  },
+  _pickCsvFile(){
+    this.closeModal();
     const inp=document.createElement('input');inp.type='file';inp.accept='.csv,text/csv';
     inp.onchange=e=>{if(e.target.files[0])App.importAnimalCsv(e.target.files[0]);};inp.click();
   },
+  downloadCsvTemplate(){
+    const bom='\uFEFF';
+    const csv=bom+'耳標番号,生年月日,品種,性別\r\n1234567890,2024-03-15,ホルスタイン,F\r\n0987654321,2024-04-02,ホルスタイン,F\r\n';
+    const blob=new Blob([csv],{type:'text/csv;charset=utf-8;'});
+    const url=URL.createObjectURL(blob);const a=document.createElement('a');
+    a.href=url;a.download='個体登録テンプレート.csv';a.click();URL.revokeObjectURL(url);
+    toast('テンプレートをダウンロードしました','ok');
+  },
   importAnimalCsv(file){
-    const r=new FileReader();
-    r.onload=e=>{
+    const doParse=txt=>{
       const fid=DB.activeId();if(!fid){toast('農場を選択してください','err');return;}
-      const lines=e.target.result.replace(/\r/g,'').split('\n').map(l=>l.trim()).filter(l=>l);
+      const lines=txt.replace(/\r/g,'').split('\n').map(l=>l.trim()).filter(l=>l);
       let added=0,skipped=0,errors=0;
-      // ヘッダー行スキップ（1行目が数字で始まらない場合）
       const startIdx=/^\d{10}/.test(lines[0])?0:1;
       for(let i=startIdx;i<lines.length;i++){
         const cols=lines[i].split(',').map(s=>s.trim().replace(/^["']|["']$/g,''));
@@ -2712,6 +2815,15 @@ const App={
       }
       toast(`${added}頭を登録しました（スキップ:${skipped}件、エラー:${errors}件）`,'ok');
       renderAnimals();
+    };
+    const r=new FileReader();
+    r.onload=e=>{
+      const txt=e.target.result;
+      if(txt.includes('\uFFFD')){
+        const r2=new FileReader();r2.onload=e2=>doParse(e2.target.result);r2.readAsText(file,'shift-jis');
+      } else {
+        doParse(txt);
+      }
     };
     r.readAsText(file,'utf-8');
   },
@@ -2973,6 +3085,7 @@ const App={
     const scan={farmId:fid,animalId:animal.id,tagId,scanDate,ageAtScan,round,right:{...SS.right},left:{...SS.left},obScore:score,mainFindings:$('f-findings').value.trim(),treated:$('f-treated').checked,drug:$('f-drug')?.value.trim()||'',notes:$('f-notes').value.trim(),...(hutchId?{hutchId}:{}),...(hutchFree&&!hutchId?{hutchFree}:{})};
     if(SS.editId){scan.id=SS.editId;DB.updateScan(fid,scan);toast('記録を更新しました','ok');}
     else{DB.addScan(fid,scan);toast(`${tagId} のスキャンを保存しました（スコア ${score}）`,'ok');}
+    if(scan.treated&&scan.drug)DrugFreq.inc(scan.drug);
     resetSS();Router.nav('/history');
   },
   editScan(sid){const fid=DB.activeId();if(!fid)return;const sc=DB.getScans(fid).find(s=>s.id===sid);if(!sc){toast('記録が見つかりません','err');return;}renderNewScan(sc);window.scrollTo(0,0);history.replaceState(null,'','#/scan/new');Router._hl('/scan/new');},
