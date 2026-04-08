@@ -2228,7 +2228,7 @@ const renderAnimals=()=>{
     <button class="btn-primary" onclick="App.openAnimalRegModal()">＋ 個体を登録</button>
   </div>
   <div class="filter-bar">
-    <input class="form-input" placeholder="個体識別番号 または 拡大4桁で検索" value="${h(AS.q)}" oninput="App.setAq(this.value)" style="width:260px">
+    <input id="animals-search" class="form-input" placeholder="個体識別番号 または 拡大4桁で検索" value="${h(AS.q)}" oninput="App.setAq(this.value,this.selectionStart)" style="width:260px">
     <button class="btn-sm btn-ghost" onclick="App.clrAq()">リセット</button>
     <span style="margin-left:auto;font-size:12px;color:var(--text-3)">${animals.length} 頭表示</span>
   </div>
@@ -2421,6 +2421,7 @@ const renderHatchMap=()=>{
       <span style="font-size:11px;color:var(--text-3)">表示向き</span>
       <button class="btn-sm ${HM.flipH?'btn-primary':'btn-ghost'}" onclick="App.hmFlip('H')" title="左右反転（入り口が右側の場合）" style="padding:3px 9px;font-size:11px">⇄ 左右</button>
       <button class="btn-sm ${HM.flipV?'btn-primary':'btn-ghost'}" onclick="App.hmFlip('V')" title="前後反転（入り口が奥側の場合）" style="padding:3px 9px;font-size:11px">⇅ 前後</button>
+      ${(HM.flipH||HM.flipV)?`<button class="btn-sm" onclick="App.hmFlipFix()" title="現在の向きをデータに確定する（ハッチ配置を永続的に変更）" style="padding:3px 9px;font-size:11px;background:#b45309;color:#fff;border:none;border-radius:5px;font-weight:700">✔ FIX</button>`:''}
     </div>
     <div class="hm-legend">
       ${[0,1,2,3,4,5].map(n=>`<div class="hm-legend-item"><div class="hm-legend-dot" style="background:${scColors[n]}"></div>スコア${n}</div>`).join('')}
@@ -2867,7 +2868,15 @@ const App={
   },
   onRepDate(v){RS.date=v;renderReport();},
   onRepExaminer(v){RS.examiner=v;},
-  setAq(v){AS.q=v;renderAnimals();},
+  setAq(v, caretPos=null){
+    AS.q=v;
+    renderAnimals();
+    const el=$('animals-search');
+    if(!el) return;
+    el.focus();
+    const pos=(typeof caretPos==='number'&&!Number.isNaN(caretPos))?caretPos:String(v||'').length;
+    try{el.setSelectionRange(pos,pos);}catch(_e){}
+  },
   clrAq(){AS.q='';renderAnimals();},
 
   // ─── Hatch Map ─────────────────────────────────
@@ -2936,6 +2945,41 @@ const App={
   hmFlip(axis){
     if(axis==='H') HM.flipH=!HM.flipH;
     else HM.flipV=!HM.flipV;
+    renderHatchMap();
+  },
+  hmFlipFix(){
+    if(!HM.flipH&&!HM.flipV) return;
+    const fid=DB.activeId();const farm=DB.getFarm(fid);
+    if(!farm||!farm.hutches?.length) return;
+    const desc=(HM.flipH&&HM.flipV)?'左右・前後反転':HM.flipH?'左右反転':'前後反転';
+    if(!confirm(`現在の表示向き（${desc}）をデータに確定します。\nハッチの配置情報が永続的に書き換えられます。続けますか？`)) return;
+    const hutches=farm.hutches;
+    const maxCol=Math.max(...hutches.map(h=>h.col));
+    const maxRow=Math.max(...hutches.map(h=>h.row));
+    const nextHutches=hutches.map(h=>({
+      ...h,
+      col:HM.flipH?maxCol-h.col:h.col,
+      row:HM.flipV?maxRow-h.row:h.row,
+    }));
+
+    // 標準レイアウトは FIX 後に列/行の順でラベルを再採番して表示を一致させる
+    if((farm.hutchMode||'standard')==='standard'){
+      const colGroups={};
+      nextHutches.forEach(ht=>{
+        if(!colGroups[ht.col]) colGroups[ht.col]=[];
+        colGroups[ht.col].push(ht);
+      });
+      Object.entries(colGroups).forEach(([col,list])=>{
+        const colNum=Number(col);
+        const base=HutchUtil.colLabel(farm,colNum);
+        list
+          .sort((a,b)=>a.row-b.row)
+          .forEach((ht,idx)=>{ ht.label=`${base}-${idx+1}`; });
+      });
+    }
+    farm.hutches=nextHutches;
+    DB.saveFarm(farm);
+    HM.flipH=false;HM.flipV=false;
     renderHatchMap();
   },
 
