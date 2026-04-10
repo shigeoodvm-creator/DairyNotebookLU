@@ -629,6 +629,12 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 .hm-tl-date{color:var(--text-3);white-space:nowrap}
 .hm-tl-tag{font-family:'Courier New',monospace;font-weight:700}
 .hm-tl-dots{display:flex;gap:3px}
+.hm-page-wrap{display:flex;flex-direction:column;height:100%}
+.hm-scroll-area{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}
+.hm-hint-box{background:var(--blue-lt);border:1px solid #bfdbfe;border-radius:8px;margin-bottom:10px;font-size:12px;color:var(--text-2)}
+.hm-hint-box summary{padding:8px 12px;cursor:pointer;font-weight:600;color:var(--blue);list-style:none;display:flex;align-items:center;gap:6px;user-select:none}
+.hm-hint-box summary::-webkit-details-marker{display:none}
+.hm-hint-box .hm-hint-body{padding:2px 14px 10px;line-height:2}
 .hm-tl-dot{width:8px;height:8px;border-radius:50%}
 .hm-no-data{padding:16px;text-align:center;color:var(--text-4);font-size:13px}
 
@@ -665,6 +671,11 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
     width:9px;height:9px;border-radius:50%;flex-shrink:0;
     -webkit-print-color-adjust:exact;print-color-adjust:exact;
   }
+
+  /* hm-page-wrap / hm-scroll-area は印刷でフラットに戻す */
+  .hm-page-wrap{display:block!important;height:auto!important}
+  .hm-scroll-area{overflow:visible!important;height:auto!important;min-height:auto!important;flex:none!important}
+  .hm-hint-box{display:none!important}
 
   /* 画面と同じ2列（メモ用の印刷専用空白列は出さない） */
   .hm-print-body{display:contents}
@@ -1098,7 +1109,7 @@ const DRUG_BASE=[
   'チルミコシン','オキシテトラサイクリン','セフチオフル','タルチスロマイシン',
   'マルボフロキサシン','ダノフロキサシン','アンピシリン','セフキノム',
   'アモキシシリン','タイロシン','ペニシリンG','ゲンタマイシン',
-  'TMP/SMX','カナマイシン','ネオマイシン','コリスチン','スペクチノマイシン','ドキシサイクリン'
+  'TMP/SMX','カナマイシン','ネオマイシン','コリスチン','スペクチノマイシン','ドキシサイクリン','チアンフェニコール'
 ];
 const DrugFreq={
   _k:`${PFX}:drug_freq`,
@@ -1241,7 +1252,11 @@ const Router={
 
 // ─── Shell ────────────────────────────────────────
 const updateTopBar=()=>{const fid=DB.activeId();const farm=fid?DB.getFarm(fid):null;const el=$('tb-farm-name');if(el)el.textContent=farm?farm.name:'農場を選択';};
-const setView=html=>{$('view').innerHTML=html;};
+const setView=html=>{
+  const m=document.getElementById('main');if(m)m.style.cssText='';
+  const v=$('view');if(v)v.style.cssText='';
+  v.innerHTML=html;
+};
 
 // ─── Scan State ───────────────────────────────────
 let SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null,exp4:''};
@@ -2387,7 +2402,7 @@ const renderHatchMap=()=>{
   },'');
 
   setView(`
-  <div class="hm-print-scope">
+  <div class="hm-print-scope hm-page-wrap">
   <!-- 印刷ヘッダー（画面では非表示） -->
   <div id="hm-print-header">
     <div class="ph-title">ハッチマップ　${h(farm.name)}</div>
@@ -2398,46 +2413,62 @@ const renderHatchMap=()=>{
     </div>
   </div>
 
-  <div class="page-hd">
-    <div class="page-title">🏠 ハッチマップ</div>
-    <div class="page-sub">${h(farm.name)}　ハッチ ${hutches.length}個</div>
-    <div style="margin-left:auto;display:flex;gap:8px">
-      <button class="btn-sm btn-ghost hm-btn-print" onclick="window.print()" title="マップを印刷（A4縦・画面と同じレイアウト）">🖨 印刷</button>
-      <button class="btn-sm btn-ghost" onclick="App.openHutchSetup()">⚙ ハッチを編集</button>
+  <!-- 固定ヘッダー（スクロールしない） -->
+  <div style="flex-shrink:0">
+    <div class="page-hd">
+      <div class="page-title">🏠 ハッチマップ</div>
+      <div class="page-sub">${h(farm.name)}　ハッチ ${hutches.length}個</div>
+      <div style="margin-left:auto;display:flex;gap:8px">
+        <button class="btn-sm btn-ghost hm-btn-print" onclick="window.print()" title="マップを印刷（A4縦・画面と同じレイアウト）">🖨 印刷</button>
+        <button class="btn-sm btn-ghost" onclick="App.openHutchSetup()">⚙ ハッチを編集</button>
+      </div>
     </div>
+
+    <!-- コントロール -->
+    <div class="hm-controls" style="margin-bottom:8px">
+      <div style="font-size:12px;color:var(--text-3)">表示日</div>
+      <div class="hm-date-nav">
+        <button onclick="App.hmPrevDate()" title="前の検診日" ${dateIdx<=0?'disabled':''}>◀</button>
+        <input type="date" value="${viewDate}" onchange="App.hmSetDate(this.value)"
+          style="border:1px solid var(--border-2);border-radius:6px;padding:3px 8px;font-size:13px;font-weight:700;color:var(--navy-2)">
+        <button onclick="App.hmNextDate()" title="次の検診日" ${dateIdx>=dates.length-1||!dates.length?'disabled':''}>▶</button>
+      </div>
+      ${dates.length?`<div style="font-size:11px;color:var(--text-4)">${dateIdx>=0?`${dateIdx+1}/${dates.length}回目の検診日`:'最近の検診日前'}</div>`:''}
+      <div style="display:flex;align-items:center;gap:6px;margin-left:4px">
+        <span style="font-size:11px;color:var(--text-3)">表示向き</span>
+        <button class="btn-sm ${HM.flipH?'btn-primary':'btn-ghost'}" onclick="App.hmFlip('H')" style="padding:3px 9px;font-size:11px">⇄ 左右</button>
+        <button class="btn-sm ${HM.flipV?'btn-primary':'btn-ghost'}" onclick="App.hmFlip('V')" style="padding:3px 9px;font-size:11px">⇅ 前後</button>
+        ${(HM.flipH||HM.flipV)?`<button class="btn-sm" onclick="App.hmFlipFix()" style="padding:3px 9px;font-size:11px;background:#b45309;color:#fff;border:none;border-radius:5px;font-weight:700">✔ 向き確定</button>`:''}
+      </div>
+      <div class="hm-legend">
+        ${[0,1,2,3,4,5].map(n=>`<div class="hm-legend-item"><div class="hm-legend-dot" style="background:${scColors[n]}"></div>スコア${n}</div>`).join('')}
+        <div class="hm-legend-item"><div class="hm-legend-dot" style="background:var(--border-2)"></div>空</div>
+      </div>
+    </div>
+
+    <!-- 表示向きボタンの説明（折りたたみ） -->
+    <details class="hm-hint-box">
+      <summary>💡 表示向きボタンの使い方</summary>
+      <div class="hm-hint-body">
+        <strong>⇄ 左右</strong>　画面上のハッチ左右が現場と逆になっている場合に反転します。例えば農場の入り口が画面右側にある場合。青くなっている間は反転中です。<br>
+        <strong>⇅ 前後</strong>　画面上のハッチ前後（上下）が現場と逆になっている場合に反転します。入り口を手前に見た向きで表示したい場合などに使用します。<br>
+        <strong>✔ 向き確定</strong>　現在の反転表示をデータに永久保存します。次回以降は自動で正しい向きで表示され、反転ボタンを押す必要がなくなります。確定するとハッチ番号の並び順もデータ上で書き換わります。
+      </div>
+    </details>
   </div>
 
-  <!-- コントロール -->
-  <div class="hm-controls">
-    <div style="font-size:12px;color:var(--text-3)">表示日</div>
-    <div class="hm-date-nav">
-      <button onclick="App.hmPrevDate()" title="前の検診日" ${dateIdx<=0?'disabled':''}>◀</button>
-      <input type="date" value="${viewDate}" onchange="App.hmSetDate(this.value)"
-        style="border:1px solid var(--border-2);border-radius:6px;padding:3px 8px;font-size:13px;font-weight:700;color:var(--navy-2)">
-      <button onclick="App.hmNextDate()" title="次の検診日" ${dateIdx>=dates.length-1||!dates.length?'disabled':''}>▶</button>
+  <!-- スクロールエリア（マップ本体＋詳細パネル） -->
+  <div class="hm-scroll-area">
+    <div class="hm-print-body">
+      <div class="hm-outer">${mapCols}</div>
     </div>
-    ${dates.length?`<div style="font-size:11px;color:var(--text-4)">${dateIdx>=0?`${dateIdx+1}/${dates.length}回目の検診日`:'最近の検診日前'}</div>`:''}
-    <div style="display:flex;align-items:center;gap:6px;margin-left:4px">
-      <span style="font-size:11px;color:var(--text-3)">表示向き</span>
-      <button class="btn-sm ${HM.flipH?'btn-primary':'btn-ghost'}" onclick="App.hmFlip('H')" title="左右反転（入り口が右側の場合）" style="padding:3px 9px;font-size:11px">⇄ 左右</button>
-      <button class="btn-sm ${HM.flipV?'btn-primary':'btn-ghost'}" onclick="App.hmFlip('V')" title="前後反転（入り口が奥側の場合）" style="padding:3px 9px;font-size:11px">⇅ 前後</button>
-      ${(HM.flipH||HM.flipV)?`<button class="btn-sm" onclick="App.hmFlipFix()" title="現在の向きをデータに確定する（ハッチ配置を永続的に変更）" style="padding:3px 9px;font-size:11px;background:#b45309;color:#fff;border:none;border-radius:5px;font-weight:700">✔ FIX</button>`:''}
-    </div>
-    <div class="hm-legend">
-      ${[0,1,2,3,4,5].map(n=>`<div class="hm-legend-item"><div class="hm-legend-dot" style="background:${scColors[n]}"></div>スコア${n}</div>`).join('')}
-      <div class="hm-legend-item"><div class="hm-legend-dot" style="background:var(--border-2)"></div>空</div>
-    </div>
-  </div>
-
-  <!-- マップ本体 -->
-  <div class="hm-print-body">
-    <div class="hm-outer">${mapCols}</div>
+    <div id="hm-detail-wrap">${detailHtml()}</div>
   </div>
   </div>
-
-  <!-- 詳細パネル -->
-  <div id="hm-detail-wrap">${detailHtml()}</div>
   `);
+  // ハッチマップページのみ全高レイアウト適用
+  document.getElementById('main').style.cssText='margin-top:64px;height:calc(100vh - 64px);overflow:hidden';
+  $('view').style.cssText='height:100%;overflow:hidden;padding:12px 24px 4px;max-width:940px;margin:0 auto';
 };
 
 // FARM MODAL
@@ -2638,15 +2669,34 @@ const renderAnimalModal=(fid,animalId)=>{
   const animal=DB.getAnimals(fid).find(a=>a.id===animalId);
   if(!animal){toast('個体情報が見つかりません','err');return;}
   const scans=DB.byAnimal(fid,animalId);
+  const hutches=HutchUtil.get(fid);
+  const lastScan=scans[scans.length-1]||null;
+  const curHutchId=lastScan?.hutchId||'';
+  const curHutchFree=lastScan?.hutchFree||'';
+  const hutchEditorHtml=(()=>{
+    if(hutches.length){
+      return `<select class="form-select" id="am-hutch-sel" style="max-width:200px">
+        <option value="">── 未指定 ──</option>
+        ${hutches.map(ht=>`<option value="${ht.id}" ${curHutchId===ht.id?'selected':''}>${h(ht.label)}</option>`).join('')}
+      </select>`;
+    }
+    return `<input class="form-input" id="am-hutch-free" value="${h(curHutchFree)}" placeholder="例：L-3" style="max-width:200px">`;
+  })();
   const bg=$('modal-bg');bg.style.display='flex';
   bg.innerHTML=`<div class="modal lg">
     <div class="modal-hd"><div class="modal-title">個体詳細：${h(animal.tagId)}</div><button class="modal-x" onclick="App.closeModal()">×</button></div>
     <div class="modal-body">
-      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:16px;font-size:13px;color:var(--text-2)">
+      <div style="display:flex;gap:20px;flex-wrap:wrap;margin-bottom:12px;font-size:13px;color:var(--text-2)">
         <span><strong>品種：</strong>${h(animal.breed||'未登録')}</span>
         <span><strong>性別：</strong>${animal.sex==='F'?'雌':animal.sex==='M'?'雄':'不明'}</span>
         <span><strong>生年月日：</strong>${fmtDate(animal.birthDate||'')}</span>
         <span><strong>スキャン回数：</strong>${scans.length}回</span>
+      </div>
+      <div style="margin-bottom:16px;padding:10px 14px;background:var(--gray-lt);border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <span style="font-size:12px;font-weight:700;color:var(--text-3);white-space:nowrap">ハッチ番号</span>
+        ${hutchEditorHtml}
+        <button class="btn-sm btn-primary" onclick="App.saveAnimalHutch('${animalId}')">全スキャンに適用</button>
+        <span style="font-size:11px;color:var(--text-4)">※変更するとこの個体の全スキャンに反映</span>
       </div>
       <div style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">スキャン履歴</div>
       ${scans.length===0?'<p style="color:var(--text-3)">スキャン記録がありません</p>':''}
@@ -2654,7 +2704,10 @@ const renderAnimalModal=(fid,animalId)=>{
       ${scans.map(s=>`<li class="tl-item">
         <div class="tl-dot" style="background:${SC[s.obScore]}">${s.obScore}</div>
         <div class="tl-content">
-          <strong>${fmtDate(s.scanDate)}　日齢${s.ageAtScan!=null?s.ageAtScan+'日':'－'}　R${s.round||1}</strong>
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <strong>${fmtDate(s.scanDate)}　日齢${s.ageAtScan!=null?s.ageAtScan+'日':'－'}　R${s.round||1}</strong>
+            <button class="btn-sm btn-danger" onclick="App.delScanFromModal('${s.id}','${animalId}')" style="flex-shrink:0">削除</button>
+          </div>
           <div style="margin:5px 0;display:flex;align-items:center;gap:8px">
             <span class="score-badge ${scClass(s.obScore)}" style="width:28px;height:28px">${s.obScore}</span>
             <span style="font-size:12px;color:var(--text-2)">${SLBL[s.obScore]}</span>
@@ -2962,7 +3015,7 @@ const App={
       row:HM.flipV?maxRow-h.row:h.row,
     }));
 
-    // 標準レイアウトは FIX 後に列/行の順でラベルを再採番して表示を一致させる
+    // 標準レイアウトは向き確定後に列/行の順でラベルを再採番して表示を一致させる
     if((farm.hutchMode||'standard')==='standard'){
       const colGroups={};
       nextHutches.forEach(ht=>{
@@ -3160,11 +3213,36 @@ const App={
     const scan={farmId:fid,animalId:animal.id,tagId,scanDate,ageAtScan,round,right:{...SS.right},left:{...SS.left},obScore:score,mainFindings:$('f-findings').value.trim(),treated:$('f-treated').checked,drug:$('f-drug')?.value.trim()||'',notes:$('f-notes').value.trim(),...(hutchId?{hutchId}:{}),...(hutchFree&&!hutchId?{hutchFree}:{})};
     if(SS.editId){scan.id=SS.editId;DB.updateScan(fid,scan);toast('記録を更新しました','ok');}
     else{DB.addScan(fid,scan);toast(`${tagId} のスキャンを保存しました（スコア ${score}）`,'ok');}
+    // ハッチが指定されている場合、同個体の同日以降のスキャンに反映
+    if(hutchId||hutchFree){
+      const updScans=DB.getScans(fid).map(sc=>{
+        if(sc.animalId!==animal.id||sc.id===scan.id||sc.scanDate<scanDate)return sc;
+        const next={...sc};delete next.hutchId;delete next.hutchFree;
+        if(hutchId)next.hutchId=hutchId;else next.hutchFree=hutchFree;
+        return next;
+      });
+      DB.saveScans(fid,updScans);
+    }
     if(scan.treated&&scan.drug)DrugFreq.inc(scan.drug);
     resetSS();Router.nav('/history');
   },
   editScan(sid){const fid=DB.activeId();if(!fid)return;const sc=DB.getScans(fid).find(s=>s.id===sid);if(!sc){toast('記録が見つかりません','err');return;}renderNewScan(sc);window.scrollTo(0,0);history.replaceState(null,'','#/scan/new');Router._hl('/scan/new');},
   delScan(sid){if(!confirm('削除しますか？'))return;const fid=DB.activeId();DB.delScan(fid,sid);toast('削除しました','warn');renderHistory();},
+  delScanFromModal(sid,animalId){if(!confirm('このスキャン記録を削除しますか？'))return;const fid=DB.activeId();DB.delScan(fid,sid);toast('削除しました','warn');renderAnimalModal(fid,animalId);},
+  saveAnimalHutch(animalId){
+    const fid=DB.activeId();if(!fid)return;
+    const hutchId=$('am-hutch-sel')?.value||'';
+    const hutchFree=$('am-hutch-free')?.value.trim()||'';
+    const updScans=DB.getScans(fid).map(s=>{
+      if(s.animalId!==animalId)return s;
+      const next={...s};delete next.hutchId;delete next.hutchFree;
+      if(hutchId)next.hutchId=hutchId;else if(hutchFree)next.hutchFree=hutchFree;
+      return next;
+    });
+    DB.saveScans(fid,updScans);
+    toast('全スキャンのハッチを更新しました','ok');
+    renderAnimalModal(fid,animalId);
+  },
   setF(k,v){if(v===''||v===null||v===undefined)delete HS.f[k];else HS.f[k]=v;renderHistory();},
   clrF(){HS.f={};renderHistory();},
   sortH(col){if(HS.sort===col){HS.sortDir=(HS.sortDir+1)%3;if(HS.sortDir===0)HS.sort=null;}else{HS.sort=col;HS.sortDir=1;}renderHistory();},
