@@ -42,8 +42,8 @@
   /* Score colors */
   --s0:#10b981; --s1:#3b82f6; --s2:#f59e0b; --s3:#f97316; --s4:#ef4444; --s5:#7f1d1d;
   --sb0:#d1fae5;--sb1:#dbeafe;--sb2:#fef3c7;--sb3:#ffedd5;--sb4:#fee2e2;--sb5:#fecaca;
-  /* Finding colors: 正常→線状B→帯状B→局所C→びまんC→肝変化→胸水→膿瘍 */
-  --fn:#10b981; --fl:#60a5fa; --fb:#3b82f6; --fc:#f59e0b; --fd:#c2410c; --fh:#b91c1c; --fe:#8b5cf6; --fa:#ef4444;
+  /* Finding colors: 正常→線状B→帯状B→小コンソリ→局所C→びまんC→肝変化→胸水→膿瘍 */
+  --fn:#10b981; --fl:#60a5fa; --fb:#3b82f6; --fs:#0d9488; --fc:#f59e0b; --fd:#c2410c; --fh:#b91c1c; --fe:#8b5cf6; --fa:#ef4444;
 }
 
 /* ─────────────────────────────────────────
@@ -256,6 +256,7 @@ input,select,textarea{font-family:inherit}
 .lung-btn.st-n{border-color:var(--fn);background:var(--sb0);color:var(--fn)}
 .lung-btn.st-l{border-color:var(--fl);background:#eff6ff;color:var(--fl)}
 .lung-btn.st-b{border-color:var(--fb);background:var(--sb1);color:var(--fb)}
+.lung-btn.st-s{border-color:var(--fs);background:#f0fdfa;color:var(--fs)}
 .lung-btn.st-c{border-color:var(--fc);background:#fffbeb;color:var(--fc)}
 .lung-btn.st-d{border-color:var(--fd);background:#fff7ed;color:var(--fd)}
 .lung-btn.st-h{border-color:var(--fh);background:#fef2f2;color:var(--fh)}
@@ -309,6 +310,7 @@ input,select,textarea{font-family:inherit}
 .fch-n{background:var(--sb0);border-color:var(--fn);color:var(--fn)}
 .fch-l{background:#eff6ff;border-color:var(--fl);color:var(--fl)}
 .fch-b{background:var(--sb1);border-color:var(--fb);color:var(--fb)}
+.fch-s{background:#f0fdfa;border-color:var(--fs);color:var(--fs)}
 .fch-c{background:#fffbeb;border-color:var(--fc);color:var(--fc)}
 .fch-d{background:#fff7ed;border-color:var(--fd);color:var(--fd)}
 .fch-h{background:#fef2f2;border-color:var(--fh);color:var(--fh)}
@@ -822,14 +824,14 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 'use strict';
 // ─── Constants ────────────────────────────────────
 const PFX = 'lu';
-const FC   = ['','A','L','B','C','D','H','E','P'];
-const FSTATE = {'':'','A':'st-n','L':'st-l','B':'st-b','C':'st-c','D':'st-d','H':'st-h','E':'st-e','P':'st-a'};
-const FCHIP  = {'':'fch-empty','A':'fch-n','L':'fch-l','B':'fch-b','C':'fch-c','D':'fch-d','H':'fch-h','E':'fch-e','P':'fch-a'};
-const FLBL   = {'':'－','A':'正常（Aライン）','L':'線状Bライン（スコア影響なし・記録のみ）','B':'帯状Bライン（コメットライン）','C':'局所コンソリデーション（≥1cm²）','D':'びまん性コンソリデーション（葉全体）','H':'肝変化（hepatization）','E':'胸水（pleural effusion）','P':'膿瘍（Purulent）'};
+const FC   = ['','A','L','B','S','C','D','H','E','P'];
+const FSTATE = {'':'','A':'st-n','L':'st-l','B':'st-b','S':'st-s','C':'st-c','D':'st-d','H':'st-h','E':'st-e','P':'st-a'};
+const FCHIP  = {'':'fch-empty','A':'fch-n','L':'fch-l','B':'fch-b','S':'fch-s','C':'fch-c','D':'fch-d','H':'fch-h','E':'fch-e','P':'fch-a'};
+const FLBL   = {'':'－','A':'正常（Aライン）','L':'線状Bライン（スコア影響なし・記録のみ）','B':'帯状Bライン（コメットライン）','S':'小コンソリデーション（<1cm²・スコア影響なし・記録のみ）','C':'局所コンソリデーション（≥1cm²）','D':'びまん性コンソリデーション（葉全体）','H':'肝変化（hepatization）','E':'胸水（pleural effusion）','P':'膿瘍（Purulent）'};
 // ボタン表示用（短い日本語）
-const FBTN   = {'':'未入力','A':'正常','L':'線状B','B':'帯状B','C':'局所C','D':'びまんC','H':'肝変化','E':'胸水','P':'膿瘍'};
+const FBTN   = {'':'未入力','A':'正常','L':'線状B','B':'帯状B','S':'小コンソリ','C':'局所C','D':'びまんC','H':'肝変化','E':'胸水','P':'膿瘍'};
 // 小チップ用（1〜2文字）
-const FCHP_CHR = {'':'－','A':'正','L':'Bl','B':'Bb','C':'局C','D':'広C','H':'肝','E':'胸','P':'膿'};
+const FCHP_CHR = {'':'－','A':'正','L':'Bl','B':'Bb','S':'小C','C':'局C','D':'広C','H':'肝','E':'胸','P':'膿'};
 const SC     = ['#10b981','#3b82f6','#f59e0b','#f97316','#ef4444','#7f1d1d'];
 const SCB    = ['#d1fae5','#dbeafe','#fef3c7','#ffedd5','#fee2e2','#fecaca'];
 const SLBL   = ['正常（Aライン・線状Bライン）','帯状Bライン（コメットライン）','局所コンソリデーション（≥1cm²）','びまん性コンソリデーション 1葉','びまん性コンソリデーション 2葉','びまん性コンソリデーション≥3葉・肝変化・胸水'];
@@ -1466,7 +1468,8 @@ const renderNewScan=(editScan=null)=>{
             <div style="background:var(--sb0);border:1.5px solid var(--fn);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fn)"><strong>正常</strong><br><span style="font-size:10px">Aライン正常</span></div>
             <div style="background:#eff6ff;border:1.5px solid var(--fl);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fl)"><strong>線状B</strong><br><span style="font-size:10px">スコア影響なし</span></div>
             <div style="background:var(--sb1);border:1.5px solid var(--fb);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fb)"><strong>帯状B</strong><br><span style="font-size:10px">コメットライン→1</span></div>
-            <div style="background:#fffbeb;border:1.5px solid var(--fc);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fc)"><strong>局所C</strong><br><span style="font-size:10px">局所コンソリ→2</span></div>
+            <div style="background:#f0fdfa;border:1.5px solid var(--fs);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fs)"><strong>小コンソリ</strong><br><span style="font-size:10px">&lt;1cm²・記録のみ</span></div>
+            <div style="background:#fffbeb;border:1.5px solid var(--fc);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fc)"><strong>局所C</strong><br><span style="font-size:10px">≥1cm²→スコア2</span></div>
             <div style="background:#fff7ed;border:1.5px solid var(--fd);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fd)"><strong>びまんC</strong><br><span style="font-size:10px">葉全体→3〜5</span></div>
             <div style="background:#fef2f2;border:1.5px solid var(--fh);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fh)"><strong>肝変化</strong><br><span style="font-size:10px">hepatization→≥5</span></div>
             <div style="background:#ede9fe;border:1.5px solid var(--fe);border-radius:6px;padding:4px 6px;text-align:center;font-size:11px;color:var(--fe)"><strong>胸水</strong><br><span style="font-size:10px">無エコー液貯留→≥5</span></div>
@@ -1482,6 +1485,29 @@ const renderNewScan=(editScan=null)=>{
       <div class="lung-block">
         <div class="lung-block-title"><span class="lung-tag left">左肺 Left</span></div>
         <div class="lung-grid l3">${LPOS.map(p=>`<div class="lung-cell"><div class="lung-cell-lbl">${RLBL[p]}</div><button type="button" class="lung-btn ${FSTATE[SS.left[p]]}" data-side="left" data-pos="${p}" onclick="App.togFinding(this)">${FBTN[SS.left[p]]||'未入力'}</button></div>`).join('')}</div>
+      </div>
+
+      <!-- 小コンソリ vs 局所C 比較ボックス -->
+      <div style="margin-top:14px;border-radius:8px;overflow:hidden;border:1.5px solid var(--border-2)">
+        <div style="background:var(--gray-lt);padding:6px 12px;font-size:11px;font-weight:700;color:var(--text-3);letter-spacing:.4px">⚠️ コンソリデーション判定の目安</div>
+        <div style="display:grid;grid-template-columns:1fr 1fr">
+          <div style="padding:10px 14px;border-right:1.5px solid var(--border-2);background:#f0fdfa">
+            <div style="font-size:12px;font-weight:800;color:var(--fs);margin-bottom:4px">🟢 小コンソリ（テキスト色：青緑）</div>
+            <div style="font-size:11px;color:var(--text-2);line-height:1.7">
+              実質化の面積 <strong>&lt; 1cm²</strong><br>
+              スコアへの影響 <strong>なし</strong>（記録のみ）<br>
+              例：点状・ごく小さな局所病変
+            </div>
+          </div>
+          <div style="padding:10px 14px;background:#fffbeb">
+            <div style="font-size:12px;font-weight:800;color:var(--fc);margin-bottom:4px">🟡 局所C（テキスト色：黄橙）</div>
+            <div style="font-size:11px;color:var(--text-2);line-height:1.7">
+              実質化の面積 <strong>≥ 1cm²</strong><br>
+              スコアへの影響 <strong>→ スコア2</strong><br>
+              例：明確な局所コンソリデーション
+            </div>
+          </div>
+        </div>
       </div>
     </div>
   </div>
