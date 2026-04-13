@@ -983,7 +983,22 @@ const treatBadge = s => {
   return '<span style="color:var(--text-4)">－</span>';
 };
 
-// 個体の初診スキャンを取得（最初の治療介入スキャン）
+// 個体の初診日情報を取得（{date, ageAtScan, scanId} の形式で返す）
+// - treatType==='new': スキャン日が初診日
+// - treatType==='ongoing': 手入力の firstDiagDate が初診日（未入力ならスキャン日）
+// - 旧データ (treated && !treatType): スキャン日が初診日
+const getFirstDiagInfo = (fid, animalId) => {
+  const candidates = DB.getScans(fid)
+    .filter(s => s.animalId === animalId && (s.treatType === 'new' || s.treatType === 'ongoing' || (s.treated && !s.treatType)))
+    .map(s => {
+      const diagDate = (s.treatType === 'ongoing' && s.firstDiagDate) ? s.firstDiagDate : s.scanDate;
+      return { date: diagDate, ageAtScan: s.ageAtScan, scanId: s.id, isManual: s.treatType === 'ongoing' };
+    })
+    .sort((a, b) => a.date.localeCompare(b.date));
+  return candidates[0] || null;
+};
+
+// 個体の初診スキャンを取得（後方互換・スキャンオブジェクトを返す）
 const getFirstTreatScan = (fid, animalId) => {
   return DB.getScans(fid)
     .filter(s => s.animalId === animalId && (s.treatType === 'new' || (s.treated && !s.treatType)))
@@ -1399,9 +1414,9 @@ const setView=html=>{
 };
 
 // ─── Scan State ───────────────────────────────────
-let SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null,exp4:'',treatType:''};
-const resetSS=()=>{SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null,exp4:'',treatType:''};};
-const loadSS=s=>{SS.right={rf_a:'',rf_p:'',r_m:'',r_c:'',...(s.right||{})};SS.left={lf_a:'',lf_p:'',l_c:'',...(s.left||{})};SS.score=s.obScore||0;SS.editId=s.id;SS.treatType=s.treatType||( s.treated?'new':'');};
+let SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null,exp4:'',treatType:'',firstDiagDate:''};
+const resetSS=()=>{SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null,exp4:'',treatType:'',firstDiagDate:''};};
+const loadSS=s=>{SS.right={rf_a:'',rf_p:'',r_m:'',r_c:'',...(s.right||{})};SS.left={lf_a:'',lf_p:'',l_c:'',...(s.left||{})};SS.score=s.obScore||0;SS.editId=s.id;SS.treatType=s.treatType||(s.treated?'new':'');SS.firstDiagDate=s.firstDiagDate||'';};
 
 // ─── Mini lung grid (read-only) ───────────────────
 const miniLung=sides=>{
@@ -1697,6 +1712,12 @@ const renderNewScan=(editScan=null)=>{
           <span class="badge ${SS.score>=2?'b-amber':'b-teal'}" id="treat-badge">${SS.score>=2?'スコア≥2：治療推奨':'スコア<2：観察'}</span>
         </div>
       </div>
+      <div id="firstdiag-area" style="${s.treatType==='ongoing'?'':'display:none'};margin-bottom:12px">
+        <div class="form-group" style="max-width:220px">
+          <label class="form-label">初診日（治療開始日）</label>
+          <input class="form-input" type="date" id="f-firstdiag" value="${h(s.firstDiagDate||'')}" max="${today()}">
+        </div>
+      </div>
       <div class="form-row" id="drug-area" style="${s.treated?'':'display:none'}">
         <div class="form-group">
           <label class="form-label">使用薬剤・投与量</label>
@@ -1762,10 +1783,13 @@ const renderHistory=()=>{
   }
   const hsIc=col=>HS.sort===col?(HS.sortDir===1?'<span class="ns-ic">▲</span>':'<span class="ns-ic">▼</span>'):'<span class="ns-ic">⇅</span>';
   const mkTh=(col,lbl)=>`<th class="note-th-sort${HS.sort===col?(HS.sortDir===1?' ns-asc':' ns-desc'):''}" onclick="App.sortH('${col}')">${lbl}${hsIc(col)}</th>`;
-  // 個体ごとの初診IDをマップ化（パフォーマンス対策）
+  // 個体ごとの初診スキャンIDをマップ化（パフォーマンス対策）new/ongoing両対応
   const firstTreatMap={};
   const _animalIds=[...new Set(sc.map(s=>s.animalId))];
-  _animalIds.forEach(aid=>{const ft=getFirstTreatScan(fid,aid);if(ft)firstTreatMap[aid]=ft.id;});
+  _animalIds.forEach(aid=>{
+    const scans=DB.getScans(fid).filter(s=>s.animalId===aid&&(s.treatType==='new'||s.treatType==='ongoing'||(s.treated&&!s.treatType)));
+    if(scans.length){const ft=scans.sort((a,b)=>a.scanDate.localeCompare(b.scanDate))[0];firstTreatMap[aid]=ft.id;}
+  });
 
   setView(`
   <div class="page-hd">
@@ -1824,7 +1848,7 @@ const renderHistory=()=>{
     <td style="font-size:12px;color:var(--text-3)">${h(hutchLabel(s))}</td>
     <td><span class="score-badge ${scClass(s.obScore)}">${s.obScore}</span></td>
     <td>${miniLung(s.right)}</td><td>${miniLung(s.left)}</td>
-    <td>${treatBadge(s)}${firstTreatMap[s.animalId]===s.id?'<br><span style="font-size:10px;color:#be2b2b;font-weight:700">🏥初診</span>':''}</td>
+    <td>${treatBadge(s)}${firstTreatMap[s.animalId]===s.id?`<br><span style="font-size:10px;color:#be2b2b;font-weight:700">🏥初診${s.treatType==='ongoing'&&s.firstDiagDate?'<span style="font-weight:400"> ('+fmtDate(s.firstDiagDate)+')</span>':''}</span>`:''}</td>
     <td style="font-size:12px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-3)">${h(s.drug||'')}</td>
     <td style="font-size:12px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-3)">${h(s.notes||'')}</td>
     <td style="white-space:nowrap">
@@ -2991,6 +3015,7 @@ const renderAnimalModal=(fid,animalId)=>{
     return `<input class="form-input" id="am-hutch-free" value="${h(curHutchFree)}" placeholder="例：L-3" style="max-width:200px">`;
   })();
   const firstTreat = getFirstTreatScan(fid, animalId);
+  const firstDiagInfo = getFirstDiagInfo(fid, animalId);
   const bg=$('modal-bg');bg.style.display='flex';
   bg.innerHTML=`<div class="modal lg">
     <div class="modal-hd"><div class="modal-title">個体詳細：${h(animal.tagId)}</div><button class="modal-x" onclick="App.closeModal()">×</button></div>
@@ -3000,7 +3025,7 @@ const renderAnimalModal=(fid,animalId)=>{
         <span><strong>性別：</strong>${animal.sex==='F'?'雌':animal.sex==='M'?'雄':'不明'}</span>
         <span><strong>生年月日：</strong>${fmtDate(animal.birthDate||'')}</span>
         <span><strong>スキャン回数：</strong>${scans.length}回</span>
-        ${firstTreat ? `<span style="background:#fee2e2;color:#be2b2b;font-size:12px;font-weight:700;padding:3px 10px;border-radius:6px;border:1px solid #fca5a5">🏥 初診：${fmtDate(firstTreat.scanDate)}${firstTreat.ageAtScan != null ? `（日齢${firstTreat.ageAtScan}日）` : ''}</span>` : ''}
+        ${firstDiagInfo ? `<span style="background:#fee2e2;color:#be2b2b;font-size:12px;font-weight:700;padding:3px 10px;border-radius:6px;border:1px solid #fca5a5">🏥 初診：${fmtDate(firstDiagInfo.date)}${firstDiagInfo.isManual?' <span style="font-size:10px;font-weight:400">(入力日)</span>':''}${firstDiagInfo.ageAtScan != null ? `（日齢${firstDiagInfo.ageAtScan}日）` : ''}</span>` : ''}
       </div>
       <div style="background:${(animal.otitisHistory?.length>0)?'#fee2e2':'var(--gray-lt)'};border:1px solid ${(animal.otitisHistory?.length>0)?'#fca5a5':'var(--border)'};border-radius:8px;padding:12px 14px;margin-bottom:14px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
@@ -3065,7 +3090,7 @@ const renderAnimalModal=(fid,animalId)=>{
         <div class="tl-dot" style="background:${SC[s.obScore]}">${s.obScore}</div>
         <div class="tl-content">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-            <strong>${fmtDate(s.scanDate)}　日齢${s.ageAtScan!=null?s.ageAtScan+'日':'－'}　R${s.round||1}${(s.treatType==='new'||(s.treated&&!s.treatType))&&firstTreat&&firstTreat.id===s.id?'　<span class="badge b-red" style="font-size:10px">🏥 初診</span>':''}</strong>
+            <strong>${fmtDate(s.scanDate)}　日齢${s.ageAtScan!=null?s.ageAtScan+'日':'－'}　R${s.round||1}${(s.treatType==='new'||s.treatType==='ongoing'||(s.treated&&!s.treatType))&&firstTreat&&firstTreat.id===s.id?`　<span class="badge b-red" style="font-size:10px">🏥 初診${s.treatType==='ongoing'&&s.firstDiagDate?' ('+fmtDate(s.firstDiagDate)+')':''}</span>`:''}</strong>
             <button class="btn-sm btn-danger" onclick="App.delScanFromModal('${s.id}','${animalId}')" style="flex-shrink:0">削除</button>
           </div>
           <div style="margin:5px 0;display:flex;align-items:center;gap:8px">
@@ -3780,8 +3805,9 @@ const App={
   onDateCh(){const tag=$('f-tag')?.value;if(tag)this.onTag(tag,true);},
   onBd(){const bd=$('f-bd')?.value;const sd=$('f-date')?.value||today();const ael=$('f-age');if(bd&&ael)ael.value=calcAge(bd,sd);},
   onTreat(v){
-    // v: '' = なし, 'new' = 治療介入, 'ongoing' = 治療中
+    // v: '' = なし, 'new' = 治療介入（スキャン日=初診日）, 'ongoing' = 治療中（初診日を手入力）
     const da=$('drug-area');if(da)da.style.display=v?'grid':'none';
+    const fda=$('firstdiag-area');if(fda)fda.style.display=v==='ongoing'?'block':'none';
     SS.treatType=v||'';
     document.querySelectorAll('.treat-seg-btn').forEach(b=>{
       b.classList.toggle('active',b.dataset.val===v);
@@ -3843,7 +3869,9 @@ const App={
     const hutchId=$('f-hutch-sel')?.value||'';
     const hutchFree=$('f-hutch-free')?.value.trim()||'';
     const treatType=presentOnly?'':SS.treatType||''; // '' | 'new' | 'ongoing'
-    const scan={farmId:fid,animalId:animal.id,tagId,scanDate,ageAtScan,round,...(presentOnly?{presentOnly:true,right:{},left:{},obScore:null,mainFindings:'',treated:false,treatType:'',drug:'',notes:$('f-notes').value.trim()}:{right:{...SS.right},left:{...SS.left},obScore:score,mainFindings:$('f-findings').value.trim(),treated:!!treatType,treatType,drug:$('f-drug')?.value.trim()||'',notes:$('f-notes').value.trim()}),...(hutchId?{hutchId}:{}),...(hutchFree&&!hutchId?{hutchFree}:{})};
+    // 治療中の場合は手入力の初診日を使用、治療介入(new)の場合はスキャン日が初診日（firstDiagDate不要）
+    const firstDiagDate=(!presentOnly&&treatType==='ongoing')?($('f-firstdiag')?.value||''):'';
+    const scan={farmId:fid,animalId:animal.id,tagId,scanDate,ageAtScan,round,...(presentOnly?{presentOnly:true,right:{},left:{},obScore:null,mainFindings:'',treated:false,treatType:'',drug:'',notes:$('f-notes').value.trim()}:{right:{...SS.right},left:{...SS.left},obScore:score,mainFindings:$('f-findings').value.trim(),treated:!!treatType,treatType,...(firstDiagDate?{firstDiagDate}:{}),drug:$('f-drug')?.value.trim()||'',notes:$('f-notes').value.trim()}),...(hutchId?{hutchId}:{}),...(hutchFree&&!hutchId?{hutchFree}:{})};
     if(SS.editId){scan.id=SS.editId;DB.updateScan(fid,scan);toast('記録を更新しました','ok');}
     else{DB.addScan(fid,scan);toast(presentOnly?`${tagId} の在舎記録を保存しました`:`${tagId} のスキャンを保存しました（スコア ${score}）`,'ok');}
     // ハッチが指定されている場合、同個体の同日以降のスキャンに反映
