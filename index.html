@@ -281,6 +281,12 @@ input,select,textarea{font-family:inherit}
    Toggle
 ───────────────────────────────────────── */
 .toggle-row{display:flex;align-items:center;gap:10px}
+.treat-seg{display:inline-flex;border:1px solid #d1d5db;border-radius:8px;overflow:hidden;flex-shrink:0}
+.treat-seg-btn{padding:5px 12px;font-size:13px;font-weight:600;border:none;background:#f9fafb;color:var(--text-3);cursor:pointer;border-right:1px solid #d1d5db;transition:background .15s,color .15s}
+.treat-seg-btn:last-child{border-right:none}
+.treat-seg-btn.active[data-val=""]{background:#e2e8f0;color:var(--text-2)}
+.treat-seg-btn.active[data-val="new"]{background:#fee2e2;color:var(--red)}
+.treat-seg-btn.active[data-val="ongoing"]{background:#fef3c7;color:#b45309}
 .toggle{position:relative;display:inline-block;width:42px;height:23px;flex-shrink:0}
 .toggle input{opacity:0;width:0;height:0}
 .tgl-slider{position:absolute;inset:0;background:#d1d5db;border-radius:12px;transition:var(--tr);cursor:pointer}
@@ -324,6 +330,13 @@ input,select,textarea{font-family:inherit}
 .tbl-wrap{overflow-x:auto}
 /* width:100% だけだと列が潰れて操作ボタンが切れる。内容幅まで広げて横スクロールに任せる */
 .tbl-wrap table{min-width:max-content}
+/* 操作列を右端に固定して常に見えるようにする */
+.tbl-wrap table thead tr th:last-child,
+.tbl-wrap table tbody tr td:last-child{position:sticky;right:0;background:var(--surface);box-shadow:-2px 0 4px rgba(0,0,0,.06);z-index:1}
+.tbl-wrap table thead tr th:last-child{background:var(--navy-2)}
+/* スキャン日セルの鉛筆ボタン */
+.scan-edit-btn{font-size:10px;padding:2px 5px;opacity:0;min-width:auto;margin-left:4px;vertical-align:middle;background:var(--blue-lt);color:var(--blue);border:none;border-radius:5px;cursor:pointer;transition:opacity .15s}
+tr:hover .scan-edit-btn{opacity:1}
 table{width:100%;border-collapse:collapse;font-size:13px}
 thead th{
   background:var(--navy-2);color:#fff;padding:10px 13px;
@@ -524,17 +537,17 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 ───────────────────────────────────────── */
 .rpt-wrap{max-width:780px;margin:0 auto;font-family:inherit;color:#1e293b}
 .rpt-header{border-bottom:2.5px solid #1e3a8a;padding-bottom:10px;margin-bottom:28px}
-.rpt-title{font-size:18px;font-weight:800;color:#1e3a8a;letter-spacing:.2px}
+.rpt-title{font-size:16px;font-weight:800;color:#1e3a8a;letter-spacing:.2px}
 .rpt-subtitle{font-size:12px;color:#64748b;margin-top:5px}
-.rpt-section{margin-bottom:32px}
+.rpt-section{margin-bottom:20px}
 .rpt-section-hd{display:flex;align-items:center;gap:10px;border-bottom:1.5px solid #e2e8f0;padding-bottom:8px;margin-bottom:20px}
 .rpt-badge{width:26px;height:26px;border-radius:50%;background:#1e3a8a;color:#fff;font-size:12px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;line-height:1}
-.rpt-section-title{font-size:16px;font-weight:700;color:#1e3a8a}
-.rpt-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-bottom:24px}
-.rpt-kpi{border:1px solid #e2e8f0;border-radius:8px;padding:16px 18px}
+.rpt-section-title{font-size:14px;font-weight:700;color:#1e3a8a}
+.rpt-kpi-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:16px}
+.rpt-kpi{border:1px solid #e2e8f0;border-radius:8px;padding:12px 14px}
 .rpt-kpi-lbl{font-size:11px;color:#94a3b8;margin-bottom:8px;font-weight:500}
-.rpt-kpi-val{font-size:30px;font-weight:800;line-height:1;color:#1e293b}
-.rpt-kpi-unit{font-size:15px;font-weight:600;margin-left:2px}
+.rpt-kpi-val{font-size:24px;font-weight:800;line-height:1;color:#1e293b}
+.rpt-kpi-unit{font-size:12px;font-weight:600;margin-left:2px}
 .rpt-kpi-sub{font-size:11px;color:#94a3b8;margin-top:5px}
 .rpt-dist-title{font-size:13px;font-weight:700;color:#1e293b;margin-bottom:10px}
 .rpt-bar-row{display:flex;align-items:center;gap:10px;margin-bottom:5px;font-size:12px}
@@ -542,14 +555,41 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 .rpt-bar-wrap{flex:1;background:#f1f5f9;border-radius:4px;height:22px;overflow:hidden}
 .rpt-bar-fill{height:100%;border-radius:4px;display:flex;align-items:center;padding:0 8px;color:#fff;font-size:11px;font-weight:700;transition:width .3s;min-width:0}
 .rpt-bar-pct{width:34px;color:#64748b;flex-shrink:0;text-align:right;font-size:11px}
-.rpt-tbl{width:100%;border-collapse:collapse;font-size:13px}
-.rpt-tbl th{font-size:11px;color:#94a3b8;font-weight:600;padding:6px 10px;border-bottom:1.5px solid #e2e8f0;text-align:left;white-space:nowrap}
-.rpt-tbl td{padding:10px 10px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
+.rpt-tbl{width:100%;border-collapse:collapse;font-size:11px}
+.rpt-tbl th{font-size:9px;color:#94a3b8;font-weight:600;padding:4px 8px;border-bottom:1.5px solid #e2e8f0;text-align:left;white-space:nowrap}
+.rpt-tbl td{padding:7px 8px;border-bottom:1px solid #f1f5f9;vertical-align:middle}
 .rpt-tbl tbody tr:last-child td{border-bottom:none}
 .rpt-id{font-weight:700;color:#1e293b}
 .rpt-score-badge{display:inline-block;padding:2px 10px;border-radius:4px;font-size:11px;font-weight:700;white-space:nowrap}
 .rpt-no-data{padding:16px 0;color:#94a3b8;font-style:italic;font-size:13px}
 .rpt-footer{border-top:1px solid #e2e8f0;padding-top:10px;margin-top:24px;font-size:10px;color:#94a3b8;display:flex;justify-content:space-between}
+.rpt-comment-box{background:#f8fafc;border:1px solid #e2e8f0;border-radius:6px;padding:10px 14px;margin-bottom:20px;font-size:12px;line-height:1.7;color:#1e293b;white-space:pre-wrap}
+/* ── コメントモード（MTと同仕様） ── */
+.btn-comment-mode.active{background:#fff0f0;color:#cc0000;border-color:#cc0000;font-weight:600}
+.comment-zone{margin:.1rem 0;min-height:0}
+.comment-zone.has-comment{margin:.25rem 0}
+.comment-add-btn{display:none;width:100%;padding:.45rem 1rem;border:2px dashed #e0c0c0;border-radius:6px;background:rgba(255,240,240,.4);color:#c08080;font-size:.85rem;cursor:pointer;text-align:left;transition:border-color .15s,color .15s,background .15s}
+.comment-add-btn:hover{border-color:#cc0000;color:#cc0000;background:rgba(255,230,230,.6)}
+.comment-mode-active .comment-add-btn{display:block}
+.comment-text-block{padding:.3rem .75rem;position:relative}
+.comment-text{font-family:'Yomogi','Comic Sans MS',cursive;color:#cc0000;font-size:.95rem;line-height:1.75;white-space:pre-wrap;display:inline-block;transform:rotate(-.4deg);margin:0;padding:0;filter:drop-shadow(.5px .5px 0 rgba(160,0,0,.12));letter-spacing:.01em}
+.comment-actions{display:none;gap:.4rem;margin-top:.3rem;align-items:center}
+.comment-mode-active .comment-actions{display:flex}
+.btn-comment-edit,.btn-comment-delete{font-size:.75rem;padding:.15rem .55rem;border-radius:3px;cursor:pointer;background:#fff;line-height:1.4}
+.btn-comment-edit{color:#2563eb;border:1px solid #93c5fd}
+.btn-comment-edit:hover{background:#eff6ff}
+.btn-comment-delete{color:#dc2626;border:1px solid #fca5a5}
+.btn-comment-delete:hover{background:#fef2f2}
+#commentEditorDiv{width:100%;min-height:100px;padding:.6rem .75rem;border:1.5px solid #ddd;border-radius:6px;font-size:.95rem;line-height:1.65;outline:none;background:#fff;box-sizing:border-box;font-family:'Yomogi',cursive;color:#cc0000}
+#commentEditorDiv:focus{border-color:#cc0000;box-shadow:0 0 0 2px rgba(204,0,0,.1)}
+#commentEditorDiv:empty::before{content:attr(data-placeholder);color:#aaa;pointer-events:none;font-style:italic}
+#commentEditorDiv span[style*="background-color"]{border-radius:2px;padding:0 1px}
+@media print{
+  .comment-add-btn,.comment-actions{display:none!important}
+  .comment-text-block{background:transparent;padding:.2rem .5rem}
+  .comment-text{font-size:.95rem!important}
+  .comment-text span[style*="background-color"]{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+}
 /* ─────────────────────────────────────────
    印刷
 ───────────────────────────────────────── */
@@ -571,6 +611,10 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
   .rpt-kpi{border:1px solid #e2e8f0!important}
   .rpt-bar-fill,.rpt-score-badge,.rpt-badge{-webkit-print-color-adjust:exact;print-color-adjust:exact}
   .rpt-kpi-val,.rpt-id{-webkit-print-color-adjust:exact;print-color-adjust:exact}
+  .rpt-section{page-break-inside:avoid;break-inside:avoid}
+  .rpt-tbl tbody tr{page-break-inside:avoid;break-inside:avoid}
+  .rpt-header{page-break-after:avoid;break-after:avoid}
+  .rpt-kpi-grid{page-break-inside:avoid;break-inside:avoid}
   @page{size:A4 landscape;margin:7mm}
 }
 
@@ -592,7 +636,7 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 }
 
 /* ─── Hatch Map ───────────────────────────────── */
-.hm-controls{display:flex;align-items:center;gap:10px;flex-wrap:wrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:12px 16px;margin-bottom:16px}
+.hm-controls{display:flex;align-items:center;gap:8px;flex-wrap:nowrap;background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-sm);padding:7px 12px;margin-bottom:6px}
 .hm-date-nav{display:flex;align-items:center;gap:6px}
 .hm-date-nav button{width:28px;height:28px;border:1px solid var(--border-2);border-radius:6px;background:var(--surface);font-size:14px;cursor:pointer;display:flex;align-items:center;justify-content:center}
 .hm-date-nav button:hover{background:var(--gray-lt)}
@@ -632,6 +676,7 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 .hm-tl-tag{font-family:'Courier New',monospace;font-weight:700}
 .hm-tl-dots{display:flex;gap:3px}
 .hm-page-wrap{display:flex;flex-direction:column;height:100%}
+#hm-1page-scale-root{display:flex;flex-direction:column;flex:1;min-height:0}
 .hm-scroll-area{flex:1;min-height:0;overflow-y:auto;overflow-x:hidden}
 .hm-hint-box{background:var(--blue-lt);border:1px solid #bfdbfe;border-radius:8px;margin-bottom:10px;font-size:12px;color:var(--text-2)}
 .hm-hint-box summary{padding:8px 12px;cursor:pointer;font-weight:600;color:var(--blue);list-style:none;display:flex;align-items:center;gap:6px;user-select:none}
@@ -639,6 +684,14 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 .hm-hint-box .hm-hint-body{padding:2px 14px 10px;line-height:2}
 .hm-tl-dot{width:8px;height:8px;border-radius:50%}
 .hm-no-data{padding:16px;text-align:center;color:var(--text-4);font-size:13px}
+.vacated-badge{display:inline-block;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:700;background:#fee2e2;color:var(--red);border:1px solid #fca5a5}
+.present-badge{display:inline-block;padding:1px 7px;border-radius:4px;font-size:11px;font-weight:700;background:#f1f5f9;color:#475569;border:1px solid #94a3b8}
+.hm-present{border-color:#94a3b8!important;background:#f8fafc!important;border-style:dashed!important}
+.hm-present .hm-present-badge{position:absolute;top:7px;right:8px;width:22px;height:22px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:10px;font-weight:800;color:#fff;background:#94a3b8}
+.hm-present .hm-cell-info{color:#94a3b8!important}
+.hm-otitis-badge{display:inline-block;padding:1px 5px;border-radius:4px;font-size:9px;font-weight:700;background:#dc2626;color:#fff;margin-top:3px;letter-spacing:.3px}
+.tl-vacated .tl-content{background:#fff5f5;border:1px solid #fca5a5;opacity:.85}
+.hm-exit-date{font-size:10px;color:var(--red);margin-top:2px}
 
 /* ─── Hatch Map 印刷ヘッダー（画面では非表示） ─── */
 #hm-print-header{display:none}
@@ -651,7 +704,7 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
   .hm-print-scope{page:hm-map}
 
   /* UI要素を非表示 */
-  #topbar,.page-hd,.hm-controls,#hm-detail-wrap,.hm-btn-print,
+  #topbar,.page-hd,.hm-screen-top,.hm-controls,#hm-detail-wrap,.hm-btn-print,
   body > *:not(#main),#modal-bg,#toast-box{display:none!important}
 
   #main{margin-top:0!important}
@@ -749,6 +802,23 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
   .hm-s4 .hm-cell-score,.hm-s5 .hm-cell-score{
     -webkit-print-color-adjust:exact;print-color-adjust:exact;
   }
+  .hm-present{
+    border-color:#94a3b8!important;background:#f8fafc!important;border-style:dashed!important;
+    opacity:1!important;-webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  .hm-present .hm-present-badge{
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+
+  /* ── 1枚印刷モード（#hm-1page-scale-root を JS で縮小して1ページに収める） ── */
+  @page hm-1page{size:A4 portrait;margin:5mm}
+  body.hm-print-1page .hm-print-scope{page:hm-1page;overflow:hidden!important}
+  body.hm-print-1page #hm-1page-scale-root{
+    -webkit-print-color-adjust:exact;print-color-adjust:exact;
+  }
+  body.hm-print-1page .hm-cell{
+    page-break-inside:auto!important;break-inside:auto!important;
+  }
 }
 
 /* Hutch setup modal */
@@ -820,6 +890,51 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 <div id="toast-box"></div>
 <input type="file" id="file-in" accept=".json" style="display:none">
 
+<!-- コメント編集モーダル（レポートコメントモード用） -->
+<div id="commentEditorModal" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,.45);z-index:9000;align-items:center;justify-content:center">
+  <div style="background:#fff;border-radius:10px;padding:0;max-width:500px;width:92%;box-shadow:0 8px 32px rgba(0,0,0,.2);overflow:hidden" onclick="event.stopPropagation()">
+    <div style="display:flex;align-items:center;justify-content:space-between;padding:14px 18px;border-bottom:1px solid #f1f3f4">
+      <h3 style="font-size:15px;font-weight:600;color:#3c4043;margin:0">コメントを編集</h3>
+      <button onclick="closeCommentEditor()" style="background:none;border:none;font-size:20px;cursor:pointer;color:#5f6368;line-height:1;padding:0 4px">×</button>
+    </div>
+    <div style="padding:18px">
+      <p style="font-size:.85rem;color:#555;margin-bottom:.75rem">入力したコメントがレポートの該当箇所に赤ペン風で表示されます。空欄で保存するとコメントを削除します。</p>
+      <div style="margin-bottom:.75rem;display:flex;align-items:center;gap:.5rem;flex-wrap:wrap">
+        <label for="commentFontSelect" style="font-size:.85rem;color:#555;white-space:nowrap">フォント：</label>
+        <select id="commentFontSelect" style="font-size:.9rem;padding:.2rem .4rem;border-radius:4px;border:1px solid #ccc;flex:1;min-width:140px" onchange="onCommentFontChange()">
+          <option value="Yomogi">よもぎ (Yomogi)</option>
+          <option value="Hachi Maru Pop">はちまるポップ (Hachi Maru Pop)</option>
+          <option value="Klee One">クレーワン (Klee One)</option>
+          <option value="Zen Kurenaido">禅紅梅 (Zen Kurenaido)</option>
+          <option value="Yuji Syuku">勇字塾 (Yuji Syuku)</option>
+        </select>
+        <label for="commentFontSizeSelect" style="font-size:.85rem;color:#555;white-space:nowrap">サイズ：</label>
+        <select id="commentFontSizeSelect" style="font-size:.9rem;padding:.2rem .4rem;border-radius:4px;border:1px solid #ccc" onchange="onCommentSizeChange()">
+          <option value="0.75rem">極小</option>
+          <option value="0.85rem">小</option>
+          <option value="0.95rem" selected>中</option>
+          <option value="1.1rem">大</option>
+          <option value="1.25rem">極大</option>
+        </select>
+      </div>
+      <div id="commentHighlightToolbar" style="margin-bottom:.5rem;display:flex;align-items:center;gap:.4rem;flex-wrap:wrap">
+        <span style="font-size:.8rem;color:#555;white-space:nowrap">蛍光ペン：</span>
+        <button type="button" class="btn-highlight" data-color="#FFFF66" title="黄色" style="background:#FFFF66;border:1px solid #bbb;border-radius:3px;width:24px;height:24px;cursor:pointer;padding:0" onclick="applyHighlight('#FFFF66')"></button>
+        <button type="button" class="btn-highlight" data-color="#66FF99" title="緑" style="background:#66FF99;border:1px solid #bbb;border-radius:3px;width:24px;height:24px;cursor:pointer;padding:0" onclick="applyHighlight('#66FF99')"></button>
+        <button type="button" class="btn-highlight" data-color="#FF99CC" title="ピンク" style="background:#FF99CC;border:1px solid #bbb;border-radius:3px;width:24px;height:24px;cursor:pointer;padding:0" onclick="applyHighlight('#FF99CC')"></button>
+        <button type="button" class="btn-highlight" data-color="#99CCFF" title="水色" style="background:#99CCFF;border:1px solid #bbb;border-radius:3px;width:24px;height:24px;cursor:pointer;padding:0" onclick="applyHighlight('#99CCFF')"></button>
+        <button type="button" class="btn-highlight" data-color="#FFCC66" title="オレンジ" style="background:#FFCC66;border:1px solid #bbb;border-radius:3px;width:24px;height:24px;cursor:pointer;padding:0" onclick="applyHighlight('#FFCC66')"></button>
+        <button type="button" id="btnRemoveHighlight" style="background:#fff;border:1px solid #ccc;border-radius:3px;padding:0 7px;height:24px;cursor:pointer;font-size:.75rem;color:#555" onclick="removeHighlight()">消去</button>
+      </div>
+      <div id="commentEditorDiv" contenteditable="true" role="textbox" aria-multiline="true" aria-label="コメント入力" data-placeholder="コメントを入力..."></div>
+      <div style="display:flex;gap:8px;margin-top:1rem">
+        <button onclick="saveCommentFromEditor()" class="btn-primary">保存</button>
+        <button onclick="closeCommentEditor()" class="btn-outline">キャンセル</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <script>
 'use strict';
 // ─── Constants ────────────────────────────────────
@@ -861,6 +976,19 @@ const fmtDate = d => d ? d.replace(/-/g,'/') : '－';
 const calcAge = (b,s) => b ? Math.max(0,Math.floor((new Date(s||today()) - new Date(b))/86400000)) : null;
 const genId = () => Date.now().toString(36)+Math.random().toString(36).slice(2);
 const scClass = n => ['sc0','sc1','sc2','sc3','sc4','sc5'][n]||'sc0';
+const treatBadge = s => {
+  const t=s.treatType||(s.treated?'new':'');
+  if(t==='ongoing') return '<span class="badge b-amber">治療中</span>';
+  if(t==='new')     return '<span class="badge b-red">介入</span>';
+  return '<span style="color:var(--text-4)">－</span>';
+};
+
+// 個体の初診スキャンを取得（最初の治療介入スキャン）
+const getFirstTreatScan = (fid, animalId) => {
+  return DB.getScans(fid)
+    .filter(s => s.animalId === animalId && (s.treatType === 'new' || (s.treated && !s.treatType)))
+    .sort((a, b) => a.scanDate.localeCompare(b.scanDate))[0] || null;
+};
 
 // ─── IndexedDB helpers（ファイルハンドル永続化）─────────────────────
 const _idbOpen = () => new Promise((res,rej)=>{
@@ -1134,11 +1262,11 @@ const DrugFreq={
 const Calc = {
   prev(scans){const t=scans.length,p=scans.filter(s=>s.obScore>=2).length;return{t,p,r:t?+(p/t*100).toFixed(1):0}},
   byDate(fid){
-    const map={};DB.getScans(fid).forEach(s=>{if(!map[s.scanDate])map[s.scanDate]={d:s.scanDate,t:0,p:0};map[s.scanDate].t++;if(s.obScore>=2)map[s.scanDate].p++;});
+    const map={};DB.getScans(fid).filter(s=>!s.vacated&&!s.presentOnly).forEach(s=>{if(!map[s.scanDate])map[s.scanDate]={d:s.scanDate,t:0,p:0};map[s.scanDate].t++;if(s.obScore>=2)map[s.scanDate].p++;});
     return Object.values(map).sort((a,b)=>a.d.localeCompare(b.d)).map(x=>({...x,r:+(x.p/x.t*100).toFixed(1)}));
   },
-  dist(fid){const d=[0,0,0,0,0,0];DB.getScans(fid).forEach(s=>{if(s.obScore>=0&&s.obScore<=5)d[s.obScore]++;});return d;},
-  treatRate(fid){const sc=DB.getScans(fid);const t=sc.filter(s=>s.treated).length;return{t,tot:sc.length,r:sc.length?+(t/sc.length*100).toFixed(1):0}},
+  dist(fid){const d=[0,0,0,0,0,0];DB.getScans(fid).filter(s=>!s.vacated&&!s.presentOnly).forEach(s=>{if(s.obScore>=0&&s.obScore<=5)d[s.obScore]++;});return d;},
+  treatRate(fid){const sc=DB.getScans(fid).filter(s=>!s.vacated&&!s.presentOnly);const t=sc.filter(s=>s.treated).length;return{t,tot:sc.length,r:sc.length?+(t/sc.length*100).toFixed(1):0}},
   bm(fid){
     const farm=DB.getFarm(fid);const tgt=BM[farm?.protocol||'B'];
     const bd=this.byDate(fid);const cur=bd.length?bd[bd.length-1].r:null;
@@ -1173,19 +1301,29 @@ const HutchUtil = {
       .sort((a,b)=>b.scanDate.localeCompare(a.scanDate)||b.createdAt.localeCompare(a.createdAt));
     if(!sc.length) return null;
     const scan=sc[0];
+    if(scan.vacated) return null; // 退出済み → 空ハッチ
     const animal=DB.getAnimals(fid).find(a=>a.id===scan.animalId)||null;
     return {scan,animal};
   },
 
-  // ハッチの入退記録を時系列で返す [{tagId,from,to,scans,lastScore}]
+  // ハッチの入退記録を時系列で返す [{animalId,tagId,scans,from,to,lastScore,exitDate}]
   history(fid, hutchId){
     const scans=DB.getScans(fid).filter(s=>s.hutchId===hutchId)
       .sort((a,b)=>a.scanDate.localeCompare(b.scanDate));
     const groups=[];
     for(const s of scans){
-      const last=groups[groups.length-1];
-      if(last && last.animalId===s.animalId){last.scans.push(s);last.to=s.scanDate;last.lastScore=s.obScore;}
-      else groups.push({animalId:s.animalId,tagId:s.tagId,scans:[s],from:s.scanDate,to:s.scanDate,lastScore:s.obScore});
+      if(s.vacated){
+        // 退出記録：現在グループの同一個体を閉じる
+        const last=groups[groups.length-1];
+        if(last&&last.animalId===s.animalId&&!last.exitDate) last.exitDate=s.scanDate;
+      } else {
+        const last=groups[groups.length-1];
+        if(last&&last.animalId===s.animalId&&!last.exitDate){
+          last.scans.push(s);last.to=s.scanDate;if(!s.presentOnly)last.lastScore=s.obScore;
+        } else {
+          groups.push({animalId:s.animalId,tagId:s.tagId,scans:[s],from:s.scanDate,to:s.scanDate,lastScore:s.presentOnly?null:s.obScore,exitDate:null});
+        }
+      }
     }
     return groups;
   },
@@ -1193,20 +1331,20 @@ const HutchUtil = {
   // 個体のハッチ移動履歴 [{hutchLabel, scanDate, obScore}]
   animalMoves(fid, animalId){
     const hutches=this.get(fid);
-    return DB.getScans(fid).filter(s=>s.animalId===animalId && s.hutchId)
+    return DB.getScans(fid).filter(s=>s.animalId===animalId && s.hutchId && !s.vacated && !s.presentOnly)
       .sort((a,b)=>a.scanDate.localeCompare(b.scanDate))
       .map(s=>({...s, hutchLabel: hutches.find(h=>h.id===s.hutchId)?.label||s.hutchId}));
   },
 
-  /** 個体のスキャン履歴で、ハッチが記録されている直近1件（スキャン日・作成日の新しい順） */
+  /** 個体のスキャン履歴で、ハッチが記録されている直近1件（退出記録・空ハッチは除く） */
   lastHutchFromScans(fid, animalId){
-    const scans=DB.getScans(fid).filter(s=>s.animalId===animalId&&(s.hutchId||s.hutchFree))
+    const scans=DB.getScans(fid).filter(s=>s.animalId===animalId&&(s.hutchId||s.hutchFree)&&!s.vacated)
       .sort((a,b)=>b.scanDate.localeCompare(a.scanDate)||String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
     return scans[0]||null;
   },
 
-  // ファームのスキャン日一覧（昇順）
-  scanDates(fid){ return [...new Set(DB.getScans(fid).map(s=>s.scanDate))].sort(); },
+  // ファームのスキャン日一覧（昇順・退出記録除く）
+  scanDates(fid){ return [...new Set(DB.getScans(fid).filter(s=>!s.vacated).map(s=>s.scanDate))].sort(); },
 
   // 標準レイアウト生成
   genStandard(leftN, rightN, lbl0='左列', lbl1='右列'){
@@ -1230,7 +1368,7 @@ const HutchUtil = {
 };
 
 // ─── Hatch Map State ──────────────────────────────
-let HM = { date: null, focusHutch: null, flipH: false, flipV: false };
+let HM = { date: null, focusHutch: null, flipH: false, flipV: false, _initialized: null };
 
 // ─── Charts ───────────────────────────────────────
 const CHS={};
@@ -1261,9 +1399,9 @@ const setView=html=>{
 };
 
 // ─── Scan State ───────────────────────────────────
-let SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null,exp4:''};
-const resetSS=()=>{SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null,exp4:''};};
-const loadSS=s=>{SS.right={rf_a:'',rf_p:'',r_m:'',r_c:'',...(s.right||{})};SS.left={lf_a:'',lf_p:'',l_c:'',...(s.left||{})};SS.score=s.obScore||0;SS.editId=s.id;};
+let SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null,exp4:'',treatType:''};
+const resetSS=()=>{SS={right:{rf_a:'',rf_p:'',r_m:'',r_c:''},left:{lf_a:'',lf_p:'',l_c:''},score:0,editId:null,exp4:'',treatType:''};};
+const loadSS=s=>{SS.right={rf_a:'',rf_p:'',r_m:'',r_c:'',...(s.right||{})};SS.left={lf_a:'',lf_p:'',l_c:'',...(s.left||{})};SS.score=s.obScore||0;SS.editId=s.id;SS.treatType=s.treatType||( s.treated?'new':'');};
 
 // ─── Mini lung grid (read-only) ───────────────────
 const miniLung=sides=>{
@@ -1296,7 +1434,7 @@ const renderHome=()=>{
 const renderDashboard=()=>{
   const fid=DB.activeId();const farm=DB.getFarm(fid);
   if(!fid||!farm){renderHome();return;}
-  const scans=DB.getScans(fid);const animals=DB.getAnimals(fid);
+  const scans=DB.getScans(fid).filter(s=>!s.vacated&&!s.presentOnly);const animals=DB.getAnimals(fid);
   const pv=Calc.prev(scans);const bm=Calc.bm(fid);const tr=Calc.treatRate(fid);
   const recent=scans.slice().sort((a,b)=>(b.createdAt||b.scanDate||'').localeCompare(a.createdAt||a.scanDate||'')).slice(0,12);
 
@@ -1360,7 +1498,7 @@ const renderDashboard=()=>{
       <td>${s.ageAtScan!=null?s.ageAtScan+'日':'－'}</td>
       <td>${miniLung(s.right)}</td><td>${miniLung(s.left)}</td>
       <td><span class="score-badge ${scClass(s.obScore)}">${s.obScore}</span></td>
-      <td>${s.treated?'<span class="badge b-red">あり</span>':'<span style="color:var(--text-4)">－</span>'}</td>
+      <td>${treatBadge(s)}</td>
     </tr>`).join('')}</tbody></table></div>`}
   </div>`);
 
@@ -1426,6 +1564,13 @@ const renderNewScan=(editScan=null)=>{
           })()}
         </div>
       </div>
+      <div style="margin-top:10px;padding:10px 14px;background:#f8fafc;border:1.5px dashed #94a3b8;border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+        <label style="display:flex;align-items:center;gap:8px;cursor:pointer;font-size:14px;font-weight:600;color:var(--text-2)">
+          <input type="checkbox" id="f-present-only" ${s.presentOnly?'checked':''} onchange="App.onPresentOnly(this.checked)" style="width:16px;height:16px;cursor:pointer">
+          この日はスキャンしない（在舎のみ記録）
+        </label>
+        <span style="font-size:12px;color:#64748b">チェックすると肺エコー所見・スコア入力をスキップできます</span>
+      </div>
       <div id="tag-wrap" style="${isEdit?'':'display:none'};margin-top:12px">
         <div id="tag-wrap-msg">${isEdit?`<div style="margin-bottom:10px"><div class="form-label" style="margin-bottom:4px">耳標番号（10桁）</div><div style="font-size:13px">${fmtTagId(s.tagId)}&emsp;<span style="color:var(--text-3)">拡大4桁：<span class="tag-exp">${get拡4(s.tagId)}</span></span></div></div>`:``}</div>
         ${!isEdit?`<div class="form-group">
@@ -1446,6 +1591,7 @@ const renderNewScan=(editScan=null)=>{
     </div>
   </div>
 
+  <div id="scan-findings-area" style="${s.presentOnly?'display:none':''}">
   <!-- 肺エコー所見 -->
   <div class="card">
     <div class="card-hd">
@@ -1541,9 +1687,13 @@ const renderNewScan=(editScan=null)=>{
         <input class="form-input" id="f-findings" value="${h(s.mainFindings||'')}" placeholder="例：右R3〜R4に実質化（2cm程度）、胸水なし">
       </div>
       <div style="margin-bottom:14px">
-        <div class="toggle-row">
-          <label class="toggle"><input type="checkbox" id="f-treated" ${s.treated?'checked':''} onchange="App.onTreat(this.checked)"><span class="tgl-slider"></span></label>
-          <span style="font-weight:600;font-size:14px">治療介入あり</span>
+        <div class="toggle-row" style="flex-wrap:wrap;gap:8px">
+          <span style="font-weight:600;font-size:14px;white-space:nowrap">治療ステータス</span>
+          <div class="treat-seg" id="treat-seg">
+            <button type="button" class="treat-seg-btn ${!s.treated?'active':''}" data-val="" onclick="App.onTreat('')">なし</button>
+            <button type="button" class="treat-seg-btn ${ s.treated&&s.treatType!=='ongoing'?'active':''}" data-val="new" onclick="App.onTreat('new')">治療介入（新規）</button>
+            <button type="button" class="treat-seg-btn ${ s.treatType==='ongoing'?'active':''}" data-val="ongoing" onclick="App.onTreat('ongoing')">治療中</button>
+          </div>
           <span class="badge ${SS.score>=2?'b-amber':'b-teal'}" id="treat-badge">${SS.score>=2?'スコア≥2：治療推奨':'スコア<2：観察'}</span>
         </div>
       </div>
@@ -1560,6 +1710,7 @@ const renderNewScan=(editScan=null)=>{
       </div>
     </div>
   </div>
+  </div><!-- /scan-findings-area -->
 
   <div id="form-err" style="color:var(--red);font-size:13px;margin-bottom:12px;display:none"></div>
   <div style="display:flex;gap:10px;justify-content:flex-end">
@@ -1582,9 +1733,11 @@ const renderHistory=()=>{
   let sc=DB.getScans(fid);
   const f=HS.f;
   if(f.tag) sc=sc.filter(s=>s.tagId&&(s.tagId.includes(f.tag)||get拡4(s.tagId).includes(f.tag)));
-  if(f.sm!=null) sc=sc.filter(s=>s.obScore>=f.sm);
-  if(f.tr==='y') sc=sc.filter(s=>s.treated);
-  if(f.tr==='n') sc=sc.filter(s=>!s.treated);
+  if(f.sm!=null) sc=sc.filter(s=>s.vacated||s.presentOnly||s.obScore>=f.sm);
+  if(f.tr==='y')       sc=sc.filter(s=>s.vacated||s.presentOnly||s.treated);
+  if(f.tr==='new')     sc=sc.filter(s=>s.vacated||s.presentOnly||(s.treatType==='new'||(s.treated&&!s.treatType)));
+  if(f.tr==='ongoing') sc=sc.filter(s=>s.vacated||s.presentOnly||s.treatType==='ongoing');
+  if(f.tr==='n')       sc=sc.filter(s=>s.vacated||s.presentOnly||!s.treated);
   if(f.df) sc=sc.filter(s=>s.scanDate>=f.df);
   if(f.dt) sc=sc.filter(s=>s.scanDate<=f.dt);
   const hutches=HutchUtil.get(fid);
@@ -1609,6 +1762,10 @@ const renderHistory=()=>{
   }
   const hsIc=col=>HS.sort===col?(HS.sortDir===1?'<span class="ns-ic">▲</span>':'<span class="ns-ic">▼</span>'):'<span class="ns-ic">⇅</span>';
   const mkTh=(col,lbl)=>`<th class="note-th-sort${HS.sort===col?(HS.sortDir===1?' ns-asc':' ns-desc'):''}" onclick="App.sortH('${col}')">${lbl}${hsIc(col)}</th>`;
+  // 個体ごとの初診IDをマップ化（パフォーマンス対策）
+  const firstTreatMap={};
+  const _animalIds=[...new Set(sc.map(s=>s.animalId))];
+  _animalIds.forEach(aid=>{const ft=getFirstTreatScan(fid,aid);if(ft)firstTreatMap[aid]=ft.id;});
 
   setView(`
   <div class="page-hd">
@@ -1616,15 +1773,17 @@ const renderHistory=()=>{
     <div class="page-sub">${h(farm.name)}　全 ${DB.getScans(fid).length} 件</div>
   </div>
   <div class="filter-bar">
-    <input class="form-input" placeholder="拡大4桁または耳標番号で検索" value="${h(f.tag||'')}" oninput="App.setF('tag',this.value)" style="width:200px">
+    <input class="form-input" placeholder="拡大4桁または耳標番号で検索" value="${h(f.tag||'')}" onchange="App.setF('tag',this.value)" onkeydown="if(event.key==='Enter'){App.setF('tag',this.value)}" style="width:200px">
     <select class="form-select" onchange="App.setF('sm',this.value?Number(this.value):null)">
       <option value="">スコア：全て</option>
       ${[1,2,3,4,5].map(n=>`<option value="${n}" ${f.sm===n?'selected':''}>≥${n}</option>`).join('')}
     </select>
     <select class="form-select" onchange="App.setF('tr',this.value)">
       <option value="">治療：全て</option>
-      <option value="y" ${f.tr==='y'?'selected':''}>治療あり</option>
-      <option value="n" ${f.tr==='n'?'selected':''}>治療なし</option>
+      <option value="y"       ${f.tr==='y'      ?'selected':''}>治療あり（全て）</option>
+      <option value="new"     ${f.tr==='new'    ?'selected':''}>治療介入（新規）</option>
+      <option value="ongoing" ${f.tr==='ongoing'?'selected':''}>治療中</option>
+      <option value="n"       ${f.tr==='n'      ?'selected':''}>治療なし</option>
     </select>
     <input class="form-input" type="date" value="${f.df||''}" onchange="App.setF('df',this.value)" style="width:138px" title="開始日">
     <span style="color:var(--text-4);font-size:12px">〜</span>
@@ -1635,18 +1794,41 @@ const renderHistory=()=>{
   ${sc.length===0?`<div class="card"><div class="card-body"><div class="empty"><div class="empty-icon">🔍</div><h3>該当する記録がありません</h3><p>フィルタ条件を変更してください</p></div></div></div>`:
   `<div class="card" style="overflow:hidden"><div class="tbl-wrap"><table>
   <thead><tr>${mkTh('scanDate','スキャン日')}${mkTh('tagId','個体識別番号')}${mkTh('ageAtScan','日齢')}${mkTh('hutch','場所')}${mkTh('obScore','スコア')}<th>右肺</th><th>左肺</th>${mkTh('treated','治療')}${mkTh('drug','薬剤')}${mkTh('notes','備考')}<th>操作</th></tr></thead>
-  <tbody>${sc.map(s=>`<tr>
-    <td>${fmtDate(s.scanDate)}<br><span style="font-size:10px;color:var(--text-4)">R${s.round||1}</span></td>
+  <tbody>${sc.map(s=>s.vacated?`<tr style="background:#fff5f5">
+    <td>${fmtDate(s.scanDate)}<br><span class="vacated-badge">退出</span></td>
+    <td class="tag-cell"><span class="tbl-link" onclick="App.openAnimalModal('${h(s.animalId)}')">${fmtTagId(s.tagId)}</span></td>
+    <td colspan="8" style="font-size:12px;color:var(--red)">🚪 ハッチ退出記録（${h(hutchLabel(s))}）${s.notes?'　'+h(s.notes):''}</td>
+    <td style="white-space:nowrap"><button class="btn-sm btn-danger" onclick="App.delScan('${s.id}')">削除</button></td>
+  </tr>`:s.presentOnly?`<tr style="background:#f8fafc;cursor:pointer" ondblclick="App.editScan('${s.id}')" title="ダブルクリックで編集">
+    <td>${fmtDate(s.scanDate)}<br><span class="present-badge">在舎</span></td>
+    <td class="tag-cell"><span class="tbl-link" onclick="App.openAnimalModal('${h(s.animalId)}')">${fmtTagId(s.tagId)}</span></td>
+    <td>${s.ageAtScan!=null?s.ageAtScan+'日':'－'}</td>
+    <td style="font-size:12px;color:var(--text-3)">${h(hutchLabel(s))}</td>
+    <td><span class="present-badge">在</span></td>
+    <td colspan="2" style="font-size:12px;color:#94a3b8">スキャンなし</td>
+    <td>－</td><td>－</td>
+    <td style="font-size:12px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-3)">${h(s.notes||'')}</td>
+    <td style="white-space:nowrap">
+      <button class="btn-sm btn-edit" onclick="App.editScan('${s.id}')" style="margin-right:4px">✏ 編集</button>
+      <button class="btn-sm btn-danger" onclick="App.delScan('${s.id}')">削除</button>
+    </td>
+  </tr>`:`<tr ondblclick="App.editScan('${s.id}')" title="ダブルクリックで編集" style="cursor:pointer">
+    <td>
+      <div style="display:flex;align-items:center;gap:2px;flex-wrap:nowrap">
+        <div>${fmtDate(s.scanDate)}<br><span style="font-size:10px;color:var(--text-4)">R${s.round||1}</span></div>
+        <button class="scan-edit-btn" onclick="event.stopPropagation();App.editScan('${s.id}')" title="編集">✏</button>
+      </div>
+    </td>
     <td class="tag-cell"><span class="tbl-link" onclick="App.openAnimalModal('${h(s.animalId)}')">${fmtTagId(s.tagId)}</span></td>
     <td>${s.ageAtScan!=null?s.ageAtScan+'日':'－'}</td>
     <td style="font-size:12px;color:var(--text-3)">${h(hutchLabel(s))}</td>
     <td><span class="score-badge ${scClass(s.obScore)}">${s.obScore}</span></td>
     <td>${miniLung(s.right)}</td><td>${miniLung(s.left)}</td>
-    <td>${s.treated?'<span class="badge b-red">あり</span>':'<span style="color:var(--text-4)">－</span>'}</td>
+    <td>${treatBadge(s)}${firstTreatMap[s.animalId]===s.id?'<br><span style="font-size:10px;color:#be2b2b;font-weight:700">🏥初診</span>':''}</td>
     <td style="font-size:12px;max-width:90px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-3)">${h(s.drug||'')}</td>
     <td style="font-size:12px;max-width:110px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;color:var(--text-3)">${h(s.notes||'')}</td>
     <td style="white-space:nowrap">
-      <button class="btn-sm btn-edit" onclick="App.editScan('${s.id}')" style="margin-right:4px">編集</button>
+      <button class="btn-sm btn-edit" onclick="App.editScan('${s.id}')" style="margin-right:4px">✏ 編集</button>
       <button class="btn-sm btn-danger" onclick="App.delScan('${s.id}')">削除</button>
     </td>
   </tr>`).join('')}</tbody></table></div></div>`}
@@ -1657,7 +1839,7 @@ const renderHistory=()=>{
 const renderAnalysis=()=>{
   const fid=DB.activeId();const farm=DB.getFarm(fid);
   if(!fid||!farm){renderHome();return;}
-  const sc=DB.getScans(fid);const bd=Calc.byDate(fid);const dist=Calc.dist(fid);
+  const sc=DB.getScans(fid).filter(s=>!s.vacated&&!s.presentOnly);const bd=Calc.byDate(fid);const dist=Calc.dist(fid);
   const tr=Calc.treatRate(fid);const bm=Calc.bm(fid);const tgt=BM[farm.protocol||'B'];
   const heavy=dist[4]+dist[5];const heavyR=sc.length?+(heavy/sc.length*100).toFixed(1):0;
 
@@ -1737,15 +1919,20 @@ const renderFollowup=()=>{
     const last=sc[0];if(!last)return null;
     const daysSince=Math.floor((new Date(today())-new Date(last.scanDate))/86400000);
     let status='ok',badge='',action='';
-    if(last.obScore>=2&&!last.treated){
+    const isTreated=last.treated;
+    const isOngoing=last.treatType==='ongoing';
+    if(last.obScore>=2&&!isTreated){
       status='urgent';badge='<span class="fu-badge fu-urgent">🚨 未治療・要介入</span>';
       action='スコア≥2で治療未実施。即時対応を推奨。';
-    } else if(last.obScore>=2&&last.treated&&daysSince<7){
-      status='ok';badge='<span class="fu-badge fu-ok">⏳ 治療中</span>';
-      action=`治療後${daysSince}日。再スキャンは${7-daysSince}日後以降。`;
-    } else if(last.obScore>=2&&last.treated&&daysSince>=7){
+    } else if(last.obScore>=2&&isOngoing){
+      status='soon';badge='<span class="fu-badge fu-soon">💊 治療継続中</span>';
+      action=`スコア≥2・治療継続中（${daysSince}日前スキャン）。経過を確認してください。`;
+    } else if(last.obScore>=2&&isTreated&&daysSince<7){
+      status='ok';badge='<span class="fu-badge fu-ok">⏳ 治療後観察中</span>';
+      action=`治療介入後${daysSince}日。再スキャンは${7-daysSince}日後以降。`;
+    } else if(last.obScore>=2&&isTreated&&daysSince>=7){
       status='urgent';badge='<span class="fu-badge fu-urgent">🔴 再スキャン期限超過</span>';
-      action=`治療後${daysSince}日経過。7〜10日後再スキャン期限を過ぎています。`;
+      action=`治療介入後${daysSince}日経過。7〜10日後再スキャン期限を過ぎています。`;
     } else if(last.obScore===1&&daysSince<5){
       status='ok';badge='<span class="fu-badge fu-ok">⏳ 観察中</span>';
       action=`スコア1。再スキャンまで${5-daysSince}日。`;
@@ -1781,7 +1968,7 @@ const renderFollowup=()=>{
     <td>${fmtDate(last.scanDate)}<br><span style="font-size:10px;color:var(--text-4)">R${last.round||1}</span></td>
     <td>${last.ageAtScan!=null?last.ageAtScan+'日':'－'}</td>
     <td><span class="score-badge ${scClass(last.obScore)}">${last.obScore}</span></td>
-    <td>${last.treated?'<span class="badge b-red">あり</span>':'<span style="color:var(--text-4)">－</span>'}</td>
+    <td>${treatBadge(last)}</td>
     <td><span class="fu-days" style="color:${status==='urgent'?'var(--red)':status==='soon'?'var(--amber)':'var(--teal)'}">${daysSince}日</span></td>
     <td>${badge}</td>
     <td style="font-size:11px;max-width:200px;color:var(--text-2)">${h(action)}</td>
@@ -1798,7 +1985,7 @@ const renderFollowup=()=>{
 
 // ─── FIELD NOTES VIEW ────────────────────────────
 let NS={prefill:true,date:today(),examiner:'',sort:null,sortDir:0};
-let RS={date:'',examiner:''};
+let RS={date:'',examiner:'',comment:''};
 const renderNotes=()=>{
   const fid=DB.activeId();const farm=DB.getFarm(fid);
   if(!fid||!farm){renderHome();return;}
@@ -1987,7 +2174,12 @@ const renderReport=()=>{
   const JBG=['#d1fae5','#dbeafe','#fef3c7','#ffedd5','#fee2e2','#fecaca'];
 
   const mkBadge=(s)=>`<span class="rpt-score-badge" style="background:${JBG[s.obScore]};color:${SC[s.obScore]}">${JLBL[s.obScore]}</span>`;
-  const treatCell=(s)=>`<span style="color:${s.treated?'#ef4444':'#94a3b8'};font-weight:700">${s.treated?'実施':'－'}</span>`;
+  const treatCell=(s)=>{
+    const t=s.treatType||(s.treated?'new':'');
+    if(t==='ongoing')return`<span style="color:#b45309;font-weight:700">治療中</span>`;
+    if(t==='new')return`<span style="color:#ef4444;font-weight:700">介入</span>`;
+    return`<span style="color:#94a3b8;font-weight:700">－</span>`;
+  };
 
   setView(`
   <style>@media print{@page{size:A4 portrait;margin:12mm}}</style>
@@ -2006,6 +2198,7 @@ const renderReport=()=>{
       <label style="font-size:13px;font-weight:600">担当獣医師</label>
       <input class="form-input" style="width:150px;font-size:13px;padding:5px 10px" value="${h(RS.examiner)}" placeholder="氏名" oninput="App.onRepExaminer(this.value)">
     </div>
+    <button class="btn-outline btn-comment-mode${commentModeActive?' active':''}" onclick="toggleCommentMode()" style="white-space:nowrap">✏ コメントモード${commentModeActive?' ON':''}</button>
     <button class="btn btn-primary" onclick="window.print()" style="margin-left:auto">🖨 印刷 / PDF保存</button>
   </div>
 
@@ -2019,7 +2212,7 @@ const renderReport=()=>{
     </div>
 
     <!-- ① 概要 -->
-    <div class="rpt-section">
+    <div class="rpt-section" id="rpt-zone-overview">
       <div class="rpt-section-hd">
         <div class="rpt-badge">①</div>
         <div class="rpt-section-title">概要</div>
@@ -2059,7 +2252,7 @@ const renderReport=()=>{
     </div>
 
     <!-- ② 要治療個体リスト -->
-    <div class="rpt-section">
+    <div class="rpt-section" id="rpt-zone-treated">
       <div class="rpt-section-hd">
         <div class="rpt-badge" style="background:#ef4444">②</div>
         <div class="rpt-section-title" style="color:#ef4444">要治療個体（スコア2以上）</div>
@@ -2074,7 +2267,7 @@ const renderReport=()=>{
             ${scans.filter(s=>s.obScore>=2).sort((a,b)=>b.obScore-a.obScore).map(s=>`<tr>
               <td class="rpt-id">#${get拡4(s.tagId)}</td>
               <td>${s.ageAtScan!=null?s.ageAtScan+'日':''}</td>
-              <td style="font-size:22px;font-weight:800;color:${SC[s.obScore]}">${s.obScore}</td>
+              <td style="font-size:16px;font-weight:800;color:${SC[s.obScore]}">${s.obScore}</td>
               <td>${mkBadge(s)}</td>
               <td>${treatCell(s)}</td>
               <td>${h(s.drug||'')}</td>
@@ -2085,7 +2278,7 @@ const renderReport=()=>{
     </div>
 
     <!-- ③ 全個体一覧 -->
-    <div class="rpt-section">
+    <div class="rpt-section" id="rpt-zone-all">
       <div class="rpt-section-hd">
         <div class="rpt-badge" style="background:#64748b">③</div>
         <div class="rpt-section-title" style="color:#475569">全個体一覧</div>
@@ -2099,7 +2292,7 @@ const renderReport=()=>{
             <td class="rpt-id">#${get拡4(s.tagId)}</td>
             <td style="font-size:11px;color:#64748b;font-family:'Courier New',monospace">${h(s.tagId)}</td>
             <td>${s.ageAtScan!=null?s.ageAtScan+'日':''}</td>
-            <td style="font-weight:800;font-size:16px;color:${SC[s.obScore]}">${s.obScore}</td>
+            <td style="font-weight:800;font-size:13px;color:${SC[s.obScore]}">${s.obScore}</td>
             <td>${mkBadge(s)}</td>
             <td>${treatCell(s)}</td>
             <td style="font-size:11px">${h(s.drug||'')}</td>
@@ -2121,6 +2314,8 @@ const renderReport=()=>{
   </div>
   `}
   `);
+  // コメントゾーンをDOMに挿入
+  if(dates.length) setTimeout(insertRptCommentZones, 0);
 };
 
 // ─── SCORE GUIDE VIEW ────────────────────────────
@@ -2285,12 +2480,13 @@ const renderAnimals=()=>{
     <th>品種</th><th>性別</th>
     ${mkTh('birthDate','生年月日')}
     ${mkTh('scanCnt','スキャン数')}
-    <th>最新スコア</th><th>ハッチ</th><th>操作</th>
+    <th>最新スコア</th><th>ハッチ</th><th>中耳炎歴</th><th>初診</th><th>操作</th>
   </tr></thead>
   <tbody>${animals.map(a=>{
     const anScans=scans.filter(s=>s.animalId===a.id).sort((x,y)=>x.scanDate.localeCompare(y.scanDate));
     const last=anScans[anScans.length-1];
-    const hutchLbl=last?(last.hutchId?(hutches.find(hh=>hh.id===last.hutchId)?.label||last.hutchId):last.hutchFree||''):'';
+    const lh=HutchUtil.lastHutchFromScans(fid,a.id);
+    const hutchLbl=lh?(lh.hutchId?(hutches.find(hh=>hh.id===lh.hutchId)?.label||lh.hutchId):lh.hutchFree||''):'';
     return`<tr>
       <td class="tag-cell">${fmtTagId(a.tagId)}</td>
       <td>${h(a.breed||'－')}</td>
@@ -2299,9 +2495,16 @@ const renderAnimals=()=>{
       <td style="text-align:center;font-weight:700;color:var(--navy)">${anScans.length}</td>
       <td>${last?`<span class="score-badge ${scClass(last.obScore)}">${last.obScore}</span>`:'－'}</td>
       <td style="font-size:12px;color:var(--text-3);text-align:center">${h(hutchLbl)||'－'}</td>
+      <td style="text-align:center;font-size:12px">${(a.otitisHistory?.length>0)?`<span style="color:#dc2626;font-weight:700">⚠️</span>&thinsp;<span style="color:var(--text-3)">${fmtDate(a.otitisHistory[0].date)}</span>`:'－'}</td>
+      <td style="text-align:center">${(ft=>{return ft?`<span style="font-size:11px;color:#be2b2b;font-weight:700">🏥 ${fmtDate(ft.scanDate)}<br><span style="font-size:10px">${ft.ageAtScan!=null?`日齢${ft.ageAtScan}日`:''}</span></span>`:`<span style="color:var(--text-4)">－</span>`;
+      })(getFirstTreatScan(fid,a.id))}</td>
       <td style="white-space:nowrap">
         <button class="btn-sm btn-ghost" onclick="App.openAnimalModal('${a.id}')" style="margin-right:3px">履歴</button>
         <button class="btn-sm btn-edit" onclick="App.addScanFor('${h(a.tagId)}')" style="margin-right:3px">スキャン</button>
+        ${(a.otitisHistory?.length>0)
+          ? `<button class="btn-sm" onclick="App.openAnimalModal('${a.id}')" style="margin-right:3px;background:#fee2e2;color:#b91c1c;border:1px solid #fca5a5;border-radius:5px;padding:3px 8px;font-size:11px;font-weight:700" title="中耳炎歴あり">⚠️ 中耳炎歴あり</button>`
+          : `<button class="btn-sm" onclick="App.openAnimalModal('${a.id}')" style="margin-right:3px;background:#f9fafb;color:#9ca3af;border:1px solid #e5e7eb;border-radius:5px;padding:3px 8px;font-size:11px;font-weight:500" title="中耳炎を記録する">中耳炎記録する</button>`
+        }
         <button class="btn-sm btn-edit" onclick="App.openAnimalRegModal('${a.id}')" style="margin-right:3px">編集</button>
         <button class="btn-sm btn-danger" onclick="App.delAnimal('${a.id}','${h(a.tagId)}')">削除</button>
       </td>
@@ -2335,6 +2538,13 @@ const renderHatchMap=()=>{
     return;
   }
 
+  // 農場デフォルト向きの初期化（農場切り替え時または初回表示時のみ）
+  if(HM._initialized !== fid){
+    HM.flipH=farm.defaultFlipH||false;
+    HM.flipV=farm.defaultFlipV||false;
+    HM._initialized=fid;
+  }
+
   // 日付決定
   const dates=HutchUtil.scanDates(fid);
   if(!HM.date) HM.date=dates.length?dates[dates.length-1]:today();
@@ -2364,11 +2574,23 @@ const renderHatchMap=()=>{
     const sc=o.scan;const tag拡4=get拡4(sc.tagId)||sc.tagId.slice(-4);
     const bd=o.animal?.birthDate;
     const infoLine=bd?`${fmtDate(bd)}・${calcAge(bd,viewDate)}日齢`:'生年月日 未登録';
+    const otitisBadge=(o.animal?.otitisHistory?.length>0)?`<div><span class="hm-otitis-badge">⚠️中耳炎歴</span></div>`:'';
+    if(sc.presentOnly){
+      return `<div class="hm-cell hm-present${HM.focusHutch===ht.id?' hm-active':''}" onclick="App.focusHutch('${ht.id}',this)" data-hid="${ht.id}">
+        <div class="hm-cell-no">${h(ht.label)}</div>
+        <div class="hm-present-badge">在</div>
+        <div class="hm-cell-tag">${tag拡4}</div>
+        <div class="hm-cell-info">${infoLine}</div>
+        <div class="hm-cell-info" style="font-size:9px;color:#94a3b8">スキャンなし</div>
+        ${otitisBadge}
+      </div>`;
+    }
     return `<div class="hm-cell hm-s${sc.obScore}${HM.focusHutch===ht.id?' hm-active':''}" onclick="App.focusHutch('${ht.id}',this)" data-hid="${ht.id}">
       <div class="hm-cell-no">${h(ht.label)}</div>
       <div class="hm-cell-score">${sc.obScore}</div>
       <div class="hm-cell-tag">${tag拡4}</div>
       <div class="hm-cell-info">${infoLine}</div>
+      ${otitisBadge}
     </div>`;
   };
 
@@ -2378,37 +2600,40 @@ const renderHatchMap=()=>{
     const ht=hutches.find(h=>h.id===HM.focusHutch);if(!ht)return'';
     const hist=HutchUtil.history(fid,HM.focusHutch);
     const animals=DB.getAnimals(fid);
+    const currentOcc=occ[HM.focusHutch];
     const tlItems=hist.map(g=>{
       const a=animals.find(x=>x.id===g.animalId);
       const name=a?get拡4(a.tagId)||a.tagId:g.tagId;
-      const isCurrent=g.to===hist[hist.length-1]?.to&&g.animalId===hist[hist.length-1]?.animalId;
+      const isCurrent=g===hist[hist.length-1]&&!g.exitDate;
       const moves=HutchUtil.animalMoves(fid,g.animalId);
       const moveStr=moves.length>1?moves.map(m=>h(m.hutchLabel)).join(' → '):'';
-      return `<div class="hm-tl-item${isCurrent?' '+'':''}">
+      return `<div class="hm-tl-item">
         <div>
           <div class="hm-tl-date">${fmtDate(g.from)}${g.from!==g.to?` ～ ${fmtDate(g.to)}`:''}</div>
-          <div style="font-size:10px;color:var(--text-4);margin-top:1px">${g.scans.length}回スキャン</div>
+          <div style="font-size:10px;color:var(--text-4);margin-top:1px">${g.scans.filter(s=>!s.presentOnly).length}回スキャン${g.scans.filter(s=>s.presentOnly).length>0?`・${g.scans.filter(s=>s.presentOnly).length}回在舎記録`:''}</div>
+          ${g.exitDate?`<div class="hm-exit-date">🚪 退出：${fmtDate(g.exitDate)}</div>`:''}
           ${moveStr?`<div style="font-size:10px;color:var(--blue);margin-top:2px">移動: ${moveStr}</div>`:''}
         </div>
         <div>
-          <div class="hm-tl-tag">${name}</div>
+          <div class="hm-tl-tag">${h(name)}</div>
           ${a?.breed?`<div style="font-size:10px;color:var(--text-3)">${h(a.breed)}</div>`:''}
         </div>
         <div style="text-align:right">
-          <span class="score-badge ${scClass(g.lastScore)}" style="font-size:13px;width:26px;height:26px">${g.lastScore}</span>
-          ${isCurrent?'<div style="font-size:10px;color:var(--teal);margin-top:2px">在舎中</div>':'<div style="font-size:10px;color:var(--text-4);margin-top:2px">退去</div>'}
+          ${g.lastScore!=null?`<span class="score-badge ${scClass(g.lastScore)}" style="font-size:13px;width:26px;height:26px">${g.lastScore}</span>`:`<span class="present-badge" style="font-size:11px">在</span>`}
+          ${isCurrent?'<div style="font-size:10px;color:var(--teal);margin-top:2px">在舎中</div>':g.exitDate?`<div style="font-size:10px;color:var(--red);margin-top:2px">退出済</div>`:'<div style="font-size:10px;color:var(--text-4);margin-top:2px">退出済</div>'}
         </div>
       </div>`;
     }).join('');
 
-    // ハッチのスコア推移（全スキャンのスコアを時系列で）
-    const allScans=DB.getScans(fid).filter(s=>s.hutchId===HM.focusHutch).sort((a,b)=>a.scanDate.localeCompare(b.scanDate));
+    // ハッチのスコア推移（退出記録・在舎記録除く）
+    const allScans=DB.getScans(fid).filter(s=>s.hutchId===HM.focusHutch&&!s.vacated&&!s.presentOnly).sort((a,b)=>a.scanDate.localeCompare(b.scanDate));
     const sparkDots=allScans.map(s=>`<div class="hm-tl-dot" style="background:${['#10b981','#3b82f6','#f59e0b','#f97316','#ef4444','#7f1d1d'][s.obScore]}" title="${fmtDate(s.scanDate)} スコア${s.obScore}"></div>`).join('');
 
     return `<div class="hm-detail">
       <div class="hm-detail-hd">
         🏠 ${h(ht.label)} の記録履歴
-        ${allScans.length?`<div style="display:flex;align-items:center;gap:3px;margin-left:auto;font-size:11px;color:var(--text-3)">スコア推移: ${sparkDots}</div>`:''}
+        ${currentOcc?`<button class="btn-sm btn-danger" style="margin-left:auto;font-size:11px" onclick="App.openExitModal('${HM.focusHutch}','${currentOcc.scan.animalId}','${currentOcc.scan.tagId}','${h(ht.label)}')">🚪 退出を記録</button>`:`<div style="margin-left:auto"></div>`}
+        ${allScans.length?`<div style="display:flex;align-items:center;gap:3px;font-size:11px;color:var(--text-3)">推移: ${sparkDots}</div>`:''}
         <button class="btn-sm btn-ghost" style="margin-left:8px" onclick="App.focusHutch(null)">×</button>
       </div>
       ${hist.length===0
@@ -2429,7 +2654,42 @@ const renderHatchMap=()=>{
 
   setView(`
   <div class="hm-print-scope hm-page-wrap">
-  <!-- 印刷ヘッダー（画面では非表示） -->
+  <!-- 画面上部（印刷では非表示） -->
+  <div class="hm-screen-top" style="flex-shrink:0">
+    <!-- コンパクトタイトル行 -->
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:6px">
+      <span style="font-size:16px;font-weight:800;color:var(--navy-2)">🏠 ハッチマップ</span>
+      <span style="font-size:12px;color:var(--text-3)">${h(farm.name)}　ハッチ ${hutches.length}個</span>
+      <div style="margin-left:auto;display:flex;gap:6px">
+        <button class="btn-sm btn-ghost hm-btn-print" onclick="window.print()" title="マップを印刷（A4縦・画面と同じレイアウト）">🖨 印刷</button>
+        <button class="btn-sm btn-ghost hm-btn-print" onclick="App.hmPrint1Page()" title="全ハッチを1枚に収めて印刷（縮小）">🖨 1枚印刷</button>
+        <button class="btn-sm btn-ghost" onclick="App.openHutchSetup()">⚙ ハッチを編集</button>
+      </div>
+    </div>
+
+    <!-- コントロール（1行） -->
+    <div class="hm-controls">
+      <div class="hm-date-nav">
+        <button onclick="App.hmPrevDate()" title="前の検診日" ${dateIdx<=0?'disabled':''}>◀</button>
+        <input type="date" value="${viewDate}" onchange="App.hmSetDate(this.value)"
+          style="border:1px solid var(--border-2);border-radius:6px;padding:2px 6px;font-size:12px;font-weight:700;color:var(--navy-2)">
+        <button onclick="App.hmNextDate()" title="次の検診日" ${dateIdx>=dates.length-1||!dates.length?'disabled':''}>▶</button>
+      </div>
+      ${dates.length?`<div style="font-size:11px;color:var(--text-4);white-space:nowrap">${dateIdx>=0?`${dateIdx+1}/${dates.length}回目`:'検診日前'}</div>`:''}
+      <div style="display:flex;align-items:center;gap:4px;margin-left:4px">
+        <button class="btn-sm ${HM.flipH?'btn-primary':'btn-ghost'}" onclick="App.hmFlip('H')" style="padding:2px 8px;font-size:11px" title="左右が現場と逆の場合に反転。青くなっている間は反転中。">⇄ 左右</button>
+        <button class="btn-sm ${HM.flipV?'btn-primary':'btn-ghost'}" onclick="App.hmFlip('V')" style="padding:2px 8px;font-size:11px" title="前後（上下）が現場と逆の場合に反転。青くなっている間は反転中。">⇅ 前後</button>
+        ${(HM.flipH||HM.flipV)?`<button class="btn-sm" onclick="App.hmFlipFix()" style="padding:2px 8px;font-size:11px;background:#b45309;color:#fff;border:none;border-radius:5px;font-weight:700" title="現在の反転表示をデータに永久保存。次回から自動で正しい向きで表示されます。">✔ 確定</button>`:''}
+      </div>
+      <div class="hm-legend">
+        ${[0,1,2,3,4,5].map(n=>`<div class="hm-legend-item"><div class="hm-legend-dot" style="background:${scColors[n]}"></div>スコア${n}</div>`).join('')}
+        <div class="hm-legend-item"><div class="hm-legend-dot" style="background:var(--border-2)"></div>空</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 印刷ヘッダー＋マップ（1枚印刷時はまとめて縮小） -->
+  <div id="hm-1page-scale-root">
   <div id="hm-print-header">
     <div class="ph-title">ハッチマップ　${h(farm.name)}</div>
     <div class="ph-sub">検診日：${viewDate}　印刷：${today()}${HM.flipH||HM.flipV?`　[${HM.flipH?'左右反転':''}${HM.flipH&&HM.flipV?'・':''}${HM.flipV?'前後反転':''}]`:''}</div>
@@ -2438,57 +2698,12 @@ const renderHatchMap=()=>{
       <div class="ph-legend-item"><div class="ph-legend-dot" style="background:#ccc"></div>空ハッチ</div>
     </div>
   </div>
-
-  <!-- 固定ヘッダー（スクロールしない） -->
-  <div style="flex-shrink:0">
-    <div class="page-hd">
-      <div class="page-title">🏠 ハッチマップ</div>
-      <div class="page-sub">${h(farm.name)}　ハッチ ${hutches.length}個</div>
-      <div style="margin-left:auto;display:flex;gap:8px">
-        <button class="btn-sm btn-ghost hm-btn-print" onclick="window.print()" title="マップを印刷（A4縦・画面と同じレイアウト）">🖨 印刷</button>
-        <button class="btn-sm btn-ghost" onclick="App.openHutchSetup()">⚙ ハッチを編集</button>
-      </div>
-    </div>
-
-    <!-- コントロール -->
-    <div class="hm-controls" style="margin-bottom:8px">
-      <div style="font-size:12px;color:var(--text-3)">表示日</div>
-      <div class="hm-date-nav">
-        <button onclick="App.hmPrevDate()" title="前の検診日" ${dateIdx<=0?'disabled':''}>◀</button>
-        <input type="date" value="${viewDate}" onchange="App.hmSetDate(this.value)"
-          style="border:1px solid var(--border-2);border-radius:6px;padding:3px 8px;font-size:13px;font-weight:700;color:var(--navy-2)">
-        <button onclick="App.hmNextDate()" title="次の検診日" ${dateIdx>=dates.length-1||!dates.length?'disabled':''}>▶</button>
-      </div>
-      ${dates.length?`<div style="font-size:11px;color:var(--text-4)">${dateIdx>=0?`${dateIdx+1}/${dates.length}回目の検診日`:'最近の検診日前'}</div>`:''}
-      <div style="display:flex;align-items:center;gap:6px;margin-left:4px">
-        <span style="font-size:11px;color:var(--text-3)">表示向き</span>
-        <button class="btn-sm ${HM.flipH?'btn-primary':'btn-ghost'}" onclick="App.hmFlip('H')" style="padding:3px 9px;font-size:11px">⇄ 左右</button>
-        <button class="btn-sm ${HM.flipV?'btn-primary':'btn-ghost'}" onclick="App.hmFlip('V')" style="padding:3px 9px;font-size:11px">⇅ 前後</button>
-        ${(HM.flipH||HM.flipV)?`<button class="btn-sm" onclick="App.hmFlipFix()" style="padding:3px 9px;font-size:11px;background:#b45309;color:#fff;border:none;border-radius:5px;font-weight:700">✔ 向き確定</button>`:''}
-      </div>
-      <div class="hm-legend">
-        ${[0,1,2,3,4,5].map(n=>`<div class="hm-legend-item"><div class="hm-legend-dot" style="background:${scColors[n]}"></div>スコア${n}</div>`).join('')}
-        <div class="hm-legend-item"><div class="hm-legend-dot" style="background:var(--border-2)"></div>空</div>
-      </div>
-    </div>
-
-    <!-- 表示向きボタンの説明（折りたたみ） -->
-    <details class="hm-hint-box">
-      <summary>💡 表示向きボタンの使い方</summary>
-      <div class="hm-hint-body">
-        <strong>⇄ 左右</strong>　画面上のハッチ左右が現場と逆になっている場合に反転します。例えば農場の入り口が画面右側にある場合。青くなっている間は反転中です。<br>
-        <strong>⇅ 前後</strong>　画面上のハッチ前後（上下）が現場と逆になっている場合に反転します。入り口を手前に見た向きで表示したい場合などに使用します。<br>
-        <strong>✔ 向き確定</strong>　現在の反転表示をデータに永久保存します。次回以降は自動で正しい向きで表示され、反転ボタンを押す必要がなくなります。確定するとハッチ番号の並び順もデータ上で書き換わります。
-      </div>
-    </details>
-  </div>
-
-  <!-- スクロールエリア（マップ本体＋詳細パネル） -->
   <div class="hm-scroll-area">
     <div class="hm-print-body">
       <div class="hm-outer">${mapCols}</div>
     </div>
     <div id="hm-detail-wrap">${detailHtml()}</div>
+  </div>
   </div>
   </div>
   `);
@@ -2621,6 +2836,24 @@ const renderHutchSetupModal=(fid)=>{
         </div>
       </div>
 
+      <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border)">
+        <div style="font-size:13px;font-weight:700;margin-bottom:10px">🗺 ハッチマップ デフォルト表示向き</div>
+        <div style="display:flex;gap:12px;flex-wrap:wrap">
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="hc-flip-h" ${farm.defaultFlipH?'checked':''}> 左右反転をデフォルトにする
+          </label>
+          <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
+            <input type="checkbox" id="hc-flip-v" ${farm.defaultFlipV?'checked':''}> 前後反転をデフォルトにする
+          </label>
+        </div>
+        <div style="font-size:11px;color:var(--text-3);margin-top:6px">
+          ※ ハッチマップを開くたびにこの設定が自動適用されます。手動での変更は引き続き可能です。
+        </div>
+        <div style="display:flex;justify-content:flex-end;margin-top:10px">
+          <button class="btn-outline" onclick="App.saveDefaultFlip()">💾 向き設定を保存</button>
+        </div>
+      </div>
+
     </div>
   </div>`;
 };
@@ -2630,6 +2863,25 @@ const renderAnimalRegModal=(animalId=null)=>{
   const fid=DB.activeId();if(!fid)return;
   const animal=animalId?DB.getAnimals(fid).find(a=>a.id===animalId):null;
   const isEdit=!!animal;
+  const hutches=HutchUtil.get(fid);
+  const lastHutch=isEdit?HutchUtil.lastHutchFromScans(fid,animal.id):null;
+  const curHutchId=lastHutch?.hutchId||'';
+  const curHutchFree=lastHutch?.hutchFree||'';
+  const afHutchHtml=isEdit?(hutches.length
+    ?`<div class="form-group" style="margin-bottom:0">
+        <label class="form-label">ハッチ場所</label>
+        <select class="form-select" id="af-hutch-sel">
+          <option value="">── 未指定 ──</option>
+          ${hutches.map(ht=>`<option value="${ht.id}" ${curHutchId===ht.id?'selected':''}>${h(ht.label)}</option>`).join('')}
+        </select>
+        <div class="form-hint" style="font-size:11px;margin-top:4px">変更すると「今」の場所のみ更新されます。過去のスキャンに記録された場所は消えません。</div>
+      </div>`
+    :`<div class="form-group" style="margin-bottom:0">
+        <label class="form-label">ハッチ場所</label>
+        <input class="form-input" id="af-hutch-free" value="${h(curHutchFree)}" placeholder="例：L-3（任意）" list="af-hutch-free-dl">
+        <datalist id="af-hutch-free-dl"></datalist>
+        <div class="form-hint" style="font-size:11px;margin-top:4px"><a href="#" onclick="App.nav('/hatch-map');App.closeModal();return false">ハッチマップ</a>でハッチを設定すると選択式になります。変更は履歴を残したまま「今」の場所だけ更新されます。</div>
+      </div>`):'';
   const bg=$('modal-bg');bg.style.display='flex';
   bg.innerHTML=`<div class="modal">
     <div class="modal-hd">
@@ -2681,11 +2933,40 @@ const renderAnimalRegModal=(animalId=null)=>{
             </select>
           </div>
         </div>
+        ${isEdit?`<div style="margin-bottom:16px;padding:12px 14px;background:var(--gray-lt);border-radius:8px;border:1px solid var(--border)">${afHutchHtml}</div>`:''}
         <div style="display:flex;gap:8px;justify-content:flex-end">
           <button type="button" class="btn-sm btn-ghost" onclick="App.closeModal()" style="padding:9px 18px">キャンセル</button>
           <button type="submit" class="btn-primary">${isEdit?'✓ 更新する':'✓ 登録する'}</button>
         </div>
       </form>
+      ${isEdit?`
+      <div style="margin-top:22px;border-top:1px solid var(--border);padding-top:18px">
+        <div style="font-size:13px;font-weight:700;color:var(--text-2);margin-bottom:10px">⚠️ 中耳炎病歴</div>
+        ${(animal.otitisHistory?.length>0)?`
+        <div style="margin-bottom:14px;display:flex;flex-direction:column;gap:6px">
+          ${(animal.otitisHistory.slice().sort((a,b)=>a.date.localeCompare(b.date))).map(rec=>`
+          <div style="background:var(--gray-lt);border-radius:7px;padding:7px 12px;font-size:12px;display:flex;gap:10px;align-items:baseline">
+            <span style="color:#dc2626;font-weight:700;white-space:nowrap">⚠️ ${fmtDate(rec.date)}</span>
+            ${rec.notes?`<span style="color:var(--text-3)">${h(rec.notes)}</span>`:''}
+          </div>`).join('')}
+        </div>`:'<div style="font-size:12px;color:var(--text-4);margin-bottom:12px">記録なし</div>'}
+        <div style="background:var(--blue-lt);border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px">新規記録を追加</div>
+          <div class="form-row" style="gap:8px;margin-bottom:8px">
+            <div class="form-group" style="flex:0 0 auto">
+              <label class="form-label" style="font-size:11px">発症日</label>
+              <input class="form-input" id="otitis-date" type="date" value="${today()}" style="width:150px">
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label" style="font-size:11px">備考（任意）</label>
+              <input class="form-input" id="otitis-notes" placeholder="例：右耳、抗生剤投与" style="width:100%">
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end">
+            <button class="btn-sm btn-primary" onclick="App.addOtitis('${animalId}')">⚠️ 記録する</button>
+          </div>
+        </div>
+      </div>`:''}
     </div>
   </div>`;
 };
@@ -2694,11 +2975,12 @@ const renderAnimalRegModal=(animalId=null)=>{
 const renderAnimalModal=(fid,animalId)=>{
   const animal=DB.getAnimals(fid).find(a=>a.id===animalId);
   if(!animal){toast('個体情報が見つかりません','err');return;}
-  const scans=DB.byAnimal(fid,animalId);
+  const allRecords=DB.byAnimal(fid,animalId);
+  const scans=allRecords.filter(s=>!s.vacated&&!s.presentOnly);
   const hutches=HutchUtil.get(fid);
-  const lastScan=scans[scans.length-1]||null;
-  const curHutchId=lastScan?.hutchId||'';
-  const curHutchFree=lastScan?.hutchFree||'';
+  const lastHutch=HutchUtil.lastHutchFromScans(fid,animalId);
+  const curHutchId=lastHutch?.hutchId||'';
+  const curHutchFree=lastHutch?.hutchFree||'';
   const hutchEditorHtml=(()=>{
     if(hutches.length){
       return `<select class="form-select" id="am-hutch-sel" style="max-width:200px">
@@ -2708,6 +2990,7 @@ const renderAnimalModal=(fid,animalId)=>{
     }
     return `<input class="form-input" id="am-hutch-free" value="${h(curHutchFree)}" placeholder="例：L-3" style="max-width:200px">`;
   })();
+  const firstTreat = getFirstTreatScan(fid, animalId);
   const bg=$('modal-bg');bg.style.display='flex';
   bg.innerHTML=`<div class="modal lg">
     <div class="modal-hd"><div class="modal-title">個体詳細：${h(animal.tagId)}</div><button class="modal-x" onclick="App.closeModal()">×</button></div>
@@ -2717,7 +3000,40 @@ const renderAnimalModal=(fid,animalId)=>{
         <span><strong>性別：</strong>${animal.sex==='F'?'雌':animal.sex==='M'?'雄':'不明'}</span>
         <span><strong>生年月日：</strong>${fmtDate(animal.birthDate||'')}</span>
         <span><strong>スキャン回数：</strong>${scans.length}回</span>
+        ${firstTreat ? `<span style="background:#fee2e2;color:#be2b2b;font-size:12px;font-weight:700;padding:3px 10px;border-radius:6px;border:1px solid #fca5a5">🏥 初診：${fmtDate(firstTreat.scanDate)}${firstTreat.ageAtScan != null ? `（日齢${firstTreat.ageAtScan}日）` : ''}</span>` : ''}
       </div>
+      <div style="background:${(animal.otitisHistory?.length>0)?'#fee2e2':'var(--gray-lt)'};border:1px solid ${(animal.otitisHistory?.length>0)?'#fca5a5':'var(--border)'};border-radius:8px;padding:12px 14px;margin-bottom:14px">
+        <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
+          <span style="font-size:13px;font-weight:700;color:${(animal.otitisHistory?.length>0)?'#b91c1c':'var(--text-2)'}">⚠️ 中耳炎病歴</span>
+          ${(animal.otitisHistory?.length>0)?`<span style="font-size:12px;color:#b91c1c;font-weight:600">${animal.otitisHistory.length}件の記録あり</span>`:`<span style="font-size:11px;color:var(--text-4)">記録なし</span>`}
+        </div>
+        <div style="font-size:11px;color:var(--text-3);margin-bottom:10px;line-height:1.6;background:#fff8;border-radius:5px;padding:5px 8px">
+          💡 マイコプラズマ等による中耳炎の治療歴を記録します。一度記録するとずっと表示されるため、伝染経路の追跡に役立ちます。
+        </div>
+        ${(animal.otitisHistory?.length>0)?`
+        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
+          ${(animal.otitisHistory.slice().sort((a,b)=>a.date.localeCompare(b.date))).map(rec=>`
+          <div style="font-size:12px;color:#7f1d1d;display:flex;gap:8px;background:#fff3;border-radius:5px;padding:3px 7px">
+            <span style="font-weight:700;white-space:nowrap">📅 ${fmtDate(rec.date)}</span>
+            ${rec.notes?`<span style="color:#b91c1c">${h(rec.notes)}</span>`:'<span style="color:#b91c1c;opacity:.6">備考なし</span>'}
+          </div>`).join('')}
+        </div>`:''}
+        <div style="background:#fff;border:1px solid #fca5a5;border-radius:7px;padding:10px 12px">
+          <div style="font-size:11px;font-weight:700;color:#b91c1c;margin-bottom:7px">＋ 新しい中耳炎治療を記録する</div>
+          <div style="display:flex;gap:8px;align-items:flex-end;flex-wrap:wrap">
+            <div>
+              <div style="font-size:11px;color:var(--text-3);margin-bottom:3px">治療日 <span style="color:var(--red)">*</span></div>
+              <input id="otitis-date-m" type="date" value="${today()}" style="border:1.5px solid var(--border-2);border-radius:6px;padding:5px 8px;font-size:13px">
+            </div>
+            <div style="flex:1;min-width:120px">
+              <div style="font-size:11px;color:var(--text-3);margin-bottom:3px">備考（使用薬・耳の左右など）</div>
+              <input id="otitis-notes-m" class="form-input" placeholder="例：右耳、エンロフロキサシン投与" style="font-size:12px">
+            </div>
+            <button class="btn-primary" onclick="App.addOtitisFromModal('${animalId}')" style="padding:7px 16px;font-size:13px;white-space:nowrap;flex-shrink:0">⚠️ 記録する</button>
+          </div>
+        </div>
+      </div>
+
       <div style="margin-bottom:16px;padding:10px 14px;background:var(--gray-lt);border-radius:8px;display:flex;align-items:center;gap:10px;flex-wrap:wrap">
         <span style="font-size:12px;font-weight:700;color:var(--text-3);white-space:nowrap">ハッチ番号</span>
         ${hutchEditorHtml}
@@ -2727,11 +3043,29 @@ const renderAnimalModal=(fid,animalId)=>{
       <div style="font-size:12px;font-weight:700;color:var(--text-3);text-transform:uppercase;letter-spacing:.6px;margin-bottom:12px">スキャン履歴</div>
       ${scans.length===0?'<p style="color:var(--text-3)">スキャン記録がありません</p>':''}
       <ul class="timeline">
-      ${scans.map(s=>`<li class="tl-item">
+      ${allRecords.map(s=>s.vacated?`<li class="tl-item tl-vacated">
+        <div class="tl-dot" style="background:var(--red);font-size:14px">🚪</div>
+        <div class="tl-content">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <strong style="color:var(--red)">${fmtDate(s.scanDate)}　退出</strong>
+            <button class="btn-sm btn-danger" onclick="App.delScanFromModal('${s.id}','${animalId}')" style="flex-shrink:0">削除</button>
+          </div>
+          <div style="font-size:12px;color:var(--red);margin-top:3px">ハッチ退出記録${s.notes?'　'+h(s.notes):''}</div>
+        </div>
+      </li>`:s.presentOnly?`<li class="tl-item">
+        <div class="tl-dot" style="background:#94a3b8;font-size:11px">在</div>
+        <div class="tl-content" style="background:#f8fafc;border:1px dashed #94a3b8">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
+            <strong style="color:#475569">${fmtDate(s.scanDate)}　日齢${s.ageAtScan!=null?s.ageAtScan+'日':'－'}　在舎のみ記録</strong>
+            <button class="btn-sm btn-danger" onclick="App.delScanFromModal('${s.id}','${animalId}')" style="flex-shrink:0">削除</button>
+          </div>
+          <div style="font-size:12px;color:#94a3b8;margin-top:3px">スキャンなし${s.notes?'　'+h(s.notes):''}</div>
+        </div>
+      </li>`:`<li class="tl-item">
         <div class="tl-dot" style="background:${SC[s.obScore]}">${s.obScore}</div>
         <div class="tl-content">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;gap:8px">
-            <strong>${fmtDate(s.scanDate)}　日齢${s.ageAtScan!=null?s.ageAtScan+'日':'－'}　R${s.round||1}</strong>
+            <strong>${fmtDate(s.scanDate)}　日齢${s.ageAtScan!=null?s.ageAtScan+'日':'－'}　R${s.round||1}${(s.treatType==='new'||(s.treated&&!s.treatType))&&firstTreat&&firstTreat.id===s.id?'　<span class="badge b-red" style="font-size:10px">🏥 初診</span>':''}</strong>
             <button class="btn-sm btn-danger" onclick="App.delScanFromModal('${s.id}','${animalId}')" style="flex-shrink:0">削除</button>
           </div>
           <div style="margin:5px 0;display:flex;align-items:center;gap:8px">
@@ -2743,7 +3077,7 @@ const renderAnimalModal=(fid,animalId)=>{
             <div class="lung-det-side"><div class="lung-det-lbl">左肺</div><div class="lung-det-ics">${Object.entries(s.left||{}).map(([k,v])=>`<span style="display:inline-flex;align-items:center;gap:2px;font-size:11px"><span style="color:var(--text-4)">${RLBL[k]||k}:</span><span class="finding-chip ${FCHIP[v]||'fch-empty'}">${v||'A'}</span></span>`).join('')}</div></div>
           </div>
           ${s.mainFindings?`<div style="font-size:12px;color:var(--text-3);margin-top:4px">所見：${h(s.mainFindings)}</div>`:''}
-          ${s.treated?`<div style="margin-top:5px"><span class="badge b-red">治療あり</span>${s.drug?` <span style="font-size:12px;color:var(--text-3)">${h(s.drug)}</span>`:''}` :''}
+          ${s.treated?`<div style="margin-top:5px">${treatBadge(s)}${s.drug?` <span style="font-size:12px;color:var(--text-3)">${h(s.drug)}</span>`:''}` :''}
           ${s.notes?`<div style="font-size:12px;color:var(--text-3);margin-top:3px">備考：${h(s.notes)}</div>`:''}
         </div>
       </li>`).join('')}
@@ -2755,6 +3089,154 @@ const renderAnimalModal=(fid,animalId)=>{
     mkChart('ch-anim',{type:'line',data:{labels:scans.map(s=>s.scanDate.slice(5)+' 日齢'+s.ageAtScan),datasets:[{label:'OBスコア',data:scans.map(s=>s.obScore),borderColor:'#1a3a5c',pointBackgroundColor:scans.map(s=>SC[s.obScore]),borderWidth:2,pointRadius:7,fill:false,tension:.3}]},options:{responsive:true,maintainAspectRatio:false,scales:{y:{min:0,max:5,ticks:{stepSize:1},title:{display:true,text:'スコア'}},x:{grid:{display:false}}},plugins:{legend:{display:false}}}});
   }
 };
+
+// ─── Comment Mode（レポート赤ペンコメント） ──────────
+let reportComments = {};
+let commentFont = 'Yomogi';
+let commentFontSize = '0.95rem';
+let commentModeActive = false;
+let commentEditorTarget = null;
+const HIGHLIGHT_COLORS = ['#FFFF66','#66FF99','#FF99CC','#99CCFF','#FFCC66'];
+
+function rgbToHex(rgb){if(!rgb)return null;var s=rgb.trim();if(/^#[0-9a-fA-F]{3,6}$/.test(s))return s.toUpperCase();var m=s.match(/^rgb\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)\s*\)$/);if(!m)return null;return'#'+[m[1],m[2],m[3]].map(function(n){return('0'+parseInt(n,10).toString(16)).slice(-2).toUpperCase();}).join('');}
+
+function escapeHtmlComment(s){var d=document.createElement('div');d.textContent=s;return d.innerHTML;}
+
+function sanitizeCommentHtml(html){
+  var tmp=document.createElement('div');tmp.innerHTML=html;
+  function processNode(node){
+    if(node.nodeType===Node.TEXT_NODE)return node.cloneNode(false);
+    if(node.nodeType!==Node.ELEMENT_NODE)return null;
+    var tag=node.tagName.toUpperCase();
+    if(tag==='BR')return document.createElement('br');
+    if(tag==='SPAN'){
+      var hex=rgbToHex(node.style.backgroundColor);
+      if(hex&&HIGHLIGHT_COLORS.indexOf(hex)!==-1){var span=document.createElement('span');span.style.backgroundColor=hex;for(var i=0;i<node.childNodes.length;i++){var c=processNode(node.childNodes[i]);if(c)span.appendChild(c);}return span;}
+      var frag=document.createDocumentFragment();for(var i=0;i<node.childNodes.length;i++){var c=processNode(node.childNodes[i]);if(c)frag.appendChild(c);}return frag;
+    }
+    var BLOCK=['DIV','P','LI','H1','H2','H3','H4','H5','H6','BLOCKQUOTE'];
+    var frag=document.createDocumentFragment();for(var i=0;i<node.childNodes.length;i++){var c=processNode(node.childNodes[i]);if(c)frag.appendChild(c);}
+    if(BLOCK.indexOf(tag)!==-1)frag.appendChild(document.createElement('br'));return frag;
+  }
+  var out=document.createElement('div');for(var i=0;i<tmp.childNodes.length;i++){var r=processNode(tmp.childNodes[i]);if(r)out.appendChild(r);}
+  while(out.lastChild&&out.lastChild.nodeName==='BR')out.removeChild(out.lastChild);
+  return out.innerHTML;
+}
+
+function loadCommentIntoEditor(divEl,stored){if(!stored){divEl.innerHTML='';return;}if(stored.indexOf('<')!==-1){divEl.innerHTML=sanitizeCommentHtml(stored);}else{divEl.innerHTML=escapeHtmlComment(stored).replace(/\n/g,'<br>');}}
+
+function applyHighlight(color){
+  var editorDiv=document.getElementById('commentEditorDiv');if(!editorDiv)return;
+  editorDiv.focus();var sel=window.getSelection();
+  if(editorDiv._savedRange){sel.removeAllRanges();sel.addRange(editorDiv._savedRange);editorDiv._savedRange=null;}
+  if(!sel||sel.rangeCount===0||sel.isCollapsed)return;
+  var range=sel.getRangeAt(0);if(!editorDiv.contains(range.commonAncestorContainer))return;
+  var span=document.createElement('span');span.style.backgroundColor=color;
+  try{range.surroundContents(span);}catch(e){var fragment=range.extractContents();span.appendChild(fragment);range.insertNode(span);}
+  sel.removeAllRanges();
+}
+
+function removeHighlight(){
+  var editorDiv=document.getElementById('commentEditorDiv');if(!editorDiv)return;
+  editorDiv.focus();var sel=window.getSelection();
+  if(editorDiv._savedRange){sel.removeAllRanges();sel.addRange(editorDiv._savedRange);editorDiv._savedRange=null;}
+  var spans=editorDiv.querySelectorAll('span[style*="background-color"]');
+  var range=(sel&&sel.rangeCount>0)?sel.getRangeAt(0):null;
+  spans.forEach(function(span){try{if(!range||range.isCollapsed||range.intersectsNode(span)){var parent=span.parentNode;if(!parent)return;while(span.firstChild)parent.insertBefore(span.firstChild,span);parent.removeChild(span);parent.normalize();}}catch(e){}});
+}
+
+const RPT_COMMENT_ZONES=[
+  {after:'rpt-zone-overview',   zone:'overview',   label:'概要後'},
+  {after:'rpt-zone-treated',    zone:'treated',    label:'要治療個体後'},
+  {after:'rpt-zone-all',        zone:'all',        label:'全個体一覧後'}
+];
+
+function insertRptCommentZones(){
+  var existing=document.querySelectorAll('.rpt-wrap .comment-zone');
+  for(var i=0;i<existing.length;i++){if(existing[i].parentNode)existing[i].parentNode.removeChild(existing[i]);}
+  RPT_COMMENT_ZONES.forEach(function(s){
+    var anchorEl=document.getElementById(s.after);if(!anchorEl||!anchorEl.parentNode)return;
+    var zone=document.createElement('div');zone.className='comment-zone';zone.setAttribute('data-zone',s.zone);
+    anchorEl.parentNode.insertBefore(zone,anchorEl.nextSibling);
+  });
+  var mc=document.querySelector('.rpt-wrap');if(!mc)return;
+  if(commentModeActive)mc.classList.add('comment-mode-active');else mc.classList.remove('comment-mode-active');
+  renderRptCommentZones();
+}
+
+function renderRptCommentZones(){
+  var zones=document.querySelectorAll('.rpt-wrap .comment-zone');
+  zones.forEach(function(zone){
+    var zoneId=zone.getAttribute('data-zone');var comment=reportComments[zoneId]||'';zone.innerHTML='';
+    if(comment){
+      zone.classList.add('has-comment');
+      var textBlock=document.createElement('div');textBlock.className='comment-text-block';
+      var textEl=document.createElement('p');textEl.className='comment-text';
+      textEl.style.fontFamily="'"+commentFont+"', cursive";textEl.style.fontSize=commentFontSize;
+      if(comment.indexOf('<')!==-1){textEl.innerHTML=sanitizeCommentHtml(comment);}else{textEl.innerHTML=escapeHtmlComment(comment).replace(/\n/g,'<br>');}
+      textBlock.appendChild(textEl);
+      var actions=document.createElement('div');actions.className='comment-actions';
+      var editBtn=document.createElement('button');editBtn.type='button';editBtn.className='btn-comment-edit';editBtn.textContent='✏ 編集';
+      (function(id){editBtn.addEventListener('click',function(){openCommentEditor(id);});})(zoneId);
+      var delBtn=document.createElement('button');delBtn.type='button';delBtn.className='btn-comment-delete';delBtn.textContent='✕ 削除';
+      (function(id){delBtn.addEventListener('click',function(){deleteComment(id);});})(zoneId);
+      actions.appendChild(editBtn);actions.appendChild(delBtn);textBlock.appendChild(actions);zone.appendChild(textBlock);
+    }else{
+      zone.classList.remove('has-comment');
+      var addBtn=document.createElement('button');addBtn.type='button';addBtn.className='comment-add-btn';addBtn.textContent='✏ ここにコメントを追加';
+      (function(id){addBtn.addEventListener('click',function(){openCommentEditor(id);});})(zoneId);
+      zone.appendChild(addBtn);
+    }
+  });
+}
+
+function toggleCommentMode(){
+  commentModeActive=!commentModeActive;
+  var mc=document.querySelector('.rpt-wrap');
+  if(mc){if(commentModeActive)mc.classList.add('comment-mode-active');else mc.classList.remove('comment-mode-active');}
+  var btn=document.querySelector('.btn-comment-mode');
+  if(btn){if(commentModeActive){btn.classList.add('active');btn.textContent='✏ コメントモード ON';}else{btn.classList.remove('active');btn.textContent='✏ コメントモード';}}
+}
+
+function openCommentEditor(zoneId){
+  commentEditorTarget=zoneId;
+  var editorDiv=document.getElementById('commentEditorDiv');
+  if(editorDiv){loadCommentIntoEditor(editorDiv,reportComments[zoneId]||'');editorDiv.style.fontFamily="'"+commentFont+"', cursive";editorDiv.style.fontSize=commentFontSize;editorDiv._savedRange=null;}
+  var fontSel=document.getElementById('commentFontSelect');var sizeSel=document.getElementById('commentFontSizeSelect');
+  if(fontSel)fontSel.value=commentFont;if(sizeSel)sizeSel.value=commentFontSize;
+  var modal=document.getElementById('commentEditorModal');if(modal){modal.style.display='flex';}
+  if(editorDiv)editorDiv.focus();
+}
+
+function closeCommentEditor(){
+  commentEditorTarget=null;
+  var modal=document.getElementById('commentEditorModal');if(modal)modal.style.display='none';
+}
+
+function saveCommentFromEditor(){
+  if(!commentEditorTarget)return;
+  var editorDiv=document.getElementById('commentEditorDiv');
+  var html=editorDiv?sanitizeCommentHtml(editorDiv.innerHTML):'';
+  var textOnly=editorDiv?editorDiv.textContent.trim():'';
+  if(textOnly){reportComments[commentEditorTarget]=html;}else{delete reportComments[commentEditorTarget];}
+  closeCommentEditor();renderRptCommentZones();
+}
+
+function deleteComment(zoneId){delete reportComments[zoneId];renderRptCommentZones();}
+
+function onCommentFontChange(){
+  var fontSel=document.getElementById('commentFontSelect');if(!fontSel)return;
+  commentFont=fontSel.value;
+  var editorDiv=document.getElementById('commentEditorDiv');if(editorDiv)editorDiv.style.fontFamily="'"+commentFont+"', cursive";
+  document.querySelectorAll('.rpt-wrap .comment-text').forEach(function(t){t.style.fontFamily="'"+commentFont+"', cursive";});
+}
+
+function onCommentSizeChange(){
+  var sizeSel=document.getElementById('commentFontSizeSelect');if(!sizeSel)return;
+  commentFontSize=sizeSel.value;
+  var editorDiv=document.getElementById('commentEditorDiv');if(editorDiv)editorDiv.style.fontSize=commentFontSize;
+  document.querySelectorAll('.rpt-wrap .comment-text').forEach(function(t){t.style.fontSize=commentFontSize;});
+}
 
 // ─── App Controller ───────────────────────────────
 const App={
@@ -2792,7 +3274,30 @@ const App={
       const animals=DB.getAnimals(fid);const a=animals.find(x=>x.id===animalId);
       if(!a){toast('個体が見つかりません','err');return;}
       a.birthDate=$('af-bd').value;a.breed=$('af-breed').value.trim();a.sex=$('af-sex').value;
-      DB.saveAnimals(fid,animals);toast('個体情報を更新しました','ok');
+      DB.saveAnimals(fid,animals);
+      const hutches=HutchUtil.get(fid);
+      const prev=HutchUtil.lastHutchFromScans(fid,animalId);
+      const prevNorm=prev?(prev.hutchId?{hutchId:prev.hutchId,hutchFree:''}:{hutchId:'',hutchFree:(prev.hutchFree||'').trim()}):{hutchId:'',hutchFree:''};
+      let newNorm={hutchId:'',hutchFree:''};
+      if(hutches.length){
+        const sel=$('af-hutch-sel')?.value||'';
+        newNorm=sel?{hutchId:sel,hutchFree:''}:{hutchId:'',hutchFree:''};
+      } else {
+        const fr=($('af-hutch-free')?.value||'').trim();
+        newNorm=fr?{hutchId:'',hutchFree:fr}:{hutchId:'',hutchFree:''};
+      }
+      const hutchChanged=prevNorm.hutchId!==newNorm.hutchId||prevNorm.hutchFree!==newNorm.hutchFree;
+      if(hutchChanged&&(newNorm.hutchId||newNorm.hutchFree)){
+        const scanDate=today();
+        const ageAtScan=a.birthDate?calcAge(a.birthDate,scanDate):null;
+        const scan={
+          farmId:fid,animalId:a.id,tagId:a.tagId,scanDate,ageAtScan,round:1,
+          presentOnly:true,right:{},left:{},obScore:null,mainFindings:'',treated:false,treatType:'',drug:'',notes:''
+        };
+        if(newNorm.hutchId)scan.hutchId=newNorm.hutchId;else scan.hutchFree=newNorm.hutchFree;
+        DB.addScan(fid,scan);
+      }
+      toast('個体情報を更新しました','ok');
     } else {
       const tagId=$('af-tag').value.replace(/\D/g,'');
       if(tagId.length!==10){toast('個体識別番号は10桁で入力してください','err');return;}
@@ -2801,6 +3306,32 @@ const App={
       toast(`個体 ${tagId.slice(0,5)}[${tagId.slice(5,9)}]${tagId.slice(9)} を登録しました`,'ok');
     }
     this.closeModal();renderAnimals();
+  },
+  addOtitis(animalId){
+    const fid=DB.activeId();if(!fid)return;
+    const date=$('otitis-date')?.value||today();
+    const notes=($('otitis-notes')?.value||'').trim();
+    if(!date){toast('発症日を入力してください','err');return;}
+    const animals=DB.getAnimals(fid);const a=animals.find(x=>x.id===animalId);
+    if(!a){toast('個体が見つかりません','err');return;}
+    if(!a.otitisHistory) a.otitisHistory=[];
+    a.otitisHistory.push({date,notes});
+    DB.saveAnimals(fid,animals);
+    toast('中耳炎病歴を記録しました','ok');
+    renderAnimalRegModal(animalId);
+  },
+  addOtitisFromModal(animalId){
+    const fid=DB.activeId();if(!fid)return;
+    const date=$('otitis-date-m')?.value||today();
+    const notes=($('otitis-notes-m')?.value||'').trim();
+    if(!date){toast('治療日を入力してください','err');return;}
+    const animals=DB.getAnimals(fid);const a=animals.find(x=>x.id===animalId);
+    if(!a){toast('個体が見つかりません','err');return;}
+    if(!a.otitisHistory) a.otitisHistory=[];
+    a.otitisHistory.push({date,notes});
+    DB.saveAnimals(fid,animals);
+    toast('中耳炎病歴を記録しました','ok');
+    renderAnimalModal(fid,animalId);
   },
   delAnimal(animalId,tagId){
     const fid=DB.activeId();if(!fid)return;
@@ -2947,6 +3478,7 @@ const App={
   },
   onRepDate(v){RS.date=v;renderReport();},
   onRepExaminer(v){RS.examiner=v;},
+  onRepComment(v){RS.comment=v;},
   setAq(v, caretPos=null){
     AS.q=v;
     renderAnimals();
@@ -2977,18 +3509,20 @@ const App={
     const ht=hutches.find(h=>h.id===HM.focusHutch);if(!ht){wrap.innerHTML='';return;}
     const hist=HutchUtil.history(fid,HM.focusHutch);
     const animals=DB.getAnimals(fid);
-    const allScans=DB.getScans(fid).filter(s=>s.hutchId===HM.focusHutch).sort((a,b)=>a.scanDate.localeCompare(b.scanDate));
+    const currentOcc=HutchUtil.occupant(fid,HM.focusHutch,HM.date||today());
+    const allScans=DB.getScans(fid).filter(s=>s.hutchId===HM.focusHutch&&!s.vacated&&!s.presentOnly).sort((a,b)=>a.scanDate.localeCompare(b.scanDate));
     const sparkDots=allScans.map(s=>`<div class="hm-tl-dot" style="background:${['#10b981','#3b82f6','#f59e0b','#f97316','#ef4444','#7f1d1d'][s.obScore]}" title="${fmtDate(s.scanDate)} スコア${s.obScore}"></div>`).join('');
     const tlItems=hist.map(g=>{
       const a=animals.find(x=>x.id===g.animalId);
       const name=a?get拡4(a.tagId)||a.tagId:g.tagId;
-      const isCurrent=g===hist[hist.length-1];
+      const isCurrent=g===hist[hist.length-1]&&!g.exitDate;
       const moves=HutchUtil.animalMoves(fid,g.animalId);
       const moveStr=moves.length>1?moves.map(m=>h(m.hutchLabel)).join(' → '):'';
       return `<div class="hm-tl-item">
         <div>
           <div class="hm-tl-date">${fmtDate(g.from)}${g.from!==g.to?` ～ ${fmtDate(g.to)}`:''}</div>
-          <div style="font-size:10px;color:var(--text-4);margin-top:1px">${g.scans.length}回スキャン</div>
+          <div style="font-size:10px;color:var(--text-4);margin-top:1px">${g.scans.filter(s=>!s.presentOnly).length}回スキャン${g.scans.filter(s=>s.presentOnly).length>0?`・${g.scans.filter(s=>s.presentOnly).length}回在舎記録`:''}</div>
+          ${g.exitDate?`<div class="hm-exit-date">🚪 退出：${fmtDate(g.exitDate)}</div>`:''}
           ${moveStr?`<div style="font-size:10px;color:var(--blue);margin-top:2px">移動: ${moveStr}</div>`:''}
         </div>
         <div>
@@ -2996,15 +3530,16 @@ const App={
           ${a?.breed?`<div style="font-size:10px;color:var(--text-3)">${h(a.breed)}</div>`:''}
         </div>
         <div style="text-align:right">
-          <span class="score-badge ${scClass(g.lastScore)}" style="font-size:13px;width:26px;height:26px">${g.lastScore}</span>
-          ${isCurrent?'<div style="font-size:10px;color:var(--teal);margin-top:2px">在舎中</div>':'<div style="font-size:10px;color:var(--text-4);margin-top:2px">退去</div>'}
+          ${g.lastScore!=null?`<span class="score-badge ${scClass(g.lastScore)}" style="font-size:13px;width:26px;height:26px">${g.lastScore}</span>`:`<span class="present-badge" style="font-size:11px">在</span>`}
+          ${isCurrent?'<div style="font-size:10px;color:var(--teal);margin-top:2px">在舎中</div>':g.exitDate?`<div style="font-size:10px;color:var(--red);margin-top:2px">退出済</div>`:'<div style="font-size:10px;color:var(--text-4);margin-top:2px">退出済</div>'}
         </div>
       </div>`;
     }).join('');
     wrap.innerHTML=`<div class="hm-detail">
       <div class="hm-detail-hd">
         🏠 ${h(ht.label)} の記録履歴
-        ${allScans.length?`<div style="display:flex;align-items:center;gap:3px;margin-left:auto;font-size:11px;color:var(--text-3)">スコア推移: ${sparkDots}</div>`:''}
+        ${currentOcc?`<button class="btn-sm btn-danger" style="margin-left:auto;font-size:11px" onclick="App.openExitModal('${HM.focusHutch}','${currentOcc.scan.animalId}','${currentOcc.scan.tagId}','${h(ht.label)}')">🚪 退出を記録</button>`:`<div style="margin-left:auto"></div>`}
+        ${allScans.length?`<div style="display:flex;align-items:center;gap:3px;font-size:11px;color:var(--text-3)">推移: ${sparkDots}</div>`:''}
         <button class="btn-sm btn-ghost" style="margin-left:8px" onclick="App.focusHutch(null)">×</button>
       </div>
       ${hist.length===0
@@ -3060,6 +3595,66 @@ const App={
     DB.saveFarm(farm);
     HM.flipH=false;HM.flipV=false;
     renderHatchMap();
+  },
+  hmPrint1Page(){
+    const root=document.getElementById('hm-1page-scale-root');
+    if(!root){window.print();return;}
+    document.body.classList.add('hm-print-1page');
+    const marginMm=5;
+    const mm=96/25.4;
+    const pageW=(210-2*marginMm)*mm;
+    const pageH=(297-2*marginMm)*mm;
+    let cleaned=false;
+    const clear=()=>{
+      if(cleaned)return;
+      cleaned=true;
+      root.style.transform='';
+      root.style.width='';
+      root.style.height='';
+      root.style.maxWidth='';
+      root.style.marginLeft='';
+      root.style.marginRight='';
+      document.body.classList.remove('hm-print-1page');
+      window.removeEventListener('beforeprint',onBefore);
+      window.removeEventListener('afterprint',onAfter);
+    };
+    const apply=()=>{
+      if(!document.body.classList.contains('hm-print-1page'))return;
+      const w=root.scrollWidth;
+      const h=root.scrollHeight;
+      if(!w||!h)return;
+      const s=Math.min(pageW/w,pageH/h,1);
+      root.style.transformOrigin='top center';
+      root.style.transform=`scale(${s})`;
+      root.style.width=`${w}px`;
+      root.style.maxWidth='100%';
+      root.style.marginLeft='auto';
+      root.style.marginRight='auto';
+      root.style.height=`${h*s}px`;
+    };
+    const onBefore=()=>{
+      requestAnimationFrame(()=>requestAnimationFrame(()=>{
+        apply();
+        setTimeout(apply,30);
+      }));
+    };
+    const onAfter=()=>{clear();};
+    window.addEventListener('beforeprint',onBefore);
+    window.addEventListener('afterprint',onAfter);
+    window.print();
+    setTimeout(()=>{
+      if(document.body.classList.contains('hm-print-1page'))clear();
+    },8000);
+  },
+  saveDefaultFlip(){
+    const fid=DB.activeId();const farm=DB.getFarm(fid);if(!farm)return;
+    const flipH=$('hc-flip-h')?.checked||false;
+    const flipV=$('hc-flip-v')?.checked||false;
+    farm.defaultFlipH=flipH;farm.defaultFlipV=flipV;
+    DB.saveFarm(farm);
+    // 次回のハッチマップ表示で再初期化させる
+    HM._initialized=null;
+    toast('デフォルト向きを保存しました','ok');
   },
 
   // ─── Hutch Setup helpers ────────────────────────
@@ -3184,7 +3779,14 @@ const App={
   },
   onDateCh(){const tag=$('f-tag')?.value;if(tag)this.onTag(tag,true);},
   onBd(){const bd=$('f-bd')?.value;const sd=$('f-date')?.value||today();const ael=$('f-age');if(bd&&ael)ael.value=calcAge(bd,sd);},
-  onTreat(v){const da=$('drug-area');if(da)da.style.display=v?'grid':'none';},
+  onTreat(v){
+    // v: '' = なし, 'new' = 治療介入, 'ongoing' = 治療中
+    const da=$('drug-area');if(da)da.style.display=v?'grid':'none';
+    SS.treatType=v||'';
+    document.querySelectorAll('.treat-seg-btn').forEach(b=>{
+      b.classList.toggle('active',b.dataset.val===v);
+    });
+  },
   onScore(v){
     SS.score=parseInt(v)||0;
     const sl=$('f-score');if(sl)sl.value=SS.score;
@@ -3216,6 +3818,9 @@ const App={
     RPOS.forEach(p=>SS.right[p]='');LPOS.forEach(p=>SS.left[p]='');
     document.querySelectorAll('.lung-btn').forEach(b=>{Object.values(FSTATE).filter(c=>c).forEach(c=>b.classList.remove(c));b.textContent='未入力';});this.updateAutoSc();
   },
+  onPresentOnly(checked){
+    const area=$('scan-findings-area');if(area)area.style.display=checked?'none':'';
+  },
   scanFormKeydown(e){
     if(e.key!=='Enter')return;
     const tag=e.target.tagName.toLowerCase();
@@ -3230,15 +3835,17 @@ const App={
     e.preventDefault();const fid=DB.activeId();if(!fid){toast('農場を選択してください','err');return;}
     const tagId=($('f-tag')?.value||'').trim();const scanDate=$('f-date').value;
     const ageRaw=$('f-age').value.trim();const ageAtScan=ageRaw!==''?parseInt(ageRaw):null;const round=parseInt($('f-round').value)||1;
-    const score=parseInt($('f-score').value)||0;
+    const presentOnly=!!$('f-present-only')?.checked;
+    const score=presentOnly?null:parseInt($('f-score').value)||0;
     if(!tagId){toast('個体が選択されていません。拡大4桁を入力してください','err');$('f-exp4')?.focus();return;}
     if(!scanDate){toast('スキャン日は必須です','err');return;}
     const animal=DB.upsertAnimal(fid,tagId,{...($('f-bd')?.value?{birthDate:$('f-bd').value}:{}),... ($('f-breed')?.value?{breed:$('f-breed').value}:{}),... ($('f-sex')?.value?{sex:$('f-sex').value}:{})});
     const hutchId=$('f-hutch-sel')?.value||'';
     const hutchFree=$('f-hutch-free')?.value.trim()||'';
-    const scan={farmId:fid,animalId:animal.id,tagId,scanDate,ageAtScan,round,right:{...SS.right},left:{...SS.left},obScore:score,mainFindings:$('f-findings').value.trim(),treated:$('f-treated').checked,drug:$('f-drug')?.value.trim()||'',notes:$('f-notes').value.trim(),...(hutchId?{hutchId}:{}),...(hutchFree&&!hutchId?{hutchFree}:{})};
+    const treatType=presentOnly?'':SS.treatType||''; // '' | 'new' | 'ongoing'
+    const scan={farmId:fid,animalId:animal.id,tagId,scanDate,ageAtScan,round,...(presentOnly?{presentOnly:true,right:{},left:{},obScore:null,mainFindings:'',treated:false,treatType:'',drug:'',notes:$('f-notes').value.trim()}:{right:{...SS.right},left:{...SS.left},obScore:score,mainFindings:$('f-findings').value.trim(),treated:!!treatType,treatType,drug:$('f-drug')?.value.trim()||'',notes:$('f-notes').value.trim()}),...(hutchId?{hutchId}:{}),...(hutchFree&&!hutchId?{hutchFree}:{})};
     if(SS.editId){scan.id=SS.editId;DB.updateScan(fid,scan);toast('記録を更新しました','ok');}
-    else{DB.addScan(fid,scan);toast(`${tagId} のスキャンを保存しました（スコア ${score}）`,'ok');}
+    else{DB.addScan(fid,scan);toast(presentOnly?`${tagId} の在舎記録を保存しました`:`${tagId} のスキャンを保存しました（スコア ${score}）`,'ok');}
     // ハッチが指定されている場合、同個体の同日以降のスキャンに反映
     if(hutchId||hutchFree){
       const updScans=DB.getScans(fid).map(sc=>{
@@ -3268,6 +3875,42 @@ const App={
     DB.saveScans(fid,updScans);
     toast('全スキャンのハッチを更新しました','ok');
     renderAnimalModal(fid,animalId);
+  },
+  openExitModal(hutchId,animalId,tagId,hutchLabel){
+    const bg=$('modal-bg');bg.style.display='flex';
+    bg.innerHTML=`<div class="modal">
+      <div class="modal-hd"><div class="modal-title">🚪 退出を記録</div><button class="modal-x" onclick="App.closeModal()">×</button></div>
+      <div class="modal-body">
+        <div style="margin-bottom:14px;padding:10px 14px;background:var(--gray-lt);border-radius:8px;font-size:13px">
+          ハッチ <strong>${h(hutchLabel)}</strong> から <strong>${fmtTagId(tagId)}</strong> が退出します
+        </div>
+        <input type="hidden" id="exit-hutch-id" value="${hutchId}">
+        <input type="hidden" id="exit-animal-id" value="${animalId}">
+        <input type="hidden" id="exit-tag-id" value="${tagId}">
+        <div class="form-group"><label class="form-label">退出日<span class="req">*</span></label>
+          <input class="form-input" id="exit-date" type="date" value="${today()}">
+        </div>
+        <div class="form-group"><label class="form-label">メモ（任意）</label>
+          <input class="form-input" id="exit-note" placeholder="例：群に戻した、転出など">
+        </div>
+        <button class="btn-primary" onclick="App.saveExit()" style="width:100%;margin-top:8px">退出を記録する</button>
+      </div>
+    </div>`;
+  },
+  saveExit(){
+    const fid=DB.activeId();if(!fid)return;
+    const date=$('exit-date').value;
+    if(!date){toast('退出日を入力してください','err');return;}
+    const hutchId=$('exit-hutch-id').value;
+    const animalId=$('exit-animal-id').value;
+    const tagId=$('exit-tag-id').value;
+    const note=$('exit-note').value.trim();
+    const scan={farmId:fid,animalId,tagId,hutchId,scanDate:date,vacated:true,notes:note,right:{},left:{},obScore:0,mainFindings:''};
+    DB.addScan(fid,scan);
+    this.closeModal();
+    toast(`${fmtTagId(tagId)} の退出を記録しました（${date}）`,'ok');
+    HM.date=date;
+    renderHatchMap();
   },
   setF(k,v){if(v===''||v===null||v===undefined)delete HS.f[k];else HS.f[k]=v;renderHistory();},
   clrF(){HS.f={};renderHistory();},
@@ -3340,7 +3983,7 @@ const App={
           fLbl[s.left?.l_c  ||''],
           s.obScore!=null?s.obScore:'',
           s.mainFindings||'',
-          s.treated?'あり':'なし',
+          s.treatType==='ongoing'?'治療中':s.treated?'治療介入':'なし',
           s.drug||'',
           s.notes||'',
           s.round||1,
