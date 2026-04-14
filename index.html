@@ -2511,8 +2511,8 @@ const renderAnimals=()=>{
     const last=anScans[anScans.length-1];
     const lh=HutchUtil.lastHutchFromScans(fid,a.id);
     const hutchLbl=lh?(lh.hutchId?(hutches.find(hh=>hh.id===lh.hutchId)?.label||lh.hutchId):lh.hutchFree||''):'';
-    return`<tr>
-      <td class="tag-cell">${fmtTagId(a.tagId)}</td>
+    return`<tr${a.deathDate?` style="opacity:.55"`:''}">
+      <td class="tag-cell">${fmtTagId(a.tagId)}${a.deathDate?`&nbsp;<span style="font-size:10px;background:#6b7280;color:#fff;border-radius:4px;padding:1px 5px;vertical-align:middle;white-space:nowrap">✕ 死亡</span>`:''}</td>
       <td>${h(a.breed||'－')}</td>
       <td>${a.sex==='F'?'♀ 雌':a.sex==='M'?'♂ 雄':'－'}</td>
       <td>${fmtDate(a.birthDate)||'－'}</td>
@@ -2991,6 +2991,32 @@ const renderAnimalRegModal=(animalId=null)=>{
           </div>
         </div>
       </div>`:''}
+      ${isEdit?`
+      <div style="margin-top:22px;border-top:1px solid var(--border);padding-top:18px">
+        <div style="font-size:13px;font-weight:700;color:#6b7280;margin-bottom:10px">✕ 死亡記録</div>
+        ${animal.deathDate?`
+        <div style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:13px;color:#374151">死亡日：<strong>${fmtDate(animal.deathDate)}</strong></span>
+          ${animal.deathNotes?`<span style="font-size:12px;color:#6b7280">${h(animal.deathNotes)}</span>`:''}
+          <button type="button" class="btn-sm btn-danger" onclick="App.clearDeath('${animalId}')" style="margin-left:auto">記録を削除</button>
+        </div>`:'<div style="font-size:12px;color:var(--text-4);margin-bottom:12px">記録なし</div>'}
+        <div style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">${animal.deathDate?'死亡記録を更新する':'死亡記録を追加する'}</div>
+          <div class="form-row" style="gap:8px;margin-bottom:8px">
+            <div class="form-group" style="flex:0 0 auto">
+              <label class="form-label" style="font-size:11px">死亡日 <span class="req">*</span></label>
+              <input class="form-input" id="death-date" type="date" value="${animal.deathDate||today()}" style="width:150px">
+            </div>
+            <div class="form-group" style="flex:1">
+              <label class="form-label" style="font-size:11px">メモ（任意）</label>
+              <input class="form-input" id="death-notes" value="${h(animal.deathNotes||'')}" placeholder="例：BRD重篤化、安楽死">
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end">
+            <button type="button" class="btn-sm btn-primary" onclick="App.saveDeath('${animalId}')">✕ 記録する</button>
+          </div>
+        </div>
+      </div>`:''}
     </div>
   </div>`;
 };
@@ -3026,6 +3052,7 @@ const renderAnimalModal=(fid,animalId)=>{
         <span><strong>生年月日：</strong>${fmtDate(animal.birthDate||'')}</span>
         <span><strong>スキャン回数：</strong>${scans.length}回</span>
         ${firstDiagInfo ? `<span style="background:#fee2e2;color:#be2b2b;font-size:12px;font-weight:700;padding:3px 10px;border-radius:6px;border:1px solid #fca5a5">🏥 初診：${fmtDate(firstDiagInfo.date)}${firstDiagInfo.isManual?' <span style="font-size:10px;font-weight:400">(入力日)</span>':''}${firstDiagInfo.ageAtScan != null ? `（日齢${firstDiagInfo.ageAtScan}日）` : ''}</span>` : ''}
+        ${animal.deathDate?`<span style="background:#374151;color:#fff;font-size:12px;font-weight:700;padding:3px 10px;border-radius:6px">✕ 死亡：${fmtDate(animal.deathDate)}${animal.deathNotes?'&ensp;<span style="font-weight:400;font-size:11px">'+h(animal.deathNotes)+'</span>':''}</span>`:''}
       </div>
       <div style="background:${(animal.otitisHistory?.length>0)?'#fee2e2':'var(--gray-lt)'};border:1px solid ${(animal.otitisHistory?.length>0)?'#fca5a5':'var(--border)'};border-radius:8px;padding:12px 14px;margin-bottom:14px">
         <div style="display:flex;align-items:center;gap:8px;margin-bottom:8px">
@@ -3357,6 +3384,28 @@ const App={
     DB.saveAnimals(fid,animals);
     toast('中耳炎病歴を記録しました','ok');
     renderAnimalModal(fid,animalId);
+  },
+  saveDeath(animalId){
+    const fid=DB.activeId();if(!fid)return;
+    const date=$('death-date')?.value;
+    const notes=($('death-notes')?.value||'').trim();
+    if(!date){toast('死亡日を入力してください','err');return;}
+    const animals=DB.getAnimals(fid);const a=animals.find(x=>x.id===animalId);
+    if(!a){toast('個体が見つかりません','err');return;}
+    a.deathDate=date;a.deathNotes=notes;
+    DB.saveAnimals(fid,animals);
+    toast('死亡記録を保存しました','ok');
+    renderAnimalRegModal(animalId);
+  },
+  clearDeath(animalId){
+    const fid=DB.activeId();if(!fid)return;
+    if(!confirm('死亡記録を削除しますか？'))return;
+    const animals=DB.getAnimals(fid);const a=animals.find(x=>x.id===animalId);
+    if(!a){toast('個体が見つかりません','err');return;}
+    delete a.deathDate;delete a.deathNotes;
+    DB.saveAnimals(fid,animals);
+    toast('死亡記録を削除しました','warn');
+    renderAnimalRegModal(animalId);
   },
   delAnimal(animalId,tagId){
     const fid=DB.activeId();if(!fid)return;
