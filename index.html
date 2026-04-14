@@ -2685,7 +2685,7 @@ const renderHatchMap=()=>{
       <span style="font-size:16px;font-weight:800;color:var(--navy-2)">🏠 ハッチマップ</span>
       <span style="font-size:12px;color:var(--text-3)">${h(farm.name)}　ハッチ ${hutches.length}個</span>
       <div style="margin-left:auto;display:flex;gap:6px">
-        <button class="btn-sm btn-ghost hm-btn-print" onclick="window.print()" title="マップを印刷（A4縦・画面と同じレイアウト）">🖨 印刷</button>
+        <button class="btn-sm btn-ghost hm-btn-print" onclick="App.hmPrint()" title="マップを印刷（A4縦・画面と同じレイアウト）">🖨 印刷</button>
         <button class="btn-sm btn-ghost hm-btn-print" onclick="App.hmPrint1Page()" title="全ハッチを1枚に収めて印刷（縮小）">🖨 1枚印刷</button>
         <button class="btn-sm btn-ghost" onclick="App.openHutchSetup()">⚙ ハッチを編集</button>
       </div>
@@ -3673,6 +3673,10 @@ const App={
   hmPrint1Page(){
     const root=document.getElementById('hm-1page-scale-root');
     if(!root){window.print();return;}
+    const style=document.createElement('style');
+    style.setAttribute('data-hm-print','onepage');
+    style.textContent='@media print{@page{size:A4 portrait;margin:5mm}body.hm-print-1page .hm-print-scope,body.hm-print-1page #hm-1page-scale-root{break-inside:avoid!important;page-break-inside:avoid!important}}';
+    document.head.appendChild(style);
     document.body.classList.add('hm-print-1page');
     const marginMm=5;
     const mm=96/25.4;
@@ -3689,6 +3693,7 @@ const App={
       root.style.marginLeft='';
       root.style.marginRight='';
       document.body.classList.remove('hm-print-1page');
+      if(style.parentNode) style.parentNode.removeChild(style);
       window.removeEventListener('beforeprint',onBefore);
       window.removeEventListener('afterprint',onAfter);
     };
@@ -3715,10 +3720,27 @@ const App={
     const onAfter=()=>{clear();};
     window.addEventListener('beforeprint',onBefore);
     window.addEventListener('afterprint',onAfter);
-    window.print();
+    apply();
+    setTimeout(()=>{
+      apply();
+      window.print();
+    },60);
     setTimeout(()=>{
       if(document.body.classList.contains('hm-print-1page'))clear();
     },8000);
+  },
+  hmPrint(){
+    const style=document.createElement('style');
+    style.setAttribute('data-hm-print','portrait');
+    style.textContent='@media print{@page{size:A4 portrait;margin:10mm 12mm}}';
+    document.head.appendChild(style);
+    const clear=()=>{
+      if(style.parentNode) style.parentNode.removeChild(style);
+      window.removeEventListener('afterprint',clear);
+    };
+    window.addEventListener('afterprint',clear);
+    window.print();
+    setTimeout(clear,8000);
   },
   saveDefaultFlip(){
     const fid=DB.activeId();const farm=DB.getFarm(fid);if(!farm)return;
@@ -4145,8 +4167,10 @@ const App={
       // 農場が0件の場合はホーム画面でファイルを開く or 新規作成を選ばせる
       if(DB.getFarms().length > 0) setTimeout(()=>this.openFarmModal(),350);
     }
-    // IndexedDB からファイルハンドルを復元（非同期）
-    (async()=>{ await FileStore.tryRestore(); })();
+    // 起動時の自動ファイル読込は行わない（都度ユーザーが選択）
+    if(!FileStore._handle){
+      FileStore._setStatus('📂 起動時は自動読込しません。メニューの「ファイルを開く」からJSONを選択してください。');
+    }
   }
 };
 App.init();
