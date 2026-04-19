@@ -126,7 +126,24 @@ input,select,textarea{font-family:inherit}
 }
 #file-dot.ok{background:var(--teal)}
 #file-dot.warn{background:var(--amber);animation:pulse-dot 1.5s infinite}
+#file-dot.err{background:var(--red)}
 @keyframes pulse-dot{0%,100%{opacity:1}50%{opacity:.4}}
+
+/* トップバー：接続中のJSON・保存状態（常時表示） */
+#file-bar{
+  display:flex;align-items:flex-start;gap:8px;min-width:0;max-width:min(420px,36vw);
+  margin-right:10px;padding:4px 10px;border-radius:8px;border:1px solid var(--border);
+  background:var(--gray-lt);flex-shrink:1;
+}
+#file-bar .file-bar-col{min-width:0;flex:1}
+.file-bar-primary{
+  font-size:12px;font-weight:600;color:var(--text-2);line-height:1.35;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+}
+.file-bar-secondary{
+  font-size:10px;color:var(--text-3);line-height:1.45;margin-top:2px;
+  overflow:hidden;text-overflow:ellipsis;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;
+}
 
 .tb-spacer{flex:1}
 
@@ -633,6 +650,8 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
   #view{padding:20px 14px 50px}
   .kpi-grid{grid-template-columns:1fr 1fr;gap:8px}
   .tb-actions .btn-outline{display:none}
+  #file-bar{max-width:160px;padding:3px 6px;margin-right:4px}
+  .file-bar-secondary{display:none}
 }
 
 /* ─── Hatch Map ───────────────────────────────── */
@@ -863,8 +882,15 @@ tbody td{padding:10px 13px;vertical-align:middle;color:var(--text-2)}
 
   <div class="tb-spacer"></div>
 
-  <div class="tb-actions">
+  <div id="file-bar" aria-live="polite">
     <span id="file-dot" title="ファイル未接続"></span>
+    <div class="file-bar-col">
+      <div id="file-bar-primary" class="file-bar-primary"></div>
+      <div id="file-bar-secondary" class="file-bar-secondary"></div>
+    </div>
+  </div>
+
+  <div class="tb-actions">
     <div class="tb-menu" id="data-menu">
       <button class="btn-outline" onclick="App.toggleMenu('data-menu')" style="display:flex;align-items:center;gap:5px">
         💾 データ<span style="font-size:9px;opacity:.6">▾</span>
@@ -1026,21 +1052,81 @@ const FileStore = {
   _dirty: false,
   _timer: null,
 
-  // ファイルステータスラベルを更新
-  _setStatus(msg, perm=false){
-    const el = document.getElementById('file-status');
+  // ファイルステータス（トップバー常時表示 + データメニュー内）
+  _setStatus(primary, perm=false, secondary=''){
+    const elMenu = document.getElementById('file-status');
+    const barPri = document.getElementById('file-bar-primary');
+    const barSec = document.getElementById('file-bar-secondary');
+    const wrap = document.getElementById('file-bar');
     const dot = document.getElementById('file-dot');
-    if(el){
-      el.style.display = msg ? '' : 'none';
-      if(perm){
-        el.innerHTML = `<span style="color:var(--amber)">🔒 ${msg}</span><br><button class="btn-outline" style="font-size:11px;padding:2px 8px;height:auto;margin-top:4px" onclick="FileStore.requestPermission()">許可する</button>`;
-      } else {
-        el.textContent = msg;
+    const visible = !!(primary || perm);
+    if(wrap) wrap.style.display = visible ? '' : 'none';
+    if(elMenu) elMenu.style.display = visible ? '' : 'none';
+
+    const tipParts = [perm ? ('🔒 '+primary) : primary, secondary].filter(Boolean);
+    const tip = tipParts.join(' — ');
+
+    if(perm){
+      if(barPri){
+        barPri.replaceChildren();
+        const sp = document.createElement('span');
+        sp.style.color = 'var(--amber)';
+        sp.textContent = '🔒 '+primary;
+        const btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'btn-outline';
+        btn.style.cssText = 'font-size:10px;padding:2px 8px;height:auto;vertical-align:middle;margin-left:4px';
+        btn.textContent = '許可する';
+        btn.onclick = () => FileStore.requestPermission();
+        barPri.appendChild(sp);
+        barPri.appendChild(btn);
+      }
+      if(barSec){
+        barSec.textContent = '前回の保存先JSONへのアクセス許可が必要です。許可すると読み込みと自動保存が再開されます。';
+        barSec.style.display = '';
+      }
+      if(elMenu){
+        elMenu.replaceChildren();
+        const sp = document.createElement('span');
+        sp.style.color = 'var(--amber)';
+        sp.textContent = '🔒 '+primary;
+        elMenu.appendChild(sp);
+        elMenu.appendChild(document.createElement('br'));
+        const btn = document.createElement('button');
+        btn.className = 'btn-outline';
+        btn.style.cssText = 'font-size:11px;padding:2px 8px;height:auto;margin-top:4px';
+        btn.textContent = '許可する';
+        btn.onclick = () => FileStore.requestPermission();
+        elMenu.appendChild(btn);
+      }
+    } else {
+      if(barPri) barPri.textContent = primary;
+      if(barSec){
+        barSec.textContent = secondary || '';
+        barSec.style.display = secondary ? '' : 'none';
+      }
+      if(elMenu){
+        elMenu.replaceChildren();
+        const d1 = document.createElement('div');
+        d1.textContent = primary;
+        elMenu.appendChild(d1);
+        if(secondary){
+          const d2 = document.createElement('div');
+          d2.style.cssText = 'font-size:10px;margin-top:4px;color:var(--text-4);line-height:1.45';
+          d2.textContent = secondary;
+          elMenu.appendChild(d2);
+        }
       }
     }
     if(dot){
-      dot.className = perm ? 'warn' : (msg && msg.includes('✅') ? 'ok' : (msg ? 'warn' : ''));
-      dot.title = msg || 'ファイル未接続';
+      const p = String(primary||'');
+      let cls = '';
+      if(perm) cls = 'warn';
+      else if(p.indexOf('⚠️') !== -1) cls = 'err';
+      else if(p.indexOf('✅') !== -1) cls = 'ok';
+      else if(p) cls = 'warn';
+      dot.className = cls;
+      dot.title = tip || 'ファイル未接続';
     }
   },
 
@@ -1063,14 +1149,20 @@ const FileStore = {
   async _write(){
     if(!this._handle || this._needPermission) return;
     try{
+      const json = this._serialize();
       const writable = await this._handle.createWritable();
-      await writable.write(this._serialize());
+      await writable.write(json);
       await writable.close();
+      try{
+        const meta = JSON.parse(json);
+        const t = meta.date ? new Date(meta.date).getTime() : Date.now();
+        localStorage.setItem(`${PFX}:lastLocalTouch`, String(t));
+      }catch{ DB._touchLocal(); }
       const ts = new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-      this._setStatus(`✅ ${this._handle.name}（${ts}保存）`);
+      this._setStatus(`✅ ${this._handle.name}（${ts}保存）`, false, '編集内容はこのJSONへ自動保存されています（入力の約0.3秒後）。タブを閉じる前にこの表示を確認してください。');
       this._dirty = false;
     }catch(e){
-      this._setStatus(`⚠️ 保存失敗: ${e.message}`);
+      this._setStatus(`⚠️ 保存失敗: ${e.message}`, false, 'ファイルへ書き込めませんでした。権限やドライブを確認するか、「名前を付けて保存」で別ファイルへ退避してください。');
     }
   },
 
@@ -1080,6 +1172,25 @@ const FileStore = {
     this._dirty = true;
     clearTimeout(this._timer);
     this._timer = setTimeout(()=>this._write(), 300);
+  },
+
+  // 直ちにディスクへ書き込み（タブ非表示時・未同期データの救済用）
+  flush(){
+    if(this._timer){clearTimeout(this._timer);this._timer=null;}
+    return this._write();
+  },
+
+  // JSONファイルの date とブラウザ内の最終編集を比較（ファイルが古いときは上書き読み込みしない）
+  _fileOlderThanLocal(fileIsoDate){
+    const ft = fileIsoDate ? new Date(fileIsoDate).getTime() : 0;
+    const lt = parseInt(localStorage.getItem(`${PFX}:lastLocalTouch`)||'0',10);
+    return lt > ft + 800;
+  },
+
+  // ファイルからロードした直後に編集時刻をファイルに合わせる
+  _syncLocalTouchToFile(d){
+    const t = d && d.date ? new Date(d.date).getTime() : Date.now();
+    try{localStorage.setItem(`${PFX}:lastLocalTouch`, String(t));}catch{}
   },
 
   // 既存ファイルを開いて内容をロード
@@ -1101,6 +1212,7 @@ const FileStore = {
       if(d.v === 'fs1'){
         if(Array.isArray(d.farms)){
           DB._bulkLoad(d.farms, d.animals||{}, d.scans||{});
+          this._syncLocalTouchToFile(d);
           toast(`ファイルを開きました（${d.farms.length}農場）`,'ok');
         }
       } else if(d.farm && Array.isArray(d.scans)){
@@ -1109,7 +1221,7 @@ const FileStore = {
         throw new Error('対応していないファイル形式です');
       }
       await _idbSet('fileHandle', handle);
-      this._setStatus(`📂 ${handle.name}`);
+      this._setStatus(`📂 ${handle.name}`, false, 'このファイルに接続済み。あとからの編集は自動で上書き保存されます。');
       updateTopBar();
       Router.nav('/dashboard');
     }catch(e){
@@ -1153,14 +1265,29 @@ const FileStore = {
       if(perm === 'granted'){
         this._handle = h;
         this._needPermission = false;
+        // 初回のみ：既にブラウザに農場データがあるのに lastLocalTouch が無い場合は「今」を入れ、古いJSONで上書きされにくくする
+        if(!localStorage.getItem(`${PFX}:lastLocalTouch`) && DB.getFarms().length>0){
+          try{localStorage.setItem(`${PFX}:lastLocalTouch`, String(Date.now()));}catch{}
+        }
         const file = await h.getFile();
         const text = await file.text();
         const d = JSON.parse(text);
         if(d.v === 'fs1' && Array.isArray(d.farms)){
+          if(this._fileOlderThanLocal(d.date)){
+            const ts = new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+            this._setStatus(`✅ ${h.name}（${ts}）`, false, 'ブラウザ内のデータの方が新しいため、古いJSONの内容は読み込みませんでした。自動保存でファイルへ反映します。');
+            toast('ブラウザに未同期の編集が残っていたため、JSONファイルより新しいデータをそのまま使います。タブを閉じる前にステータスが「保存」になるまでお待ちください。','warn',6500);
+            await this.flush();
+            updateTopBar();
+            if(DB.activeId() && DB.getFarm(DB.activeId())) Router.nav('/dashboard');
+            else renderHome();
+            return;
+          }
           DB._bulkLoad(d.farms, d.animals||{}, d.scans||{});
+          this._syncLocalTouchToFile(d);
         }
         const ts = new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-        this._setStatus(`✅ ${h.name}（${ts}読込）`);
+        this._setStatus(`✅ ${h.name}（${ts}読込）`, false, '前回のJSONから復元しました。編集は自動でこのファイルに保存されます。');
         updateTopBar();
         if(DB.activeId() && DB.getFarm(DB.activeId())) Router.nav('/dashboard');
         else renderHome();
@@ -1181,14 +1308,29 @@ const FileStore = {
       const perm = await this._handle.requestPermission({mode:'readwrite'});
       if(perm === 'granted'){
         this._needPermission = false;
+        if(!localStorage.getItem(`${PFX}:lastLocalTouch`) && DB.getFarms().length>0){
+          try{localStorage.setItem(`${PFX}:lastLocalTouch`, String(Date.now()));}catch{}
+        }
         const file = await this._handle.getFile();
         const text = await file.text();
         const d = JSON.parse(text);
         if(d.v === 'fs1' && Array.isArray(d.farms)){
+          if(this._fileOlderThanLocal(d.date)){
+            const ts = new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
+            this._setStatus(`✅ ${this._handle.name}（${ts}）`, false, 'ブラウザ内のデータの方が新しいため、古いJSONは読み込みませんでした。自動保存で反映します。');
+            toast('ブラウザ内のデータを優先しました。JSONへ同期しています。','warn',5000);
+            await this.flush();
+            updateTopBar();
+            toast('ファイルに接続しました','ok');
+            if(DB.activeId() && DB.getFarm(DB.activeId())) Router.nav('/dashboard');
+            else renderHome();
+            return;
+          }
           DB._bulkLoad(d.farms, d.animals||{}, d.scans||{});
+          this._syncLocalTouchToFile(d);
         }
         const ts = new Date().toLocaleTimeString('ja-JP',{hour:'2-digit',minute:'2-digit'});
-        this._setStatus(`✅ ${this._handle.name}（${ts}読込）`);
+        this._setStatus(`✅ ${this._handle.name}（${ts}読込）`, false, '接続しました。編集は自動でこのJSONに保存されます。');
         updateTopBar();
         toast('ファイルに接続しました','ok');
         if(DB.activeId() && DB.getFarm(DB.activeId())) Router.nav('/dashboard');
@@ -1202,15 +1344,19 @@ const FileStore = {
 const DB = {
   g(k){try{return JSON.parse(localStorage.getItem(`${PFX}:${k}`))||null}catch{return null}},
   s(k,v){localStorage.setItem(`${PFX}:${k}`,JSON.stringify(v))},
+  // 編集時刻（起動時にファイルより新しいブラウザ内データを守るため）
+  _touchLocal(){
+    try{localStorage.setItem(`${PFX}:lastLocalTouch`,String(Date.now()));}catch{}
+  },
   getFarms(){return this.g('farms')||[]},
-  saveFarms(f){this.s('farms',f);FileStore.schedule();},
+  saveFarms(f){this.s('farms',f);this._touchLocal();FileStore.schedule();},
   getFarm(id){return this.getFarms().find(f=>f.id===id)||null},
   saveFarm(f){const a=this.getFarms();const i=a.findIndex(x=>x.id===f.id);i>=0?a[i]=f:a.push(f);this.saveFarms(a)},
   delFarm(id){this.saveFarms(this.getFarms().filter(f=>f.id!==id));['animals','scans'].forEach(k=>localStorage.removeItem(`${PFX}:${id}:${k}`));if(this.activeId()===id)this.s('active','')},
   activeId(){return this.g('active')||null},
   setActive(id){this.s('active',id)},
   getAnimals(fid){try{return JSON.parse(localStorage.getItem(`${PFX}:${fid}:animals`))||[]}catch{return[]}},
-  saveAnimals(fid,a){localStorage.setItem(`${PFX}:${fid}:animals`,JSON.stringify(a));FileStore.schedule();},
+  saveAnimals(fid,a){localStorage.setItem(`${PFX}:${fid}:animals`,JSON.stringify(a));this._touchLocal();FileStore.schedule();},
   findByTag(fid,tag){return this.getAnimals(fid).find(a=>a.tagId===tag.trim())||null},
   upsertAnimal(fid,tag,extra={}){
     let a=this.getAnimals(fid);let x=a.find(i=>i.tagId===tag.trim());
@@ -1219,7 +1365,7 @@ const DB = {
     this.saveAnimals(fid,a);return x;
   },
   getScans(fid){try{return JSON.parse(localStorage.getItem(`${PFX}:${fid}:scans`))||[]}catch{return[]}},
-  saveScans(fid,s){localStorage.setItem(`${PFX}:${fid}:scans`,JSON.stringify(s));FileStore.schedule();},
+  saveScans(fid,s){localStorage.setItem(`${PFX}:${fid}:scans`,JSON.stringify(s));this._touchLocal();FileStore.schedule();},
   addScan(fid,s){const a=this.getScans(fid);s.id=genId();s.createdAt=new Date().toISOString();a.push(s);this.saveScans(fid,a);return s},
   updateScan(fid,s){const a=this.getScans(fid);const i=a.findIndex(x=>x.id===s.id);if(i>=0){a[i]=s;this.saveScans(fid,a);}},
   delScan(fid,sid){this.saveScans(fid,this.getScans(fid).filter(s=>s.id!==sid))},
@@ -2882,9 +3028,71 @@ const renderHutchSetupModal=(fid)=>{
   </div>`;
 };
 
+// 中耳炎履歴に安定IDを付与（修正・削除用）
+const ensureAnimalOtitisIds=(fid,animalId)=>{
+  const animals=DB.getAnimals(fid);
+  const a=animals.find(x=>x.id===animalId);
+  if(!a?.otitisHistory?.length)return;
+  let dirty=false;
+  for(const r of a.otitisHistory){
+    if(!r.id){r.id=genId();dirty=true;}
+  }
+  if(dirty) DB.saveAnimals(fid,animals);
+};
+
+const fmtOtitisRowsForAnimal=(animalId,animal,view)=>{
+  const sorted=(animal.otitisHistory||[]).slice().sort((a,b)=>a.date.localeCompare(b.date));
+  const ctx=App.otitisEditCtx;
+  return sorted.map(rec=>{
+    const oid=rec.id;
+    const editing=ctx && ctx.animalId===animalId && ctx.otitisId===oid && ctx.view===view;
+    if(editing){
+      return`<div style="margin-bottom:8px;background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 12px">
+        <div style="font-size:11px;font-weight:700;color:#b45309;margin-bottom:8px">✏️ この記録を修正中</div>
+        <div class="form-row" style="gap:8px;flex-wrap:wrap">
+          <div class="form-group" style="flex:0 0 auto;margin-bottom:0">
+            <label class="form-label" style="font-size:11px">日付 <span class="req">*</span></label>
+            <input class="form-input" id="otitis-edit-date" type="date" value="${rec.date}" style="width:150px">
+          </div>
+          <div class="form-group" style="flex:1;min-width:160px;margin-bottom:0">
+            <label class="form-label" style="font-size:11px">備考（任意）</label>
+            <input class="form-input" id="otitis-edit-notes" value="${h(rec.notes||'')}" placeholder="例：右耳、投薬内容">
+          </div>
+        </div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:10px">
+          <button type="button" class="btn-sm btn-ghost" onclick="App.cancelOtitisEdit()">キャンセル</button>
+          <button type="button" class="btn-sm btn-primary" onclick="App.commitOtitisEdit('${animalId}')">変更を保存</button>
+        </div>
+      </div>`;
+    }
+    return`<div style="background:var(--gray-lt);border-radius:7px;padding:8px 10px;font-size:12px;display:flex;flex-wrap:wrap;align-items:center;gap:8px;justify-content:space-between;border:1px solid var(--border)">
+      <div style="display:flex;gap:10px;align-items:baseline;flex:1;min-width:0">
+        <span style="color:#dc2626;font-weight:700;white-space:nowrap">⚠️ ${fmtDate(rec.date)}</span>
+        ${rec.notes?`<span style="color:var(--text-3);word-break:break-word">${h(rec.notes)}</span>`:'<span style="color:var(--text-4)">備考なし</span>'}
+      </div>
+      <div style="display:flex;gap:6px;flex-shrink:0">
+        <button type="button" class="btn-sm" onclick="App.startOtitisEdit('${animalId}','${oid}','${view}')">修正</button>
+        <button type="button" class="btn-sm btn-danger" onclick="App.removeOtitis('${animalId}','${oid}')">削除</button>
+      </div>
+    </div>`;
+  }).join('');
+};
+
+const refreshAnimalMetaViews=(fid,animalId)=>{
+  if(!fid||!animalId)return;
+  const ttl=document.querySelector('#modal-bg .modal-title')?.textContent||'';
+  const vis=$('modal-bg')?.style.display==='flex';
+  if(vis){
+    if(ttl.startsWith('個体詳細')){renderAnimalModal(fid,animalId);return;}
+    if(ttl.includes('個体情報を編集')){renderAnimalRegModal(animalId);return;}
+  }
+  renderAnimals();
+};
+
 // ANIMAL REGISTRATION MODAL
 const renderAnimalRegModal=(animalId=null)=>{
   const fid=DB.activeId();if(!fid)return;
+  if(animalId) ensureAnimalOtitisIds(fid,animalId);
   const animal=animalId?DB.getAnimals(fid).find(a=>a.id===animalId):null;
   const isEdit=!!animal;
   const hutches=HutchUtil.get(fid);
@@ -2965,17 +3173,14 @@ const renderAnimalRegModal=(animalId=null)=>{
       </form>
       ${isEdit?`
       <div style="margin-top:22px;border-top:1px solid var(--border);padding-top:18px">
-        <div style="font-size:13px;font-weight:700;color:var(--text-2);margin-bottom:10px">⚠️ 中耳炎病歴</div>
+        <div style="font-size:13px;font-weight:700;color:var(--text-2);margin-bottom:6px">⚠️ 中耳炎病歴</div>
+        <p style="font-size:12px;color:var(--text-3);margin:0 0 10px;line-height:1.55">一覧の<strong>修正・削除</strong>、下のフォームから<strong>新規追加</strong>ができます。</p>
         ${(animal.otitisHistory?.length>0)?`
-        <div style="margin-bottom:14px;display:flex;flex-direction:column;gap:6px">
-          ${(animal.otitisHistory.slice().sort((a,b)=>a.date.localeCompare(b.date))).map(rec=>`
-          <div style="background:var(--gray-lt);border-radius:7px;padding:7px 12px;font-size:12px;display:flex;gap:10px;align-items:baseline">
-            <span style="color:#dc2626;font-weight:700;white-space:nowrap">⚠️ ${fmtDate(rec.date)}</span>
-            ${rec.notes?`<span style="color:var(--text-3)">${h(rec.notes)}</span>`:''}
-          </div>`).join('')}
+        <div style="margin-bottom:14px;display:flex;flex-direction:column;gap:8px">
+          ${fmtOtitisRowsForAnimal(animalId, animal, 'reg')}
         </div>`:'<div style="font-size:12px;color:var(--text-4);margin-bottom:12px">記録なし</div>'}
         <div style="background:var(--blue-lt);border:1px solid #bfdbfe;border-radius:8px;padding:12px 14px">
-          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px">新規記録を追加</div>
+          <div style="font-size:12px;font-weight:700;color:var(--blue);margin-bottom:8px">＋ 新規記録を追加</div>
           <div class="form-row" style="gap:8px;margin-bottom:8px">
             <div class="form-group" style="flex:0 0 auto">
               <label class="form-label" style="font-size:11px">発症日</label>
@@ -2993,15 +3198,19 @@ const renderAnimalRegModal=(animalId=null)=>{
       </div>`:''}
       ${isEdit?`
       <div style="margin-top:22px;border-top:1px solid var(--border);padding-top:18px">
-        <div style="font-size:13px;font-weight:700;color:#6b7280;margin-bottom:10px">✕ 死亡記録</div>
+        <div style="font-size:13px;font-weight:700;color:#6b7280;margin-bottom:6px">✕ 死亡記録</div>
+        <p style="font-size:12px;color:var(--text-3);margin:0 0 12px;line-height:1.55">
+          死亡日・メモは<strong>下のフォーム</strong>からいつでも<strong>変更</strong>できます。「記録を削除」で取り消しも可能です。
+        </p>
         ${animal.deathDate?`
-        <div style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;padding:10px 14px;margin-bottom:10px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
-          <span style="font-size:13px;color:#374151">死亡日：<strong>${fmtDate(animal.deathDate)}</strong></span>
+        <div style="background:#e5e7eb;border:1px solid #9ca3af;border-radius:8px;padding:10px 14px;margin-bottom:12px;display:flex;gap:12px;align-items:center;flex-wrap:wrap">
+          <span style="font-size:12px;font-weight:700;color:#374151">現在の記録</span>
+          <span style="font-size:13px;color:#374151">死亡日 <strong>${fmtDate(animal.deathDate)}</strong></span>
           ${animal.deathNotes?`<span style="font-size:12px;color:#6b7280">${h(animal.deathNotes)}</span>`:''}
           <button type="button" class="btn-sm btn-danger" onclick="App.clearDeath('${animalId}')" style="margin-left:auto">記録を削除</button>
-        </div>`:'<div style="font-size:12px;color:var(--text-4);margin-bottom:12px">記録なし</div>'}
-        <div style="background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px;padding:12px 14px">
-          <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">${animal.deathDate?'死亡記録を更新する':'死亡記録を追加する'}</div>
+        </div>`:'<div style="font-size:12px;color:var(--text-4);margin-bottom:12px">未登録です。必要なときだけ入力してください。</div>'}
+        <div style="background:#f9fafb;border:1px solid var(--border-2);border-radius:8px;padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:#374151;margin-bottom:8px">${animal.deathDate?'死亡記録を修正する':'死亡記録を追加する'}</div>
           <div class="form-row" style="gap:8px;margin-bottom:8px">
             <div class="form-group" style="flex:0 0 auto">
               <label class="form-label" style="font-size:11px">死亡日 <span class="req">*</span></label>
@@ -3013,7 +3222,7 @@ const renderAnimalRegModal=(animalId=null)=>{
             </div>
           </div>
           <div style="display:flex;justify-content:flex-end">
-            <button type="button" class="btn-sm btn-primary" onclick="App.saveDeath('${animalId}')">✕ 記録する</button>
+            <button type="button" class="btn-sm btn-primary" onclick="App.saveDeath('${animalId}')">${animal.deathDate?'💾 変更を保存':'✕ 記録する'}</button>
           </div>
         </div>
       </div>`:''}
@@ -3023,6 +3232,7 @@ const renderAnimalRegModal=(animalId=null)=>{
 
 // ANIMAL MODAL
 const renderAnimalModal=(fid,animalId)=>{
+  ensureAnimalOtitisIds(fid,animalId);
   const animal=DB.getAnimals(fid).find(a=>a.id===animalId);
   if(!animal){toast('個体情報が見つかりません','err');return;}
   const allRecords=DB.byAnimal(fid,animalId);
@@ -3060,15 +3270,11 @@ const renderAnimalModal=(fid,animalId)=>{
           ${(animal.otitisHistory?.length>0)?`<span style="font-size:12px;color:#b91c1c;font-weight:600">${animal.otitisHistory.length}件の記録あり</span>`:`<span style="font-size:11px;color:var(--text-4)">記録なし</span>`}
         </div>
         <div style="font-size:11px;color:var(--text-3);margin-bottom:10px;line-height:1.6;background:#fff8;border-radius:5px;padding:5px 8px">
-          💡 マイコプラズマ等による中耳炎の治療歴を記録します。一度記録するとずっと表示されるため、伝染経路の追跡に役立ちます。
+          💡 マイコプラズマ等による中耳炎の治療歴を記録します。一覧の<strong>修正・削除</strong>、または下から<strong>新規追加</strong>できます。
         </div>
         ${(animal.otitisHistory?.length>0)?`
-        <div style="display:flex;flex-direction:column;gap:4px;margin-bottom:10px">
-          ${(animal.otitisHistory.slice().sort((a,b)=>a.date.localeCompare(b.date))).map(rec=>`
-          <div style="font-size:12px;color:#7f1d1d;display:flex;gap:8px;background:#fff3;border-radius:5px;padding:3px 7px">
-            <span style="font-weight:700;white-space:nowrap">📅 ${fmtDate(rec.date)}</span>
-            ${rec.notes?`<span style="color:#b91c1c">${h(rec.notes)}</span>`:'<span style="color:#b91c1c;opacity:.6">備考なし</span>'}
-          </div>`).join('')}
+        <div style="display:flex;flex-direction:column;gap:8px;margin-bottom:10px">
+          ${fmtOtitisRowsForAnimal(animalId, animal, 'detail')}
         </div>`:''}
         <div style="background:#fff;border:1px solid #fca5a5;border-radius:7px;padding:10px 12px">
           <div style="font-size:11px;font-weight:700;color:#b91c1c;margin-bottom:7px">＋ 新しい中耳炎治療を記録する</div>
@@ -3083,6 +3289,29 @@ const renderAnimalModal=(fid,animalId)=>{
             </div>
             <button class="btn-primary" onclick="App.addOtitisFromModal('${animalId}')" style="padding:7px 16px;font-size:13px;white-space:nowrap;flex-shrink:0">⚠️ 記録する</button>
           </div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:14px;padding:12px 14px;background:#f3f4f6;border:1px solid #d1d5db;border-radius:8px">
+        <div style="font-size:13px;font-weight:700;color:#374151;margin-bottom:6px">✕ 死亡記録</div>
+        <p style="font-size:12px;color:var(--text-3);margin:0 0 10px;line-height:1.55">死亡日・メモの<strong>追加・修正・削除</strong>はここで行えます（一覧のバッジにも反映されます）。</p>
+        ${animal.deathDate?`
+        <div style="background:#e5e7eb;border-radius:8px;padding:8px 12px;margin-bottom:10px;display:flex;flex-wrap:wrap;align-items:center;gap:10px;border:1px solid #9ca3af">
+          <span style="font-size:12px;font-weight:700">現在の記録</span>
+          <span><strong>${fmtDate(animal.deathDate)}</strong></span>
+          ${animal.deathNotes?`<span style="font-size:12px;color:#6b7280">${h(animal.deathNotes)}</span>`:''}
+          <button type="button" class="btn-sm btn-danger" onclick="App.clearDeath('${animalId}')" style="margin-left:auto">記録を削除</button>
+        </div>`:''}
+        <div class="form-row" style="gap:10px;flex-wrap:wrap;align-items:flex-end">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" style="font-size:11px">死亡日 <span class="req">*</span></label>
+            <input class="form-input" id="death-date-m" type="date" value="${animal.deathDate||today()}" style="width:150px">
+          </div>
+          <div class="form-group" style="flex:1;min-width:200px;margin-bottom:0">
+            <label class="form-label" style="font-size:11px">メモ（任意）</label>
+            <input class="form-input" id="death-notes-m" value="${h(animal.deathNotes||'')}" placeholder="例：BRD重篤化、安楽死">
+          </div>
+          <button type="button" class="btn-primary" onclick="App.saveDeath('${animalId}')">${animal.deathDate?'💾 変更を保存':'✕ 記録する'}</button>
         </div>
       </div>
 
@@ -3292,6 +3521,7 @@ function onCommentSizeChange(){
 
 // ─── App Controller ───────────────────────────────
 const App={
+  otitisEditCtx:null,
   nav(p){Router.nav(p);this.closeMenus();},
   toggleMenu(id){const el=document.getElementById(id);if(!el)return;const o=el.classList.contains('open');this.closeMenus();if(!o)el.classList.add('open');},
   closeMenus(){document.querySelectorAll('.tb-menu.open').forEach(m=>m.classList.remove('open'));},
@@ -3359,43 +3589,90 @@ const App={
     }
     this.closeModal();renderAnimals();
   },
+  startOtitisEdit(animalId,otitisId,view){
+    this.otitisEditCtx={animalId,otitisId,view};
+    const fid=DB.activeId();if(!fid)return;
+    if(view==='reg') renderAnimalRegModal(animalId);
+    else renderAnimalModal(fid,animalId);
+  },
+  cancelOtitisEdit(){
+    const ctx=this.otitisEditCtx;if(!ctx)return;
+    this.otitisEditCtx=null;
+    const fid=DB.activeId();if(!fid)return;
+    if(ctx.view==='reg') renderAnimalRegModal(ctx.animalId);
+    else renderAnimalModal(fid,ctx.animalId);
+  },
+  commitOtitisEdit(animalId){
+    const fid=DB.activeId();if(!fid)return;
+    const ctx=this.otitisEditCtx;
+    if(!ctx||ctx.animalId!==animalId)return;
+    const date=$('otitis-edit-date')?.value;
+    const notes=($('otitis-edit-notes')?.value||'').trim();
+    if(!date){toast('日付を入力してください','err');return;}
+    const animals=DB.getAnimals(fid);
+    const a=animals.find(x=>x.id===animalId);
+    const rec=a?.otitisHistory?.find(r=>r.id===ctx.otitisId);
+    if(!rec){toast('記録が見つかりません','err');return;}
+    rec.date=date;rec.notes=notes;
+    DB.saveAnimals(fid,animals);
+    this.otitisEditCtx=null;
+    toast('中耳炎記録を更新しました','ok');
+    if(ctx.view==='reg') renderAnimalRegModal(animalId);
+    else renderAnimalModal(fid,animalId);
+  },
+  removeOtitis(animalId,otitisId){
+    if(!confirm('この中耳炎記録を削除しますか？'))return;
+    this.otitisEditCtx=null;
+    const fid=DB.activeId();if(!fid)return;
+    const animals=DB.getAnimals(fid);
+    const a=animals.find(x=>x.id===animalId);
+    if(!a?.otitisHistory?.length){toast('記録がありません','err');return;}
+    const next=a.otitisHistory.filter(r=>r.id!==otitisId);
+    if(next.length===a.otitisHistory.length){toast('記録が見つかりません','err');return;}
+    a.otitisHistory=next;
+    DB.saveAnimals(fid,animals);
+    toast('中耳炎記録を削除しました','warn');
+    refreshAnimalMetaViews(fid,animalId);
+  },
   addOtitis(animalId){
     const fid=DB.activeId();if(!fid)return;
+    this.otitisEditCtx=null;
     const date=$('otitis-date')?.value||today();
     const notes=($('otitis-notes')?.value||'').trim();
     if(!date){toast('発症日を入力してください','err');return;}
     const animals=DB.getAnimals(fid);const a=animals.find(x=>x.id===animalId);
     if(!a){toast('個体が見つかりません','err');return;}
     if(!a.otitisHistory) a.otitisHistory=[];
-    a.otitisHistory.push({date,notes});
+    a.otitisHistory.push({id:genId(),date,notes});
     DB.saveAnimals(fid,animals);
     toast('中耳炎病歴を記録しました','ok');
     renderAnimalRegModal(animalId);
   },
   addOtitisFromModal(animalId){
     const fid=DB.activeId();if(!fid)return;
+    this.otitisEditCtx=null;
     const date=$('otitis-date-m')?.value||today();
     const notes=($('otitis-notes-m')?.value||'').trim();
     if(!date){toast('治療日を入力してください','err');return;}
     const animals=DB.getAnimals(fid);const a=animals.find(x=>x.id===animalId);
     if(!a){toast('個体が見つかりません','err');return;}
     if(!a.otitisHistory) a.otitisHistory=[];
-    a.otitisHistory.push({date,notes});
+    a.otitisHistory.push({id:genId(),date,notes});
     DB.saveAnimals(fid,animals);
     toast('中耳炎病歴を記録しました','ok');
     renderAnimalModal(fid,animalId);
   },
   saveDeath(animalId){
     const fid=DB.activeId();if(!fid)return;
-    const date=$('death-date')?.value;
-    const notes=($('death-notes')?.value||'').trim();
+    const date=$('death-date')?.value||$('death-date-m')?.value;
+    const notes=(($('death-notes')?.value ?? $('death-notes-m')?.value) ?? '').trim();
     if(!date){toast('死亡日を入力してください','err');return;}
     const animals=DB.getAnimals(fid);const a=animals.find(x=>x.id===animalId);
     if(!a){toast('個体が見つかりません','err');return;}
     a.deathDate=date;a.deathNotes=notes;
     DB.saveAnimals(fid,animals);
     toast('死亡記録を保存しました','ok');
-    renderAnimalRegModal(animalId);
+    refreshAnimalMetaViews(fid,animalId);
   },
   clearDeath(animalId){
     const fid=DB.activeId();if(!fid)return;
@@ -3405,7 +3682,7 @@ const App={
     delete a.deathDate;delete a.deathNotes;
     DB.saveAnimals(fid,animals);
     toast('死亡記録を削除しました','warn');
-    renderAnimalRegModal(animalId);
+    refreshAnimalMetaViews(fid,animalId);
   },
   delAnimal(animalId,tagId){
     const fid=DB.activeId();if(!fid)return;
@@ -4143,6 +4420,11 @@ const App={
   init(){
     $('file-in').addEventListener('change',ev=>{if(ev.target.files[0])this.importFarm(ev.target.files[0]);ev.target.value='';});
     $('modal-bg').addEventListener('click',e=>{if(e.target===$('modal-bg'))this.closeModal();});
+    // JSON接続時：タブ非表示・ページ離脱の直前に未フラッシュの保存を実行（閉じる直前の編集取りこぼし対策）
+    document.addEventListener('visibilitychange',()=>{
+      if(document.visibilityState==='hidden') FileStore.flush();
+    });
+    window.addEventListener('pagehide',()=>{ FileStore.flush(); });
     // ファイル未設定でデータがある場合、閉じる前に警告
     window.addEventListener('beforeunload', e=>{
       if((!FileStore._handle || FileStore._needPermission) && DB.getFarms().length > 0){
@@ -4160,17 +4442,21 @@ const App={
     Router.on('/analysis',()=>renderAnalysis());
     Router.on('/guide',()=>renderGuide());
     Router.on('/hatch-map',()=>renderHatchMap());
-    updateTopBar();Router.init();
-    if(!DB.activeId()||!DB.getFarm(DB.activeId())){
-      renderHome();
-      // 農場が登録済みの場合のみ農場選択モーダルを自動表示
-      // 農場が0件の場合はホーム画面でファイルを開く or 新規作成を選ばせる
-      if(DB.getFarms().length > 0) setTimeout(()=>this.openFarmModal(),350);
-    }
-    // 起動時の自動ファイル読込は行わない（都度ユーザーが選択）
-    if(!FileStore._handle){
-      FileStore._setStatus('📂 起動時は自動読込しません。メニューの「ファイルを開く」からJSONを選択してください。');
-    }
+    (async ()=>{
+      if(FileStore._supported()) await FileStore.tryRestore();
+      if(!FileStore._handle){
+        const sec = FileStore._supported()
+          ? '作業データはこのブラウザにのみ保存されます（環境によっては終了時に消えます）。確実に残すには「名前を付けて保存」。JSONを「ファイルを開く」で開いているときだけ、編集が自動でそのファイルに保存されます。'
+          : 'このブラウザはフォルダ連携に非対応です。データはブラウザ内のみ保持されます。「名前を付けて保存」でJSONをダウンロードしてバックアップしてください。';
+        FileStore._setStatus('📂 JSONファイル未接続', false, sec);
+      }
+      updateTopBar();
+      Router.init();
+      if(!DB.activeId()||!DB.getFarm(DB.activeId())){
+        renderHome();
+        if(DB.getFarms().length > 0) setTimeout(()=>this.openFarmModal(),350);
+      }
+    })();
   }
 };
 App.init();
