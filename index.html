@@ -2154,41 +2154,63 @@ const renderFollowup=()=>{
 };
 
 // ─── FIELD NOTES VIEW ────────────────────────────
-let NS={prefill:true,date:today(),examiner:'',sort:null,sortDir:0};
+let NS={prefill:true,date:today(),historyDate:'',examiner:'',sort:null,sortDir:0};
 let RS={date:'',examiner:'',comment:''};
+
+/** 野帳：refDate 以前の記録で、refDate 時点のハッチ占有（退出で解除）。スキャン0件は noScans */
+function noteAnimalHutchAtDate(fid, animalId, refDate){
+  const scans=DB.getScans(fid).filter(s=>s.animalId===animalId&&s.scanDate<=refDate)
+    .sort((a,b)=>a.scanDate.localeCompare(b.scanDate)||String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
+  if(!scans.length) return {noScans:true,hutchId:'',hutchFree:''};
+  let hid='', hfree='';
+  for(const s of scans){
+    if(s.vacated){
+      if(s.hutchId){
+        if(s.hutchId===hid) hid='';
+      }else if(s.hutchFree&&s.hutchFree.trim()&&s.hutchFree.trim()===hfree){
+        hfree='';
+      }
+      continue;
+    }
+    if(s.hutchId){ hid=s.hutchId; hfree=''; }
+    else if(s.hutchFree&&s.hutchFree.trim()){ hfree=s.hutchFree.trim(); hid=''; }
+  }
+  return {noScans:false,hutchId:hid,hutchFree:hfree};
+}
+
+/** 野帳：historyDate 当日の実スキャン（退出・在舎のみ除く）のうち最新1件 */
+function noteScanOnHistoryDate(fid, animalId, historyDate){
+  if(!historyDate) return null;
+  const cand=DB.getScans(fid).filter(s=>s.animalId===animalId&&s.scanDate===historyDate&&!s.vacated&&!s.presentOnly)
+    .sort((a,b)=>String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+  return cand[0]||null;
+}
+
 const renderNotes=()=>{
   const fid=DB.activeId();const farm=DB.getFarm(fid);
   if(!fid||!farm){renderHome();return;}
   const animals=DB.getAnimals(fid).sort((a,b)=>get拡4(a.tagId).localeCompare(get拡4(b.tagId)));
-  const allScans=DB.getScans(fid);
   const notesHutches=HutchUtil.get(fid);
   const ROW_COUNT=40;
 
-  // 自動入力ON：検査日（野帳の検査日）より前のスキャン日のうち最新日＝「前回検査日」。その日に検査された個体（各個体の最新スキャンがその日）のみ。最大40頭・拡大4桁順
   const refDate=NS.date;
-  let prevRoundDate=null;
   const rows=[];
   if(NS.prefill){
-    const byId=new Map(animals.map(a=>[a.id,a]));
-    const lastScanByAnimal=new Map();
-    allScans.forEach(s=>{
-      const cur=lastScanByAnimal.get(s.animalId);
-      if(!cur||s.scanDate.localeCompare(cur.scanDate)>0) lastScanByAnimal.set(s.animalId,s);
+    const picked=[];
+    animals.forEach(a=>{
+      const ht=noteAnimalHutchAtDate(fid,a.id,refDate);
+      const inHutch=ht.noScans||!!(ht.hutchId||ht.hutchFree);
+      if(!inHutch) return;
+      const lastHutch=ht.hutchId?(notesHutches.find(hh=>hh.id===ht.hutchId)?.label||ht.hutchId):(ht.hutchFree||'');
+      const hist=noteScanOnHistoryDate(fid,a.id,NS.historyDate);
+      const age=a.birthDate?calcAge(a.birthDate,NS.date):null;
+      const prefillScore=hist&&hist.obScore!=null?hist.obScore:null;
+      const round=hist?(hist.round||1)+1:'';
+      const prevDate=hist?hist.scanDate:'';
+      picked.push({tag:a.tagId,age,lastHutch,prefillScore,prevDate,round});
     });
-    const datesBefore=[...new Set(allScans.map(s=>s.scanDate).filter(d=>d<refDate))];
-    if(datesBefore.length) prevRoundDate=datesBefore.sort().reverse()[0];
-    if(prevRoundDate){
-      const recent=[...lastScanByAnimal.entries()]
-        .filter(([id,last])=>byId.has(id)&&last.scanDate===prevRoundDate)
-        .sort((a,b)=>get拡4(byId.get(a[0]).tagId).localeCompare(get拡4(byId.get(b[0]).tagId)))
-        .slice(0,ROW_COUNT)
-        .map(([id,last])=>({a:byId.get(id),last}));
-      recent.forEach(({a,last},i)=>{
-        const age=a.birthDate?calcAge(a.birthDate,NS.date):null;
-        const lastHutch=last?(last.hutchId?(notesHutches.find(hh=>hh.id===last.hutchId)?.label||last.hutchId):last.hutchFree||''):'';
-        rows.push({no:i+1,tag:a.tagId,age,lastHutch,prefillScore:last?last.obScore:null,prevDate:last?last.scanDate:'',round:last?last.round+1:1});
-      });
-    }
+    picked.sort((a,b)=>get拡4(a.tag).localeCompare(get拡4(b.tag)));
+    picked.forEach((r,i)=>{r.no=i+1;rows.push(r);});
     while(rows.length<ROW_COUNT)rows.push({no:rows.length+1});
   } else {
     for(let i=0;i<ROW_COUNT;i++)rows.push({no:i+1});
@@ -2230,11 +2252,16 @@ const renderNotes=()=>{
   <div class="note-opts no-print">
     <label style="display:flex;align-items:center;gap:6px;font-size:13px;cursor:pointer">
       <input type="checkbox" ${NS.prefill?'checked':''} onchange="NS.prefill=this.checked;renderNotes()" style="width:15px;height:15px">
-      前回検査日の個体を自動入力
+      ハッチ在籍個体を自動入力
     </label>
     <div style="display:flex;align-items:center;gap:6px;font-size:13px">
       <span style="color:var(--text-3);font-weight:600">検査日：</span>
       <input type="date" value="${NS.date}" onchange="NS.date=this.value;renderNotes()" style="font-size:13px;padding:5px 8px;border:1.5px solid var(--border-2);border-radius:7px">
+    </div>
+    <div style="display:flex;align-items:center;gap:6px;font-size:13px;flex-wrap:wrap">
+      <span style="color:var(--text-3);font-weight:600">履歴参照日：</span>
+      <input type="date" value="${h(NS.historyDate||'')}" onchange="NS.historyDate=this.value;renderNotes()" style="font-size:13px;padding:5px 8px;border:1.5px solid var(--border-2);border-radius:7px">
+      <button type="button" class="btn-sm btn-ghost" onclick="NS.historyDate='';renderNotes()">クリア</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px;font-size:13px">
       <span style="color:var(--text-3);font-weight:600">検査者：</span>
@@ -2242,10 +2269,9 @@ const renderNotes=()=>{
     </div>
     <button class="btn-primary" onclick="window.print()" style="margin-left:auto">🖨 印刷・PDF出力</button>
   </div>
-  ${NS.prefill?`<div class="no-print" style="font-size:12px;color:var(--text-3);margin:0 0 12px;line-height:1.5">
-    ${prevRoundDate
-      ? `前回検査日（自動判定）：${prevRoundDate.replace(/-/g,'/')}（検査日 ${refDate.replace(/-/g,'/')} より前のスキャン日のうち最新）。この日が各個体の最新スキャン日である個体のみを入力します。`
-      : `※ 検査日より前のスキャンがデータにないため、個体は自動入力されません。`}
+  ${NS.prefill?`<div class="no-print" style="font-size:12px;color:var(--text-3);margin:0 0 12px;line-height:1.6">
+    検査日（${refDate.replace(/-/g,'/')}）時点でハッチに在籍している個体を一覧します（退出済みは除く）。スキャン未登録の新規個体も含みます。<br>
+    「履歴参照日」を指定すると、その日の<strong>実スキャン</strong>（退出・在舎のみを除く）から「前回スコア」「検診回数（次回目安）」を転記します。未指定または該当日に実スキャンがない行は空欄です。
   </div>`:''}
 
   <div class="note-wrap">
