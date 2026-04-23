@@ -2157,7 +2157,7 @@ const renderFollowup=()=>{
 let NS={prefill:true,date:today(),historyDate:'',examiner:'',sort:null,sortDir:0};
 let RS={date:'',examiner:'',comment:''};
 
-/** 野帳：refDate 以前の記録で、refDate 時点のハッチ占有（退出で解除）。スキャン0件は noScans */
+/** 野帳：refDate 以前の記録で、refDate 時点のハッチ占有（退出で解除）。スキャン0件＝ハッチ未割当扱いでリスト外 */
 function noteAnimalHutchAtDate(fid, animalId, refDate){
   const scans=DB.getScans(fid).filter(s=>s.animalId===animalId&&s.scanDate<=refDate)
     .sort((a,b)=>a.scanDate.localeCompare(b.scanDate)||String(a.createdAt||'').localeCompare(String(b.createdAt||'')));
@@ -2199,7 +2199,7 @@ const renderNotes=()=>{
     const picked=[];
     animals.forEach(a=>{
       const ht=noteAnimalHutchAtDate(fid,a.id,refDate);
-      const inHutch=ht.noScans||!!(ht.hutchId||ht.hutchFree);
+      const inHutch=!!(ht.hutchId||ht.hutchFree);
       if(!inHutch) return;
       const lastHutch=ht.hutchId?(notesHutches.find(hh=>hh.id===ht.hutchId)?.label||ht.hutchId):(ht.hutchFree||'');
       const hist=noteScanOnHistoryDate(fid,a.id,NS.historyDate);
@@ -2270,7 +2270,7 @@ const renderNotes=()=>{
     <button class="btn-primary" onclick="window.print()" style="margin-left:auto">🖨 印刷・PDF出力</button>
   </div>
   ${NS.prefill?`<div class="no-print" style="font-size:12px;color:var(--text-3);margin:0 0 12px;line-height:1.6">
-    検査日（${refDate.replace(/-/g,'/')}）時点でハッチに在籍している個体を一覧します（退出済みは除く）。スキャン未登録の新規個体も含みます。<br>
+    検査日（${refDate.replace(/-/g,'/')}）時点で<strong>ハッチに割り当てられている個体のみ</strong>を一覧します（退出済み・ハッチ未設定は除きます）。<br>
     「<strong>前回検診日</strong>」を指定すると、その日の<strong>実スキャン</strong>（退出・在舎のみを除く）から「前回スコア」「検診回数（次回目安）」を転記します。未指定または該当日に実スキャンがない行は空欄です。
   </div>`:''}
 
