@@ -2259,8 +2259,8 @@ const renderNotes=()=>{
       <input type="date" value="${NS.date}" onchange="NS.date=this.value;renderNotes()" style="font-size:13px;padding:5px 8px;border:1.5px solid var(--border-2);border-radius:7px">
     </div>
     <div style="display:flex;align-items:center;gap:6px;font-size:13px;flex-wrap:wrap">
-      <span style="color:var(--text-3);font-weight:600">履歴参照日：</span>
-      <input type="date" value="${h(NS.historyDate||'')}" onchange="NS.historyDate=this.value;renderNotes()" style="font-size:13px;padding:5px 8px;border:1.5px solid var(--border-2);border-radius:7px">
+      <span style="color:var(--text-3);font-weight:600">前回検診日：</span>
+      <input type="date" value="${h(NS.historyDate||'')}" title="この日付の実スキャンから前回スコア等を転記" onchange="NS.historyDate=this.value;renderNotes()" style="font-size:13px;padding:5px 8px;border:1.5px solid var(--border-2);border-radius:7px">
       <button type="button" class="btn-sm btn-ghost" onclick="NS.historyDate='';renderNotes()">クリア</button>
     </div>
     <div style="display:flex;align-items:center;gap:6px;font-size:13px">
@@ -2271,7 +2271,7 @@ const renderNotes=()=>{
   </div>
   ${NS.prefill?`<div class="no-print" style="font-size:12px;color:var(--text-3);margin:0 0 12px;line-height:1.6">
     検査日（${refDate.replace(/-/g,'/')}）時点でハッチに在籍している個体を一覧します（退出済みは除く）。スキャン未登録の新規個体も含みます。<br>
-    「履歴参照日」を指定すると、その日の<strong>実スキャン</strong>（退出・在舎のみを除く）から「前回スコア」「検診回数（次回目安）」を転記します。未指定または該当日に実スキャンがない行は空欄です。
+    「<strong>前回検診日</strong>」を指定すると、その日の<strong>実スキャン</strong>（退出・在舎のみを除く）から「前回スコア」「検診回数（次回目安）」を転記します。未指定または該当日に実スキャンがない行は空欄です。
   </div>`:''}
 
   <div class="note-wrap">
@@ -3222,6 +3222,45 @@ const renderAnimalRegModal=(animalId=null)=>{
           </div>
         </div>
       </div>`:''}
+      ${isEdit?(function(){
+        const vacList=DB.getScans(fid).filter(s=>s.animalId===animal.id&&s.vacated)
+          .sort((a,b)=>b.scanDate.localeCompare(a.scanDate)||String(b.createdAt||'').localeCompare(String(a.createdAt||'')));
+        const canExit=!!(curHutchId||curHutchFree);
+        const lblNow=curHutchId?(hutches.find(h=>h.id===curHutchId)?.label||curHutchId):(curHutchFree||'');
+        const histHtml=vacList.length?`<div style="margin-bottom:12px;display:flex;flex-direction:column;gap:6px">
+          <div style="font-size:11px;font-weight:700;color:var(--text-3)">過去の退出記録</div>
+          ${vacList.map(s=>{
+            const hl=s.hutchId?(hutches.find(h=>h.id===s.hutchId)?.label||s.hutchId):(s.hutchFree||'');
+            return`<div style="background:#fff5f5;border:1px solid #fecaca;border-radius:7px;padding:6px 10px;font-size:12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center;justify-content:space-between">
+              <span><span style="color:var(--red);font-weight:700">🚪 ${fmtDate(s.scanDate)}</span>　<span style="color:var(--text-3)">${h(hl)}</span>${s.notes?`　<span style="color:var(--text-4)">${h(s.notes)}</span>`:''}</span>
+              <button type="button" class="btn-sm btn-danger" onclick="App.delExitFromReg('${s.id}','${animalId}')">削除</button>
+            </div>`;
+          }).join('')}
+        </div>`:'';
+        const formHtml=canExit?`<div style="background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:12px 14px">
+          <div style="font-size:12px;font-weight:700;color:#b91c1c;margin-bottom:8px">＋ 退出を記録</div>
+          <div style="font-size:12px;color:var(--text-3);margin-bottom:10px;line-height:1.5">現在のハッチ：<strong>${h(lblNow)}</strong> から退出します。</div>
+          <div class="form-row" style="gap:8px;margin-bottom:8px;flex-wrap:wrap">
+            <div class="form-group" style="flex:0 0 auto;margin-bottom:0">
+              <label class="form-label" style="font-size:11px">退出日 <span class="req">*</span></label>
+              <input class="form-input" id="reg-exit-date" type="date" value="${today()}" style="width:150px">
+            </div>
+            <div class="form-group" style="flex:1;min-width:160px;margin-bottom:0">
+              <label class="form-label" style="font-size:11px">メモ（任意）</label>
+              <input class="form-input" id="reg-exit-note" placeholder="例：群に戻した、転出など" style="width:100%">
+            </div>
+          </div>
+          <div style="display:flex;justify-content:flex-end">
+            <button type="button" class="btn-sm btn-primary" onclick="App.saveExitFromReg('${animalId}')">🚪 退出を記録する</button>
+          </div>
+        </div>`:`<div style="font-size:12px;color:var(--text-3);background:var(--gray-lt);border-radius:8px;padding:10px 12px;line-height:1.55">現在ハッチに割り当てられていないため、ここから退出は記録できません。先に上の<strong>ハッチ場所</strong>を指定するか、<a href="#" onclick="App.nav('/hatch-map');App.closeModal();return false">ハッチマップ</a>で割り当ててください。</div>`;
+        return`<div style="margin-top:22px;border-top:1px solid var(--border);padding-top:18px">
+          <div style="font-size:13px;font-weight:700;color:var(--text-2);margin-bottom:6px">🚪 ハッチ退出記録</div>
+          <p style="font-size:12px;color:var(--text-3);margin:0 0 12px;line-height:1.55">ハッチからの退出をスキャン履歴に追加します（ハッチマップの「退出」と同じ種類の記録です）。</p>
+          ${histHtml}
+          ${formHtml}
+        </div>`;
+      })():''}
       ${isEdit?`
       <div style="margin-top:22px;border-top:1px solid var(--border);padding-top:18px">
         <div style="font-size:13px;font-weight:700;color:#6b7280;margin-bottom:6px">✕ 死亡記録</div>
@@ -4307,12 +4346,39 @@ const App={
     const animalId=$('exit-animal-id').value;
     const tagId=$('exit-tag-id').value;
     const note=$('exit-note').value.trim();
-    const scan={farmId:fid,animalId,tagId,hutchId,scanDate:date,vacated:true,notes:note,right:{},left:{},obScore:0,mainFindings:''};
+    const scan={farmId:fid,animalId,tagId,scanDate:date,vacated:true,notes:note,right:{},left:{},obScore:0,mainFindings:''};
+    if(hutchId)scan.hutchId=hutchId;
     DB.addScan(fid,scan);
     this.closeModal();
     toast(`${fmtTagId(tagId)} の退出を記録しました（${date}）`,'ok');
     HM.date=date;
     renderHatchMap();
+  },
+  saveExitFromReg(animalId){
+    const fid=DB.activeId();if(!fid)return;
+    const lh=HutchUtil.lastHutchFromScans(fid,animalId);
+    const hutchId=lh?.hutchId||'';
+    const hutchFree=(!hutchId&&lh?.hutchFree)?String(lh.hutchFree).trim():'';
+    if(!hutchId&&!hutchFree){toast('現在ハッチに割り当てられていません。先にハッチ場所を指定してください','err');return;}
+    const date=$('reg-exit-date')?.value;
+    if(!date){toast('退出日を入力してください','err');return;}
+    const animal=DB.getAnimals(fid).find(a=>a.id===animalId);
+    if(!animal){toast('個体が見つかりません','err');return;}
+    const note=($('reg-exit-note')?.value||'').trim();
+    const scan={farmId:fid,animalId,tagId:animal.tagId,scanDate:date,vacated:true,notes:note,right:{},left:{},obScore:0,mainFindings:''};
+    if(hutchId)scan.hutchId=hutchId;else scan.hutchFree=hutchFree;
+    DB.addScan(fid,scan);
+    toast(`退出を記録しました（${date}）`,'ok');
+    renderAnimalRegModal(animalId);
+  },
+  delExitFromReg(scanId,animalId){
+    if(!confirm('この退出記録を削除しますか？'))return;
+    const fid=DB.activeId();if(!fid)return;
+    const s=DB.getScans(fid).find(x=>x.id===scanId);
+    if(!s||!s.vacated||s.animalId!==animalId){toast('記録が見つかりません','err');return;}
+    DB.delScan(fid,scanId);
+    toast('退出記録を削除しました','warn');
+    renderAnimalRegModal(animalId);
   },
   setF(k,v){if(v===''||v===null||v===undefined)delete HS.f[k];else HS.f[k]=v;renderHistory();},
   clrF(){HS.f={};renderHistory();},
